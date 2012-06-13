@@ -5,10 +5,6 @@ class Upsert
     class PG_Connection < Buffer
       attr_reader :db_function_name
 
-      def initialize(*)
-        super
-        @db_function_name = "merge_#{table_name}_#{Kernel.rand(1e11)}"
-      end
       def compose(targets)
         target = targets.first
         unless created_db_function?
@@ -22,7 +18,7 @@ class Upsert
             nil
           end
         end
-        %{ SELECT pg_temp.#{db_function_name}(#{quote_values(ordered_args)}) }
+        %{ SELECT #{db_function_name}(#{quote_values(ordered_args)}) }
       end
       def execute(sql)
         connection.exec sql
@@ -56,8 +52,9 @@ class Upsert
         !!@created_db_function_query
       end
       def create_db_function(example_row)
+        @db_function_name = "pg_temp.merge_#{table_name}_#{Kernel.rand(1e11)}"
         execute <<-EOS
-CREATE FUNCTION pg_temp.#{db_function_name}(#{column_definitions.map { |c| "#{c.name}_input #{c.sql_type} DEFAULT #{c.default || 'NULL'}" }.join(',') }) RETURNS VOID AS
+CREATE FUNCTION #{db_function_name}(#{column_definitions.map { |c| "#{c.name}_input #{c.sql_type} DEFAULT #{c.default || 'NULL'}" }.join(',') }) RETURNS VOID AS
 $$
 BEGIN
     LOOP
