@@ -9,9 +9,9 @@ MiniTest::Unit.runner.reporters << MiniTest::Reporters::SpecReporter.new
 require 'active_record'
 require 'active_record_inline_schema'
 
-require 'logger'
-ActiveRecord::Base.logger = Logger.new($stdout)
-ActiveRecord::Base.logger.level = Logger::DEBUG
+# require 'logger'
+# ActiveRecord::Base.logger = Logger.new($stdout)
+# ActiveRecord::Base.logger.level = Logger::DEBUG
 
 class Pet < ActiveRecord::Base
   self.primary_key = 'name'
