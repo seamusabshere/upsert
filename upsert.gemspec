@@ -4,9 +4,9 @@ require File.expand_path('../lib/upsert/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Seamus Abshere"]
   gem.email         = ["seamus@abshere.net"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
-  gem.homepage      = ""
+  gem.description   = %q{Upsert for MySQL, PostgreSQL, and SQLite. Codifies various SQL MERGE tricks like MySQL's ON DUPLICATE KEY UPDATE, PostgreSQL's CREATE FUNCTION merge_db, and SQLite's INSERT OR IGNORE.}
+  gem.summary       = %q{Upsert for MySQL, PostgreSQL, and SQLite. Finally, all those SQL MERGE tricks codified.}
+  gem.homepage      = "https://github.com/seamusabshere/upsert"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
