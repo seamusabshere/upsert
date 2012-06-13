@@ -12,6 +12,8 @@ Finally, all those SQL MERGE tricks codified.
 
 ### PostgreSQL
 
+#### Used
+
     # http://www.postgresql.org/docs/current/interactive/plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING
     CREATE TABLE db (a INT PRIMARY KEY, b TEXT);
     CREATE FUNCTION merge_db(key INT, data TEXT) RETURNS VOID AS
@@ -39,12 +41,13 @@ Finally, all those SQL MERGE tricks codified.
     SELECT merge_db(1, 'david');
     SELECT merge_db(1, 'dennis');
 
+#### Alternatives (not used)
+
     # http://stackoverflow.com/questions/1109061/insert-on-duplicate-update-postgresql
     UPDATE table SET field='C', field2='Z' WHERE id=3;
     INSERT INTO table (id, field, field2)
       SELECT 3, 'C', 'Z'
       WHERE NOT EXISTS (SELECT 1 FROM table WHERE id=3);
-
 
     # http://stackoverflow.com/questions/5269590/why-doesnt-this-rule-prevent-duplicate-key-violations
     BEGIN;
