@@ -28,11 +28,11 @@ MiniTest::Spec.class_eval do
 
   def assert_creates(model, expected_records)
     expected_records.each do |conditions|
-      model.count(:conditions => conditions).must_equal 0
+      model.where(conditions).count.must_equal 0
     end
     yield
     expected_records.each do |conditions|
-      model.count(:conditions => conditions).must_equal 1
+      model.where(conditions).count.must_equal 1
     end
   end
 
