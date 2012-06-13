@@ -6,7 +6,13 @@ shared_examples_for :database do
         upsert.row({:name => 'Jerry'}, {:gender => 'male'})
       end
     end
-    it "works for a single row with nulls" do
+    it "works for a single row with implicit nulls" do
+      upsert = Upsert.new connection, :pets
+      assert_creates(Pet, [{:name => 'Inky', :gender => nil}]) do
+        upsert.row({:name => 'Inky'}, {})
+      end
+    end
+    it "works for a single row with explicit nulls" do
       upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Inky', :gender => nil}]) do
         upsert.row({:name => 'Inky'}, {:gender => nil})
