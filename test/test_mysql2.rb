@@ -2,13 +2,14 @@ require 'helper'
 require 'mysql2'
 
 system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS test_upsert; CREATE DATABASE test_upsert CHARSET utf8" }
+ActiveRecord::Base.establish_connection :adapter => 'mysql2', :username => 'root', :password => 'password', :database => 'test_upsert'
 
 describe "upserting on mysql2" do
   before do
+    ActiveRecord::Base.connection.drop_table Pet.table_name rescue nil
+    Pet.auto_upgrade!
     @opened_connections = []
     @connection = new_connection
-    connection.query %{ DROP TABLE IF EXISTS "pets" }
-    connection.query %{ CREATE TABLE "pets" ("name" varchar(255) PRIMARY KEY, "gender" varchar(255)) }
   end
   after do
     @opened_connections.each { |c| c.close }
@@ -20,13 +21,6 @@ describe "upserting on mysql2" do
   end
   def connection
     @connection
-  end
-  def select_one(sql)
-    connection.query(sql, :as => :array).first.first
-  end
-
-  def count_sql(table_name, row)
-    %{ SELECT COUNT(*) FROM "#{table_name}" WHERE #{row.map { |k, v| v.nil? ? %{ `#{k}` IS NULL } : %{ `#{k}` = '#{v}' }}.join(' AND ')}}
   end
 
   it_behaves_like :database

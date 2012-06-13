@@ -1,24 +1,23 @@
 require 'helper'
 require 'sqlite3'
 
+db_path = File.expand_path('../../tmp/test.sqlite3', __FILE__)
+FileUtils.mkdir_p File.dirname(db_path)
+FileUtils.rm_f db_path
+ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => db_path
+
 describe "upserting on sqlite" do
   before do
-    @connection = SQLite3::Database.new(':memory:')
-    connection.execute %{ CREATE TABLE "pets" ("name" varchar(255), "gender" varchar(255)) }
-    connection.execute %{ CREATE UNIQUE INDEX "index_#{'pets'}_on_name" ON "pets" ("name") }
+    ActiveRecord::Base.connection.drop_table Pet.table_name rescue nil
+    Pet.auto_upgrade!
+    @connection = new_connection
   end
   def new_connection
-    @connection
+    db_path = File.expand_path('../../tmp/test.sqlite3', __FILE__)
+    SQLite3::Database.open(db_path)
   end
   def connection
     @connection
-  end
-  def select_one(sql)
-    connection.execute(sql).first.first
-  end
-
-  def count_sql(table_name, row)
-    %{ SELECT COUNT(*) FROM "#{table_name}" WHERE #{row.map { |k, v| v.nil? ? %{ "#{k}" IS NULL } : %{ "#{k}" = "#{v}" }}.join(' AND ')}}
   end
 
   it_behaves_like :database

@@ -6,6 +6,19 @@ require 'minitest/reporters'
 MiniTest::Unit.runner = MiniTest::SuiteRunner.new
 MiniTest::Unit.runner.reporters << MiniTest::Reporters::SpecReporter.new
 
+require 'active_record'
+require 'active_record_inline_schema'
+
+require 'logger'
+ActiveRecord::Base.logger = Logger.new($stdout)
+ActiveRecord::Base.logger.level = Logger::DEBUG
+
+class Pet < ActiveRecord::Base
+  self.primary_key = 'name'
+  col :name
+  col :gender
+end
+
 require 'upsert'
 
 MiniTest::Spec.class_eval do
@@ -13,19 +26,13 @@ MiniTest::Spec.class_eval do
     @shared_examples ||= {}
   end
 
-  def assert_count(expected_count, table_name, row)
-    sql = count_sql table_name, row
-    actual_count = select_one(sql).to_i
-    actual_count.must_equal expected_count
-  end
-
-  def assert_creates(table_name, rows)
-    rows.each do |row|
-      assert_count 0, table_name, row
+  def assert_creates(model, expected_records)
+    expected_records.each do |conditions|
+      model.count(:conditions => conditions).must_equal 0
     end
     yield
-    rows.each do |row|
-      assert_count 1, table_name, row
+    expected_records.each do |conditions|
+      model.count(:conditions => conditions).must_equal 1
     end
   end
 
