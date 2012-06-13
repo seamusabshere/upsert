@@ -3,8 +3,6 @@ require 'upsert/buffer/pg_connection/column_definition'
 class Upsert
   class Buffer
     class PG_Connection < Buffer
-      class Row < Upsert::Row; end
-      
       attr_reader :db_function_name
 
       def initialize(*)

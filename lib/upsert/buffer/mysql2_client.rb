@@ -1,7 +1,6 @@
 class Upsert
   class Buffer
     class Mysql2_Client < Buffer
-      class Row < Upsert::Row; end
       def compose(targets)
         columns = targets.first.columns
         row_inserts = targets.map { |row| row.inserts }

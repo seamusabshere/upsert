@@ -20,7 +20,7 @@ class Upsert
       !!@async
     end
     def add(selector, document)
-      rows << self.class.const_get(:Row).new(selector, document)
+      rows << Row.new(selector, document)
       if sql = chunk
         execute sql
       end
