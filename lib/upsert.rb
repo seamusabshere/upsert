@@ -37,5 +37,4 @@ class Upsert
       end
     end
   end
-
 end

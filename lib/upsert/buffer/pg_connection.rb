@@ -20,19 +20,25 @@ class Upsert
         end
         %{ SELECT #{db_function_name}(#{quote_values(ordered_args)}) }
       end
+
       def execute(sql)
         connection.exec sql
       end
+
       def max_length
         INFINITY
       end
+
       def max_targets
         1
       end
+
       include Quoter
+      
       def quote_ident(k)
         SINGLE_QUOTE + connection.quote_ident(k) + SINGLE_QUOTE
       end
+      
       # FIXME escape_bytea with (v, k = nil)
       def quote_value(v)
         case v
@@ -44,13 +50,17 @@ class Upsert
           v
         end
       end
+      
       def column_definitions
         @column_definitions ||= ColumnDefinition.all(connection, table_name)
       end
+      
       private
+      
       def created_db_function?
         !!@created_db_function_query
       end
+      
       def create_db_function(example_row)
         @db_function_name = "pg_temp.merge_#{table_name}_#{Kernel.rand(1e11)}"
         execute <<-EOS

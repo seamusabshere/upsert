@@ -16,20 +16,24 @@ class Upsert
       @table_name = table_name
       @rows = []
     end
+
     def async?
       !!@async
     end
+
     def add(selector, document)
       rows << Row.new(selector, document)
       if sql = chunk
         execute sql
       end
     end
+
     def clear
       while sql = chunk
         execute sql
       end
     end
+
     def chunk
       return if rows.empty?
       targets = []
@@ -46,6 +50,7 @@ class Upsert
       end
       sql
     end
+    
     def cleanup
       clear
     end

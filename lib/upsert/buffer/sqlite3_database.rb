@@ -9,16 +9,21 @@ UPDATE "#{table_name}" SET #{quote_pairs(target.updates)} WHERE #{quote_pairs(ta
 EOS
         sql
       end
+
       def execute(sql)
         connection.execute sql
       end
+
       def max_targets
         1
       end
+
       def max_length
         INFINITY
       end
+
       include Quoter
+      
       def quote_value(v)
         case v
         when NilClass
@@ -29,6 +34,7 @@ EOS
           v
         end
       end
+      
       def quote_ident(k)
         SINGLE_QUOTE + SQLite3::Database.quote(k.to_s) + SINGLE_QUOTE
       end

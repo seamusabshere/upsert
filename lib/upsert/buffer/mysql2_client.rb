@@ -13,16 +13,21 @@ ON DUPLICATE KEY UPDATE #{column_tautologies.join(',')};
 EOS
         sql
       end
+
       def execute(sql)
         connection.query sql
       end
+
       def max_targets
         INFINITY
       end
+
       def max_length
         @max_length ||= connection.query("SHOW VARIABLES LIKE 'max_allowed_packet'", :as => :hash).first['Value'].to_i
       end
+
       include Quoter
+
       def quote_value(v)
         case v
         when NilClass
@@ -33,6 +38,7 @@ EOS
           v
         end
       end
+      
       def quote_ident(k)
         BACKTICK + connection.escape(k.to_s) + BACKTICK
       end
