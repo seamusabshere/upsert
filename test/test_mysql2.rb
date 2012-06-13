@@ -25,4 +25,6 @@ describe "upserting on mysql2" do
 
   it_behaves_like 'a database with an upsert trick'
 
+  it_behaves_like 'something that can be speeded up with upserting'
+
 end

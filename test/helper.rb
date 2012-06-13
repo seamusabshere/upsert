@@ -17,6 +17,9 @@ class Pet < ActiveRecord::Base
   self.primary_key = 'name'
   col :name
   col :gender
+  col :tag_number, :type => :integer
+  col :birthday, :type => :datetime
+  col :home_address, :type => :text
 end
 
 require 'upsert'

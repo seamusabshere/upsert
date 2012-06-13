@@ -20,6 +20,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'pg'
   gem.add_development_dependency 'activerecord' # testing only
   gem.add_development_dependency 'active_record_inline_schema'
+  gem.add_development_dependency 'faker'
   gem.add_development_dependency 'minitest'
   gem.add_development_dependency 'minitest-reporters'
   gem.add_development_dependency 'yard'
