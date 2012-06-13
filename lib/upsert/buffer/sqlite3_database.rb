@@ -3,15 +3,16 @@ class Upsert
     class SQLite3_Database < Buffer
       def compose(targets)
         target = targets.first
-        sql = <<-EOS
-INSERT OR IGNORE INTO "#{table_name}" (#{quote_idents(target.columns)}) VALUES (#{quote_values(target.inserts)});
-UPDATE "#{table_name}" SET #{quote_pairs(target.updates)} WHERE #{quote_pairs(target.selector)}
-EOS
-        sql
+        parts = []
+        parts << %{ INSERT OR IGNORE INTO "#{table_name}" (#{quote_idents(target.columns)}) VALUES (#{quote_values(target.inserts)}) }
+        if target.updates.length > 0
+          parts << %{ UPDATE "#{table_name}" SET #{quote_pairs(target.updates)} WHERE #{quote_pairs(target.selector)} }
+        end
+        parts.join(';')
       end
 
       def execute(sql)
-        connection.execute sql
+        connection.execute_batch sql
       end
 
       def max_targets
@@ -36,7 +37,7 @@ EOS
       end
       
       def quote_ident(k)
-        SINGLE_QUOTE + SQLite3::Database.quote(k.to_s) + SINGLE_QUOTE
+        DOUBLE_QUOTE + SQLite3::Database.quote(k.to_s) + DOUBLE_QUOTE
       end
     end
   end

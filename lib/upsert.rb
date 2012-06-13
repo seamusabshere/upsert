@@ -9,6 +9,7 @@ require 'upsert/buffer/sqlite3_database'
 class Upsert
   INFINITY = 1.0/0
   SINGLE_QUOTE = %{'}
+  DOUBLE_QUOTE = %{"}
   BACKTICK = %{`}
 
   attr_reader :buffer
