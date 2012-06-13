@@ -51,4 +51,6 @@ module MiniTest::Spec::SharedExamples
 end
 
 Object.class_eval { include(MiniTest::Spec::SharedExamples) }
-require 'shared_examples'
+Dir[File.expand_path("../shared/*.rb", __FILE__)].each do |path|
+  require path
+end

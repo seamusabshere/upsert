@@ -20,5 +20,5 @@ describe "upserting on sqlite" do
     @connection
   end
 
-  it_behaves_like :database
+  it_behaves_like 'a database with an upsert trick'
 end
