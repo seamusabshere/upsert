@@ -6,7 +6,7 @@ ActiveRecord::Base.establish_connection :adapter => 'mysql2', :username => 'root
 
 describe "upserting on mysql2" do
   before do
-    ActiveRecord::Base.connection.drop_table Pet.table_name rescue nil
+    ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil
     Pet.auto_upgrade!
     @opened_connections = []
     @connection = new_connection

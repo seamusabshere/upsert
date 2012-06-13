@@ -8,7 +8,7 @@ ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => db_p
 
 describe "upserting on sqlite" do
   before do
-    ActiveRecord::Base.connection.drop_table Pet.table_name rescue nil
+    ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil
     Pet.auto_upgrade!
     @connection = new_connection
   end
