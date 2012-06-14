@@ -11,6 +11,8 @@ class Upsert
   SINGLE_QUOTE = %{'}
   DOUBLE_QUOTE = %{"}
   BACKTICK = %{`}
+  ISO8601_DATETIME = '%Y-%m-%dT%l:%M:%S%z'
+  ISO8601_DATE = '%F'
 
   attr_reader :buffer
 
@@ -23,16 +25,12 @@ class Upsert
     buffer.add selector, document
   end
 
-  def cleanup
-    buffer.cleanup
-  end
-
   def multi(&blk)
     @multi_mutex.synchronize do
       begin
         buffer.async = true
         instance_eval(&blk)
-        buffer.cleanup
+        buffer.clear
       ensure
         buffer.async = nil
       end

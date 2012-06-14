@@ -42,17 +42,13 @@ class Upsert
         targets << rows.pop
         last_sql = sql
         sql = compose(targets)
-      end until rows.empty? or targets.length >= max_targets or sql.length > max_length
+      end until rows.empty? or targets.length == max_targets or sql.length > max_length
       if sql.length > max_length
         raise if last_sql.nil?
         sql = last_sql
         rows << targets.pop
       end
       sql
-    end
-    
-    def cleanup
-      clear
     end
   end
 end

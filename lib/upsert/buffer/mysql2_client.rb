@@ -32,8 +32,14 @@ EOS
         case v
         when NilClass
           'NULL'
-        when String, Symbol
-          SINGLE_QUOTE + connection.escape(v.to_s) + SINGLE_QUOTE
+        when Symbol
+          quote_value v.to_s
+        when String
+          SINGLE_QUOTE + connection.escape(v) + SINGLE_QUOTE
+        when Time, DateTime
+          SINGLE_QUOTE + v.strftime(ISO8601_DATETIME) + SINGLE_QUOTE
+        when Date
+          SINGLE_QUOTE + v.strftime(ISO8601_DATE) + SINGLE_QUOTE
         else
           v
         end
