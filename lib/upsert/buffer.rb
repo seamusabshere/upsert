@@ -29,12 +29,12 @@ class Upsert
     end
 
     def clear
-      while sql = chunk
+      while sql = chunk(true)
         execute sql
       end
     end
 
-    def chunk
+    def chunk(allow_undersized = false)
       return if rows.empty?
       targets = []
       sql = nil
@@ -47,8 +47,12 @@ class Upsert
         raise if last_sql.nil?
         sql = last_sql
         rows << targets.pop
+      elsif async? and not allow_undersized
+        @rows += targets
+        nil
+      else
+        sql
       end
-      sql
     end
   end
 end
