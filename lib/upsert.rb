@@ -25,11 +25,11 @@ class Upsert
     buffer.add selector, document
   end
 
-  def multi(&blk)
+  def multi
     @multi_mutex.synchronize do
       begin
         buffer.async = true
-        instance_eval(&blk)
+        yield self
         buffer.clear
       ensure
         buffer.async = nil

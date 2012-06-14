@@ -52,26 +52,26 @@ shared_examples_for 'a database with an upsert trick' do
     it "works for multiple rows (base case)" do
       upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-        upsert.multi do
-          row({:name => 'Jerry'}, :gender => 'male')
+        upsert.multi do |xxx|
+          xxx.row({:name => 'Jerry'}, :gender => 'male')
         end
       end
     end
     it "works for multiple rows (not changing anything)" do
       upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-        upsert.multi do
-          row({:name => 'Jerry'}, :gender => 'male')
-          row({:name => 'Jerry'}, :gender => 'male')
+        upsert.multi do |xxx|
+          xxx.row({:name => 'Jerry'}, :gender => 'male')
+          xxx.row({:name => 'Jerry'}, :gender => 'male')
         end
       end
     end
     it "works for multiple rows (changing something)" do
       upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
-        upsert.multi do
-          row({:name => 'Jerry'}, :gender => 'male')
-          row({:name => 'Jerry'}, :gender => 'neutered')
+        upsert.multi do |xxx|
+          xxx.row({:name => 'Jerry'}, :gender => 'male')
+          xxx.row({:name => 'Jerry'}, :gender => 'neutered')
         end
       end
       Pet.where(:gender => 'male').count.must_equal 0

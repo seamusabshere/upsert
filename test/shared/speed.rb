@@ -4,7 +4,7 @@ require 'faker'
 shared_examples_for 'something that can be speeded up with upserting' do
   describe "speed of upserting" do
     before do
-      $fakes = []
+      @fakes = []
       200.times do
         fake = {
           :name => Faker::Name.name,
@@ -12,12 +12,12 @@ shared_examples_for 'something that can be speeded up with upserting' do
           :birthday => Time.at(rand * Time.now.to_i),
           :home_address => Faker::Address.street_address
         }
-        $fakes << fake
+        @fakes << fake
       end
     end
     it "is faster than just creating records with ActiveRecord" do
       # dry run
-      $fakes.each do |fake|
+      @fakes.each do |fake|
         pet = Pet.new
         fake.each do |k, v|
           pet.send "#{k}=", v
@@ -26,7 +26,7 @@ shared_examples_for 'something that can be speeded up with upserting' do
       end
       Pet.delete_all
       ar_time = Benchmark.realtime do
-        $fakes.each do |fake|
+        @fakes.each do |fake|
           pet = Pet.new
           fake.each do |k, v|
             pet.send "#{k}=", v
@@ -37,10 +37,9 @@ shared_examples_for 'something that can be speeded up with upserting' do
       Pet.delete_all
       upsert_time = Benchmark.realtime do
         upsert = Upsert.new connection, :pets
-        # FIXME don't use instance_eval for multi since seems like this is a common pattern...
-        upsert.multi do
-          $fakes.each do |fake|
-            row(fake.slice(:name), fake.except(:name))
+        upsert.multi do |xxx|
+          @fakes.each do |fake|
+            xxx.row(fake.slice(:name), fake.except(:name))
           end
         end
       end
