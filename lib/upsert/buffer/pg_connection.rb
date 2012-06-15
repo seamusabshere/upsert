@@ -3,8 +3,6 @@ require 'upsert/buffer/pg_connection/column_definition'
 class Upsert
   class Buffer
     class PG_Connection < Buffer
-      E_AND_SINGLE_QUOTE = %{E'}
-
       include Quoter
 
       attr_reader :merge_function
