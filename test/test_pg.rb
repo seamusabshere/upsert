@@ -30,4 +30,6 @@ describe "upserting on postgresql" do
 
   it_behaves_like 'something that supports binary upserts'
 
+  it_behaves_like "something that supports multibyte"
+
 end

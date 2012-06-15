@@ -29,4 +29,5 @@ describe "upserting on mysql2" do
 
   it_behaves_like 'something that supports binary upserts'
 
+  it_behaves_like "something that supports multibyte"
 end

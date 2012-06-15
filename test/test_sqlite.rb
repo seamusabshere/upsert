@@ -30,6 +30,8 @@ describe "upserting on sqlite" do
 
   it_behaves_like 'something that can be speeded up with upserting'
 
+  it_behaves_like "something that supports multibyte"
+
   # FIXME not supported because it requires using bind variables, etc.
   # it_behaves_like 'something that supports binary upserts'
 end
