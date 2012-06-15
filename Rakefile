@@ -10,7 +10,7 @@ Rake::TestTask.new(:_test) do |test|
 end
 
 task :test_each_db_adapter do
-  %w{ mysql2 sqlite pg }.each do |database|
+  %w{ mysql2 sqlite pg active_record_connection_adapter }.each do |database|
     puts
     puts "#{'*'*10} Running #{database} tests"
     puts

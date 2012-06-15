@@ -2,6 +2,10 @@ class Upsert
   class Buffer
     class << self
       def for(connection, table_name)
+        if connection.respond_to?(:raw_connection)
+          # deal with ActiveRecord::Base.connection or ActiveRecord::Base.connection_pool.checkout
+          connection = connection.raw_connection
+        end
         const_get(connection.class.name.gsub(/\W+/, '_')).new connection, table_name
       end
     end
