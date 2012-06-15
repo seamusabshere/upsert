@@ -35,7 +35,7 @@ class Upsert
       end
 
       def quote_time(v)
-        quote_value [v.strftime(ISO8601_DATETIME), sprintf(USEC_SPRINTF, v.usec)].join('.')
+        quote_string [v.strftime(ISO8601_DATETIME), sprintf(USEC_SPRINTF, v.usec)].join('.')
       end
 
       def quote_ident(k)

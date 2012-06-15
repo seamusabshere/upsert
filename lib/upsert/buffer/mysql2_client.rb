@@ -98,7 +98,7 @@ class Upsert
       alias_method :quote_binary, :quote_string
 
       def quote_time(v)
-        quote_value v.strftime(ISO8601_DATETIME)
+        quote_string v.strftime(ISO8601_DATETIME)
       end
 
       def quote_ident(k)

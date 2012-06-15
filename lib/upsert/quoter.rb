@@ -13,11 +13,11 @@ class Upsert
       when Upsert::Binary
         quote_binary v.v # must be defined by base
       when Symbol
-        quote_value v.to_s
+        quote_string v.to_s
       when Time, DateTime
         quote_time v # must be defined by base
       when Date
-        quote_value v.strftime(ISO8601_DATE)
+        quote_string v.strftime(ISO8601_DATE)
       else
         raise "not sure how to quote #{v.class}: #{v.inspect}"
       end
