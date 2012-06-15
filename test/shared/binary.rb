@@ -13,7 +13,7 @@ shared_examples_for 'supports binary upserts' do
         assert_creates(Pet, [{:name => name, :zipped_biography => zipped_biography}]) do
           upsert.row({:name => name}, {:zipped_biography => Upsert.binary(zipped_biography)})
         end
-        Zlib::Inflate.inflate(Pet.find(name).zipped_biography).must_equal biography
+        Zlib::Inflate.inflate(Pet.find_by_name(name).zipped_biography).must_equal biography
       end
     end
   end

@@ -10,6 +10,7 @@ MiniTest::Unit.runner = MiniTest::SuiteRunner.new
 MiniTest::Unit.runner.reporters << MiniTest::Reporters::SpecReporter.new
 
 require 'active_record'
+require 'activerecord-import'
 require 'active_record_inline_schema'
 
 # require 'logger'
@@ -17,7 +18,6 @@ require 'active_record_inline_schema'
 # ActiveRecord::Base.logger.level = Logger::DEBUG
 
 class Pet < ActiveRecord::Base
-  self.primary_key = 'name'
   col :name
   col :gender
   col :good, :type => :boolean
@@ -27,6 +27,7 @@ class Pet < ActiveRecord::Base
   col :tag_number, :type => :integer
   col :birthday, :type => :date
   col :home_address, :type => :text
+  add_index :name, :unique => true
 end
 
 require 'upsert'
@@ -45,9 +46,9 @@ MiniTest::Spec.class_eval do
       end
       200.times do
         selector = ActiveSupport::OrderedHash.new
-        selector[:name] = names.sample(1)[0]
+        selector[:name] = names.sample(1).first
         document = {
-          :lovability => BigDecimal.new(4e12, 2),
+          :lovability => BigDecimal.new(rand(1e11), 2),
           :tag_number => rand(1e8),
           :good => true,
           :birthday => Time.at(rand * Time.now.to_i).to_date,
@@ -63,7 +64,7 @@ MiniTest::Spec.class_eval do
 
   def assert_same_result(records, &blk)
     blk.call(records)
-    ref1 = Pet.order(:name).all.map(&:attributes)
+    ref1 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
     
     Pet.delete_all
 
@@ -73,7 +74,7 @@ MiniTest::Spec.class_eval do
         xxx.row(selector, document)
       end
     end
-    ref2 = Pet.order(:name).all.map(&:attributes)
+    ref2 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
     ref2.must_equal ref1
   end
 

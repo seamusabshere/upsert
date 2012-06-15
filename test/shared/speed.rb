@@ -45,35 +45,28 @@ shared_examples_for 'can be speeded up with upserting' do
       end
     end
 
-    # describe 'compared to activerecord-import' do
-    #   assert_faster_than 'how it uses ON DUPLICATE KEY' do
-    #     columns = []
-    #     values = []
-    #     selector.each do |k, v|
-    #       columns << k
-    #       values << v
-    #     end
-    #     document.each do |k, v|
-    #       columns << k
-    #       values << v
-    #     end
-    #     on_duplicate_key_update = if insert_only
-    #       selector.keys
-    #     else
-    #       selector.keys + document.keys
-    #     end
-    #     attempt = 0
-    #     # until record = first(:conditions => selector)
-    #     begin
-    #       if attempt > 0
-    #         ::Kernel.srand
-    #         wait_time = ::Kernel.rand*(2**attempt)
-    #         $stderr.puts "Upsert #{name} with #{selector}: attempt #{attempt}, waiting #{wait_time}..."
-    #         ::Kernel.sleep wait_time
-    #       end
-    #       import columns, [values], :timestamps => false, :on_duplicate_key_update => on_duplicate_key_update
-
-    #   end
-    # end
+    describe 'compared to activerecord-import' do
+      it "is faster than faking upserts with activerecord-import" do
+        unless Pet.connection.respond_to?(:sql_for_on_duplicate_key_update)
+          flunk "#{Pet.connection} does not support activerecord-import's :on_duplicate_key_update"
+        end
+        assert_faster_than 'faking upserts with activerecord-import', lotsa_records do |records|
+          columns = nil
+          all_values = []
+          records.each do |selector, document|
+            columns ||= (selector.keys + document.keys).uniq
+            all_values << columns.map do |k|
+              if document.has_key?(k)
+                # prefer the document so that you can change rows
+                document[k]
+              else
+                selector[k]
+              end
+            end
+          end
+          Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
+        end
+      end
+    end
   end
 end
