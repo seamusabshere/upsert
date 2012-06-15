@@ -1,3 +1,5 @@
+require 'bigdecimal'
+
 require 'upsert/version'
 require 'upsert/binary'
 require 'upsert/buffer'

@@ -36,6 +36,14 @@ class Upsert
         quote_string [v.strftime(ISO8601_DATETIME), sprintf(USEC_SPRINTF, v.usec)].join('.')
       end
 
+      def quote_big_decimal(v)
+        v.to_s('F')
+      end
+
+      def quote_boolean(v)
+        v ? 'TRUE' : 'FALSE'
+      end
+
       def quote_ident(k)
         DOUBLE_QUOTE + connection.quote_ident(k.to_s) + DOUBLE_QUOTE
       end

@@ -26,6 +26,8 @@ describe "upserting on postgresql" do
 
   it_also 'is a database with an upsert trick'
 
+  it_also 'is just as correct as other ways'
+
   it_also 'can be speeded up with upserting'
 
   it_also 'supports binary upserts'

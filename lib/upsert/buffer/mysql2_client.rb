@@ -74,6 +74,12 @@ class Upsert
         case v
         when NilClass
           4
+        when TrueClass
+          4
+        when FalseClass
+          5
+        when BigDecimal
+          v.to_s('F').length
         when Upsert::Binary
           # conservative
           v.length * 2 + 3
@@ -89,6 +95,10 @@ class Upsert
         else
           raise "not sure how to get quoted length of #{v.class}: #{v.inspect}"
         end
+      end
+
+      def quote_boolean(v)
+        v ? 'TRUE' : 'FALSE'
       end
 
       def quote_string(v)
@@ -109,6 +119,10 @@ class Upsert
 
       def quote_ident(k)
         BACKTICK + connection.escape(k.to_s) + BACKTICK
+      end
+
+      def quote_big_decimal(v)
+        v.to_s('F')
       end
     end
   end

@@ -20,10 +20,12 @@ class Pet < ActiveRecord::Base
   self.primary_key = 'name'
   col :name
   col :gender
+  col :good, :type => :boolean
+  col :lovability, :type => :float
   col :morning_walk_time, :type => :datetime
   col :zipped_biography, :type => :binary
   col :tag_number, :type => :integer
-  col :birthday, :type => :datetime
+  col :birthday, :type => :date
   col :home_address, :type => :text
 end
 
@@ -32,6 +34,47 @@ require 'upsert'
 MiniTest::Spec.class_eval do
   def self.shared_examples
     @shared_examples ||= {}
+  end
+
+  def lotsa_records
+    @records ||= begin
+      memo = []
+      names = []
+      50.times do
+        names << Faker::Name.name
+      end
+      200.times do
+        selector = ActiveSupport::OrderedHash.new
+        selector[:name] = names.sample(1)[0]
+        document = {
+          :lovability => BigDecimal.new(4e12, 2),
+          :tag_number => rand(1e8),
+          :good => true,
+          :birthday => Time.at(rand * Time.now.to_i).to_date,
+          :morning_walk_time => Time.at(rand * Time.now.to_i),
+          :home_address => Faker::Address.street_address,
+          :zipped_biography => Upsert.binary(Zlib::Deflate.deflate(Faker::Lorem.paragraphs(10).join("\n\n"), Zlib::BEST_SPEED))
+        }
+        memo << [selector, document]
+      end
+      memo
+    end
+  end
+
+  def assert_same_result(records, &blk)
+    blk.call(records)
+    ref1 = Pet.order(:name).all.map(&:attributes)
+    
+    Pet.delete_all
+
+    upsert = Upsert.new connection, :pets
+    upsert.multi do |xxx|
+      records.each do |selector, document|
+        xxx.row(selector, document)
+      end
+    end
+    ref2 = Pet.order(:name).all.map(&:attributes)
+    ref2.must_equal ref1
   end
 
   def assert_creates(model, expected_records)
@@ -47,14 +90,14 @@ MiniTest::Spec.class_eval do
   def assert_faster_than(competition, records, &blk)
     # dry run
     blk.call records
-    ref1 = Pet.order(:name).all.map(&:attributes)
     Pet.delete_all
+    sleep 1
     # --
     
     ar_time = Benchmark.realtime { blk.call(records) }
-    ref2 = Pet.order(:name).all.map(&:attributes)
-    ref2.must_equal ref1
+
     Pet.delete_all
+    sleep 1
 
     upsert_time = Benchmark.realtime do
       upsert = Upsert.new connection, :pets
@@ -64,8 +107,6 @@ MiniTest::Spec.class_eval do
         end
       end
     end
-    ref3 = Pet.order(:name).all.map(&:attributes)
-    ref3.must_equal ref1
     upsert_time.must_be :<, ar_time
     $stderr.puts "   Upsert was #{((ar_time - upsert_time) / ar_time * 100).round}% faster than #{competition}"
   end

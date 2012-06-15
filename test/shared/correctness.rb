@@ -1,8 +1,8 @@
-shared_examples_for 'can be speeded up with upserting' do
-  describe :speed do
+shared_examples_for 'is just as correct as other ways' do
+  describe :correctness do
     describe 'compared to native ActiveRecord' do
       it "is faster than new/set/save" do
-        assert_faster_than 'find + new/set/save', lotsa_records do |records|
+        assert_same_result lotsa_records do |records|
           records.each do |selector, document|
             if pet = Pet.where(selector).first
               pet.update_attributes document, :without_protection => true
@@ -20,7 +20,7 @@ shared_examples_for 'can be speeded up with upserting' do
         end
       end
       it "is faster than find_or_create + update_attributes" do
-        assert_faster_than 'find_or_create + update_attributes', lotsa_records do |records|
+        assert_same_result lotsa_records do |records|
           dynamic_method = nil
           records.each do |selector, document|
             dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"
@@ -30,7 +30,7 @@ shared_examples_for 'can be speeded up with upserting' do
         end
       end
       it "is faster than create + rescue/find/update" do
-        assert_faster_than 'create + rescue/find/update', lotsa_records do |records|
+        assert_same_result lotsa_records do |records|
           dynamic_method = nil
           records.each do |selector, document|
             dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"

@@ -6,12 +6,16 @@ class Upsert
       case v
       when NilClass
         'NULL'
-      when Numeric
-        v
       when Upsert::Binary
         quote_binary v # must be defined by base
       when String
         quote_string v # must be defined by base
+      when TrueClass, FalseClass
+        quote_boolean v
+      when BigDecimal
+        quote_big_decimal v
+      when Numeric
+        v
       when Symbol
         quote_string v.to_s
       when Time, DateTime

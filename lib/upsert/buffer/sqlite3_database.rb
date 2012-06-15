@@ -31,6 +31,15 @@ class Upsert
       def quote_ident(k)
         DOUBLE_QUOTE + SQLite3::Database.quote(k.to_s) + DOUBLE_QUOTE
       end
+
+      def quote_boolean(v)
+        s = v ? 't' : 'f'
+        quote_string s
+      end
+
+      def quote_big_decimal(v)
+        v.to_f
+      end
     end
   end
 end
