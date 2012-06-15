@@ -12,7 +12,8 @@ shared_examples_for 'can be speeded up with upserting' do
         document = {
           :tag_number => rand(1e8),
           :birthday => Time.at(rand * Time.now.to_i),
-          :home_address => Faker::Address.street_address
+          :home_address => Faker::Address.street_address,
+          :zipped_biography => Upsert.binary(Zlib::Deflate.deflate(Faker::Lorem.paragraphs(10).join("\n\n"), Zlib::BEST_SPEED))
         }
         @fakes << [selector, document]
       end

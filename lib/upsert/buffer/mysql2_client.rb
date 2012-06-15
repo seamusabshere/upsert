@@ -76,7 +76,7 @@ class Upsert
           4
         when Upsert::Binary
           # conservative
-          v.v.length * 2 + 3
+          v.length * 2 + 3
         when Numeric
           v.to_s.length
         when String

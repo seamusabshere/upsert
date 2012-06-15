@@ -1,5 +1,3 @@
-require 'zlib'
-
 shared_examples_for 'supports binary upserts' do
   describe 'binary' do
     before do

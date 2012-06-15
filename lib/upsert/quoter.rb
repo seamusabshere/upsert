@@ -8,10 +8,10 @@ class Upsert
         'NULL'
       when Numeric
         v
+      when Upsert::Binary
+        quote_binary v # must be defined by base
       when String
         quote_string v # must be defined by base
-      when Upsert::Binary
-        quote_binary v.v # must be defined by base
       when Symbol
         quote_string v.to_s
       when Time, DateTime
