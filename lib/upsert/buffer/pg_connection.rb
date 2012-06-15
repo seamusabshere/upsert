@@ -2,6 +2,7 @@ require 'upsert/buffer/pg_connection/column_definition'
 
 class Upsert
   class Buffer
+    # @private
     class PG_Connection < Buffer
       include Quoter
 

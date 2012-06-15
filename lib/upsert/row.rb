@@ -1,4 +1,5 @@
 class Upsert
+  # @private
   class Row
     attr_reader :buffer
     attr_reader :selector

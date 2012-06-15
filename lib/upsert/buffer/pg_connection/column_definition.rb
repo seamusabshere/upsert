@@ -1,6 +1,7 @@
 class Upsert
   class Buffer
     class PG_Connection < Buffer
+      # @private
       # activerecord-3.2.5/lib/active_record/connection_adapters/postgresql_adapter.rb#column_definitions
       class ColumnDefinition
         class << self

@@ -1,4 +1,5 @@
 class Upsert
+  # @private
   class Buffer
     class << self
       def for(connection, table_name)

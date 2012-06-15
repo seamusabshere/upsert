@@ -1,5 +1,6 @@
 class Upsert
   class Buffer
+    # @private
     class Mysql2_Client < Buffer
       include Quoter
 

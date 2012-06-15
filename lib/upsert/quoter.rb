@@ -1,4 +1,5 @@
 class Upsert
+  # @private
   module Quoter
     ISO8601_DATE = '%F'
 

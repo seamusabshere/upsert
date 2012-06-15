@@ -2,7 +2,50 @@
 
 Finally, all those SQL MERGE tricks codified.
 
-## Supported databases
+## Usage
+
+### One at a time
+
+    upsert = Upsert.new Pet.connection, Pet.table_name
+    upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+    upsert.row({:name => 'Pierre'}, :breed => 'tabby')
+
+### Multiple upserts at once
+
+    Upsert.new(Pet.connection, Pet.table_name).multi do |upsert|
+      upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+      upsert.row({:name => 'Pierre'}, :breed => 'tabby')
+    end
+
+## Wishlist
+
+1. Make `c=c+1` stuff possible with `Upsert.sql('c=c+1')` or something
+
+## Speed
+
+### MySQL
+
+(from the tests)
+
+    Upsert was 47% faster than faking upserts with activerecord-import
+    Upsert was 77% faster than find + new/set/save
+    Upsert was 84% faster than create + rescue/find/update
+    Upsert was 82% faster than find_or_create + update_attributes
+
+### PostgreSQL
+
+    Upsert was 73% faster than find + new/set/save
+    Upsert was 84% faster than find_or_create + update_attributes
+    Upsert was 87% faster than create + rescue/find/update
+
+## Supported database drivers
+
+1. [mysql2](https://rubygems.org/gems/mysql2) (e.g. `Upsert.new(Mysql2::Connection.new([...]), :pets)`)
+2. [sqlite3](https://rubygems.org/gems/sqlite3)
+3. [pg](https://rubygems.org/gems/pg)
+4. Any of these wrapped in an ActiveRecord connection adapter (e.g. `Upsert.new(Pet.connection, Pet.table_name)`)
+
+## SQL merge tricks in use
 
 ### MySQL
 
@@ -11,8 +54,6 @@ Finally, all those SQL MERGE tricks codified.
       ON DUPLICATE KEY UPDATE c=c+1;
 
 ### PostgreSQL
-
-#### Used
 
     # http://www.postgresql.org/docs/current/interactive/plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING
     CREATE TABLE db (a INT PRIMARY KEY, b TEXT);
@@ -41,7 +82,15 @@ Finally, all those SQL MERGE tricks codified.
     SELECT merge_db(1, 'david');
     SELECT merge_db(1, 'dennis');
 
-#### Alternatives (not used)
+### Sqlite
+
+    # http://stackoverflow.com/questions/2717590/sqlite-upsert-on-duplicate-key-update
+    INSERT OR IGNORE INTO visits VALUES ($ip, 0);
+    UPDATE visits SET hits = hits + 1 WHERE ip LIKE $ip;
+
+### Unused alternatives
+
+#### PostgreSQL
 
     # http://stackoverflow.com/questions/1109061/insert-on-duplicate-update-postgresql
     UPDATE table SET field='C', field2='Z' WHERE id=3;
@@ -62,9 +111,3 @@ Finally, all those SQL MERGE tricks codified.
        WHERE NOT EXISTS (SELECT 1 FROM target_data
                          WHERE target_data.key_column = stage_data.key_column)
     END;
-
-### Sqlite
-
-    # http://stackoverflow.com/questions/2717590/sqlite-upsert-on-duplicate-key-update
-    INSERT OR IGNORE INTO visits VALUES ($ip, 0);
-    UPDATE visits SET hits = hits + 1 WHERE ip LIKE $ip;

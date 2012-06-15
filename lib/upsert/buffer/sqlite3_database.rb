@@ -1,5 +1,6 @@
 class Upsert
   class Buffer
+    # @private
     class SQLite3_Database < Buffer
       include Quoter
 
