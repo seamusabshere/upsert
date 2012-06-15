@@ -1,4 +1,5 @@
 require 'upsert/version'
+require 'upsert/binary'
 require 'upsert/buffer'
 require 'upsert/quoter'
 require 'upsert/row'
@@ -7,6 +8,12 @@ require 'upsert/buffer/pg_connection'
 require 'upsert/buffer/sqlite3_database'
 
 class Upsert
+  class << self
+    def binary(v)
+      Binary.new v
+    end
+  end
+
   attr_reader :buffer
 
   def initialize(connection, table_name)

@@ -1,9 +1,6 @@
 class Upsert
   class Buffer
     class Mysql2_Client < Buffer
-      QUOTE_VALUE = SINGLE_QUOTE
-      QUOTE_IDENT = BACKTICK
-
       include Quoter
 
       def chunk
@@ -73,12 +70,39 @@ class Upsert
         @max_sql_length ||= connection.query("SHOW VARIABLES LIKE 'max_allowed_packet'", :as => :hash).first['Value'].to_i
       end
 
-      def escape_string(v)
-        connection.escape v
+      def quoted_value_length(v)
+        case v
+        when NilClass
+          4
+        when Upsert::Binary
+          # conservative
+          v.v.length * 2 + 3
+        when Numeric
+          v.to_s.length
+        when String
+          # conservative
+          v.length * 2 + 2
+        when Time, DateTime
+          24 + 2
+        when Date
+          10 + 2
+        else
+          raise "not sure how to get quoted length of #{v.class}: #{v.inspect}"
+        end
       end
-      
-      def escape_ident(k)
-        k
+
+      def quote_string(v)
+        SINGLE_QUOTE + connection.escape(v) + SINGLE_QUOTE
+      end
+
+      alias_method :quote_binary, :quote_string
+
+      def quote_time(v)
+        quote_value v.strftime(ISO8601_DATETIME)
+      end
+
+      def quote_ident(k)
+        BACKTICK + connection.escape(k.to_s) + BACKTICK
       end
     end
   end

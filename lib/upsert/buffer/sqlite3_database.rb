@@ -1,10 +1,6 @@
 class Upsert
   class Buffer
     class SQLite3_Database < Buffer
-      QUOTE_VALUE = SINGLE_QUOTE
-      QUOTE_IDENT = DOUBLE_QUOTE
-      USEC_PRECISION = true
-
       include Quoter
 
       def chunk
@@ -20,12 +16,20 @@ class Upsert
         connection.execute_batch sql
       end
 
-      def escape_string(v)
-        SQLite3::Database.quote v
+      def quote_string(v)
+        SINGLE_QUOTE + SQLite3::Database.quote(v) + SINGLE_QUOTE
       end
 
-      def escape_ident(k)
-        k
+      def quote_binary(v)
+        raise "binary not supported for sqlite upsert currently"
+      end
+
+      def quote_time(v)
+        quote_value [v.strftime(ISO8601_DATETIME), sprintf(USEC_SPRINTF, v.usec)].join('.')
+      end
+      
+      def quote_ident(k)
+        DOUBLE_QUOTE + SQLite3::Database.quote(k.to_s) + DOUBLE_QUOTE
       end
     end
   end

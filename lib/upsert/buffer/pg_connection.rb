@@ -3,9 +3,7 @@ require 'upsert/buffer/pg_connection/column_definition'
 class Upsert
   class Buffer
     class PG_Connection < Buffer
-      QUOTE_VALUE = SINGLE_QUOTE
-      QUOTE_IDENT = SINGLE_QUOTE
-      USEC_PRECISION = true
+      E_AND_SINGLE_QUOTE = %{E'}
 
       include Quoter
 
@@ -28,15 +26,22 @@ class Upsert
         connection.exec sql
       end
 
-      def escape_ident(k)
-        connection.quote_ident k
+      def quote_string(v)
+        SINGLE_QUOTE + connection.escape_string(v) + SINGLE_QUOTE
       end
 
-      # FIXME escape_bytea with (v, k = nil)
-      def escape_string(v)
-        connection.escape_string v
+      def quote_binary(v)
+        E_AND_SINGLE_QUOTE + connection.escape_bytea(v) + SINGLE_QUOTE
       end
-      
+
+      def quote_time(v)
+        quote_value [v.strftime(ISO8601_DATETIME), sprintf(USEC_SPRINTF, v.usec)].join('.')
+      end
+
+      def quote_ident(k)
+        DOUBLE_QUOTE + connection.quote_ident(k.to_s) + DOUBLE_QUOTE
+      end
+
       def column_definitions
         @column_definitions ||= ColumnDefinition.all(connection, table_name)
       end

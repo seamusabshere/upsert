@@ -28,4 +28,6 @@ describe "upserting on postgresql" do
 
   it_behaves_like 'something that can be speeded up with upserting'
 
+  it_behaves_like 'something that supports binary upserts'
+
 end

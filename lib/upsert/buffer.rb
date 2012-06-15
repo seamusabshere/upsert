@@ -9,6 +9,9 @@ class Upsert
     SINGLE_QUOTE = %{'}
     DOUBLE_QUOTE = %{"}
     BACKTICK = %{`}
+    USEC_SPRINTF = '%06d'
+    ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S' #FIXME ignores timezones i think
+    ISO8601_DATE = '%F'
 
     attr_reader :connection
     attr_reader :table_name

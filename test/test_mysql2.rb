@@ -27,4 +27,6 @@ describe "upserting on mysql2" do
 
   it_behaves_like 'something that can be speeded up with upserting'
 
+  it_behaves_like 'something that supports binary upserts'
+
 end
