@@ -34,6 +34,5 @@ describe "upserting on sqlite" do
 
   it_also "doesn't mess with timezones"
 
-  # FIXME not supported because it requires using bind variables, etc.
-  # it_also 'supports binary upserts'
+  it_also 'supports binary upserts'
 end

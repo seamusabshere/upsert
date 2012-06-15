@@ -21,7 +21,7 @@ class Upsert
       end
 
       def quote_binary(v)
-        raise "binary not supported for sqlite upsert currently"
+        X_AND_SINGLE_QUOTE + v.unpack("H*")[0] + SINGLE_QUOTE
       end
 
       def quote_time(v)

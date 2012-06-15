@@ -9,6 +9,7 @@ class Upsert
     SINGLE_QUOTE = %{'}
     DOUBLE_QUOTE = %{"}
     BACKTICK = %{`}
+    X_AND_SINGLE_QUOTE = %{x'}
     USEC_SPRINTF = '%06d'
     ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S' #FIXME ignores timezones i think
 
