@@ -23,13 +23,13 @@ describe "upserting on mysql2" do
     @connection
   end
 
-  it_behaves_like 'a database with an upsert trick'
+  it_also 'is a database with an upsert trick'
 
-  it_behaves_like 'something that can be speeded up with upserting'
+  it_also 'can be speeded up with upserting'
 
-  it_behaves_like 'something that supports binary upserts'
+  it_also 'supports binary upserts'
 
-  it_behaves_like "something that supports multibyte"
+  it_also "supports multibyte"
 
-  it_behaves_like "doesn't mess with timezones"
+  it_also "doesn't mess with timezones"
 end

@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-shared_examples_for "something that supports multibyte" do
+shared_examples_for "supports multibyte" do
   describe :multibyte do
     it "works one-by-one" do
       upsert = Upsert.new connection, :pets

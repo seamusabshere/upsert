@@ -1,4 +1,4 @@
-shared_examples_for 'something that can be speeded up with upserting' do
+shared_examples_for 'can be speeded up with upserting' do
   describe "speed" do
     before do
       @fakes = []

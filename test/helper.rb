@@ -75,7 +75,7 @@ module MiniTest::Spec::SharedExamples
     MiniTest::Spec.shared_examples[desc] = block
   end
 
-  def it_behaves_like(desc)
+  def it_also(desc)
     self.instance_eval do
       MiniTest::Spec.shared_examples[desc].call
     end

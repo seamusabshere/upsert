@@ -1,4 +1,4 @@
-shared_examples_for 'a database with an upsert trick' do
+shared_examples_for 'is a database with an upsert trick' do
   describe :row do
     it "works for a single row (base case)" do
       upsert = Upsert.new connection, :pets
