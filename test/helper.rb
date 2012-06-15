@@ -19,6 +19,7 @@ class Pet < ActiveRecord::Base
   self.primary_key = 'name'
   col :name
   col :gender
+  col :morning_walk_time, :type => :datetime
   col :zipped_biography, :type => :binary
   col :tag_number, :type => :integer
   col :birthday, :type => :datetime

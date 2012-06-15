@@ -32,6 +32,8 @@ describe "upserting on sqlite" do
 
   it_behaves_like "something that supports multibyte"
 
+  it_behaves_like "doesn't mess with timezones"
+
   # FIXME not supported because it requires using bind variables, etc.
   # it_behaves_like 'something that supports binary upserts'
 end

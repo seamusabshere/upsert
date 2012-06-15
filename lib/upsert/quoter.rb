@@ -1,5 +1,7 @@
 class Upsert
   module Quoter
+    ISO8601_DATE = '%F'
+
     def quote_value(v)
       case v
       when NilClass

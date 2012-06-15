@@ -32,4 +32,5 @@ describe "upserting on postgresql" do
 
   it_behaves_like "something that supports multibyte"
 
+  it_behaves_like "doesn't mess with timezones"
 end
