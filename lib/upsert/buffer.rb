@@ -37,19 +37,5 @@ class Upsert
         execute sql
       end
     end
-
-    def chunk
-      return false if rows.empty?
-      take = rows.length
-      until take == 1 or fits_in_single_query?(take)
-        take -= 1
-      end
-      if async? and not maximal?(take)
-        return false
-      end
-      sql = sql take
-      @rows = rows.drop(take)
-      sql
-    end
   end
 end

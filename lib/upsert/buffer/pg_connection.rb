@@ -3,33 +3,25 @@ require 'upsert/buffer/pg_connection/column_definition'
 class Upsert
   class Buffer
     class PG_Connection < Buffer
-      MAX_CONCURRENCY = 1
       QUOTE_VALUE = SINGLE_QUOTE
       QUOTE_IDENT = SINGLE_QUOTE
+      USEC_PRECISION = true
 
       include Quoter
 
-      attr_reader :db_function_name
+      attr_reader :merge_function
 
-        # unless created_db_function?
-        #   create_db_function target
-        # end
-        # hsh = target.to_hash
-        # ordered_args = column_definitions.map do |c|
-        #   if hsh.has_key? c.name
-        #     hsh[c.name]
-        #   else
-        #     nil
-        #   end
-        # end
-        # %{ SELECT #{db_function_name}(#{quote_values(ordered_args)}) }
-
-      def fits_in_single_query?(take)
-        take <= MAX_CONCURRENCY
-      end
-
-      def maximal?(take)
-        take >= MAX_CONCURRENCY
+      def chunk
+        return false if rows.empty?
+        row = rows.shift
+        unless merge_function
+          create_merge_function row
+        end
+        hsh = row.to_hash
+        ordered_args = column_definitions.map do |c|
+          hsh[c.name]
+        end
+        %{SELECT #{merge_function}(#{quote_values(ordered_args)})}
       end
 
       def execute(sql)
@@ -51,14 +43,10 @@ class Upsert
       
       private
       
-      def created_db_function?
-        !!@created_db_function_query
-      end
-      
-      def create_db_function(example_row)
-        @db_function_name = "pg_temp.merge_#{table_name}_#{Kernel.rand(1e11)}"
+      def create_merge_function(example_row)
+        @merge_function = "pg_temp.merge_#{table_name}_#{Kernel.rand(1e11)}"
         execute <<-EOS
-CREATE FUNCTION #{db_function_name}(#{column_definitions.map { |c| "#{c.name}_input #{c.sql_type} DEFAULT #{c.default || 'NULL'}" }.join(',') }) RETURNS VOID AS
+CREATE FUNCTION #{merge_function}(#{column_definitions.map { |c| "#{c.name}_input #{c.sql_type} DEFAULT #{c.default || 'NULL'}" }.join(',') }) RETURNS VOID AS
 $$
 BEGIN
     LOOP
@@ -81,7 +69,6 @@ END;
 $$
 LANGUAGE plpgsql;
 EOS
-        @created_db_function_query = true
       end
     end
   end

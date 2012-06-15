@@ -6,6 +6,24 @@ class Upsert
 
       include Quoter
 
+      def chunk
+        return false if rows.empty?
+        take = rows.length
+        until take == 1 or fits_in_single_query?(take)
+          take -= 1
+        end
+        if async? and not maximal?(take)
+          return false
+        end
+        sql = sql take
+        @rows = rows.drop(take)
+        sql
+      end
+
+      def execute(sql)
+        connection.query sql
+      end
+
       def fits_in_single_query?(take)
         sql_length(take) <= max_sql_length
       end
@@ -39,7 +57,7 @@ class Upsert
 
       # where 3 is parens and comma
       def variable_sql_length(take)
-        rows.first(take).inject(0) { |sum, row| sum + row.quoted_values_length + 3 }
+        rows.first(take).inject(0) { |sum, row| sum + row.values_sql_length + 3 }
       end
 
       def sql_length(take)
@@ -47,12 +65,8 @@ class Upsert
       end
 
       def sql(take)
-        values = rows.first(take).map { |row| row.quoted_values }
-        [ insert_part, '(', values.join('),('), ')', update_part ].join
-      end
-
-      def execute(sql)
-        connection.query sql
+        all_value_sql = rows.first(take).map { |row| row.values_sql }
+        [ insert_part, '(', all_value_sql.join('),('), ')', update_part ].join
       end
 
       def max_sql_length

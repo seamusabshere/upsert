@@ -17,7 +17,11 @@ class Upsert
       when Symbol
         quote_value v.to_s
       when Time, DateTime
-        quote_value v.strftime(ISO8601_DATETIME)
+        if self.class.const_defined?(:USEC_PRECISION) and self.class.const_get(:USEC_PRECISION)
+          quote_value "#{v.strftime(ISO8601_DATETIME)}.#{sprintf("%06d", v.usec)}"
+        else
+          quote_value v.strftime(ISO8601_DATETIME)
+        end
       when Date
         quote_value v.strftime(ISO8601_DATE)
       else

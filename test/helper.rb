@@ -43,12 +43,12 @@ MiniTest::Spec.class_eval do
   def assert_faster_than(competition, records, &blk)
     # dry run
     blk.call records
-    ref1 = Pet.all.map(&:attributes)
+    ref1 = Pet.order(:name).all.map(&:attributes)
     Pet.delete_all
     # --
     
     ar_time = Benchmark.realtime { blk.call(records) }
-    ref2 = Pet.all.map(&:attributes)
+    ref2 = Pet.order(:name).all.map(&:attributes)
     ref2.must_equal ref1
     Pet.delete_all
 
@@ -60,7 +60,7 @@ MiniTest::Spec.class_eval do
         end
       end
     end
-    ref3 = Pet.all.map(&:attributes)
+    ref3 = Pet.order(:name).all.map(&:attributes)
     ref3.must_equal ref1
     upsert_time.must_be :<, ar_time
     $stderr.puts "   Upsert was #{((ar_time - upsert_time) / ar_time * 100).round}% faster than #{competition}"

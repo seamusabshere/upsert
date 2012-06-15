@@ -1,29 +1,23 @@
 class Upsert
   class Buffer
     class SQLite3_Database < Buffer
-      MAX_CONCURRENCY = 1
       QUOTE_VALUE = SINGLE_QUOTE
       QUOTE_IDENT = DOUBLE_QUOTE
+      USEC_PRECISION = true
 
       include Quoter
 
-        # parts = []
-        # parts << %{ INSERT OR IGNORE INTO "#{table_name}" (#{quote_idents(target.columns)}) VALUES (#{quote_values(target.inserts)}) }
-        # if target.updates.length > 0
-        #   parts << %{ UPDATE "#{table_name}" SET #{quote_pairs(target.updates)} WHERE #{quote_pairs(target.selector)} }
-        # end
-        # parts.join(';')
+      def chunk
+        return false if rows.empty?
+        row = rows.shift
+        %{
+          INSERT OR IGNORE INTO "#{table_name}" (#{row.columns_sql}) VALUES (#{row.values_sql});
+          UPDATE "#{table_name}" SET #{row.set_sql} WHERE #{row.where_sql}
+        }
+      end
 
       def execute(sql)
         connection.execute_batch sql
-      end
-
-      def fits_in_single_query?(take)
-        take <= MAX_CONCURRENCY
-      end
-
-      def maximal?(take)
-        take >= MAX_CONCURRENCY
       end
 
       def escape_string(v)

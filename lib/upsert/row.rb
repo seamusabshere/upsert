@@ -14,16 +14,24 @@ class Upsert
       @columns ||= (selector.keys + document.keys).uniq
     end
 
-    def quoted_values_length
-      @quoted_values_length ||= pairs.inject(0) { |sum, (_, v)| sum + buffer.quoted_value_length(v) }
+    def values_sql_length
+      @values_sql_length ||= pairs.inject(0) { |sum, (_, v)| sum + buffer.quoted_value_length(v) }
     end
 
-    def quoted_values
-      buffer.quote_values values
+    def values_sql
+      buffer.quote_values pairs.map { |_, v| v }
     end
 
-    def values
-      pairs.map { |_, v| v }
+    def columns_sql
+      buffer.quote_idents columns
+    end
+
+    def where_sql
+      buffer.quote_pairs selector
+    end
+
+    def set_sql
+      buffer.quote_pairs pairs
     end
 
     def pairs
