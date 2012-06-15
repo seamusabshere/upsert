@@ -95,6 +95,12 @@ class Upsert
         SINGLE_QUOTE + connection.escape(v) + SINGLE_QUOTE
       end
 
+      # We **could** do this, but I don't think it's necessary.
+      # def quote_binary(v)
+      #   X_AND_SINGLE_QUOTE + v.unpack("H*")[0] + SINGLE_QUOTE
+      # end
+
+      # put raw binary straight into sql
       alias_method :quote_binary, :quote_string
 
       def quote_time(v)
