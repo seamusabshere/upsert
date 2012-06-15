@@ -6,6 +6,10 @@ class Upsert
       end
     end
 
+    SINGLE_QUOTE = %{'}
+    DOUBLE_QUOTE = %{"}
+    BACKTICK = %{`}
+
     attr_reader :connection
     attr_reader :table_name
     attr_reader :rows
@@ -22,37 +26,30 @@ class Upsert
     end
 
     def add(selector, document)
-      rows << Row.new(selector, document)
+      rows << Row.new(self, selector, document)
       if sql = chunk
         execute sql
       end
     end
 
     def clear
-      while sql = chunk(true)
+      while sql = chunk
         execute sql
       end
     end
 
-    def chunk(allow_undersized = false)
-      return if rows.empty?
-      targets = []
-      sql = nil
-      begin
-        targets << rows.pop
-        last_sql = sql
-        sql = compose(targets)
-      end until rows.empty? or targets.length == max_targets or sql.length > max_length
-      if sql.length > max_length
-        raise if last_sql.nil?
-        sql = last_sql
-        rows << targets.pop
-      elsif async? and not allow_undersized
-        @rows += targets
-        nil
-      else
-        sql
+    def chunk
+      return false if rows.empty?
+      take = rows.length
+      until take == 1 or fits_in_single_query?(take)
+        take -= 1
       end
+      if async? and not maximal?(take)
+        return false
+      end
+      sql = sql take
+      @rows = rows.drop(take)
+      sql
     end
   end
 end

@@ -3,58 +3,46 @@ require 'upsert/buffer/pg_connection/column_definition'
 class Upsert
   class Buffer
     class PG_Connection < Buffer
+      MAX_CONCURRENCY = 1
+      QUOTE_VALUE = SINGLE_QUOTE
+      QUOTE_IDENT = SINGLE_QUOTE
+
+      include Quoter
+
       attr_reader :db_function_name
 
-      def compose(targets)
-        target = targets.first
-        unless created_db_function?
-          create_db_function target
-        end
-        hsh = target.to_hash
-        ordered_args = column_definitions.map do |c|
-          if hsh.has_key? c.name
-            hsh[c.name]
-          else
-            nil
-          end
-        end
-        %{ SELECT #{db_function_name}(#{quote_values(ordered_args)}) }
+        # unless created_db_function?
+        #   create_db_function target
+        # end
+        # hsh = target.to_hash
+        # ordered_args = column_definitions.map do |c|
+        #   if hsh.has_key? c.name
+        #     hsh[c.name]
+        #   else
+        #     nil
+        #   end
+        # end
+        # %{ SELECT #{db_function_name}(#{quote_values(ordered_args)}) }
+
+      def fits_in_single_query?(take)
+        take <= MAX_CONCURRENCY
+      end
+
+      def maximal?(take)
+        take >= MAX_CONCURRENCY
       end
 
       def execute(sql)
         connection.exec sql
       end
 
-      def max_length
-        INFINITY
+      def escape_ident(k)
+        connection.quote_ident k
       end
 
-      def max_targets
-        1
-      end
-
-      include Quoter
-      
-      def quote_ident(k)
-        SINGLE_QUOTE + connection.quote_ident(k) + SINGLE_QUOTE
-      end
-      
       # FIXME escape_bytea with (v, k = nil)
-      def quote_value(v)
-        case v
-        when NilClass
-          'NULL'
-        when Symbol
-          quote_value v.to_s
-        when String
-          SINGLE_QUOTE + connection.escape_string(v) + SINGLE_QUOTE
-        when Time, DateTime
-          SINGLE_QUOTE + v.strftime(ISO8601_DATETIME) + SINGLE_QUOTE
-        when Date
-          SINGLE_QUOTE + v.strftime(ISO8601_DATE) + SINGLE_QUOTE
-        else
-          v
-        end
+      def escape_string(v)
+        connection.escape_string v
       end
       
       def column_definitions

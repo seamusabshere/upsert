@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'bundler/setup'
+require 'benchmark'
 require 'minitest/spec'
 require 'minitest/autorun'
 require 'minitest/reporters'
@@ -39,6 +40,31 @@ MiniTest::Spec.class_eval do
     end
   end
 
+  def assert_faster_than(competition, records, &blk)
+    # dry run
+    blk.call records
+    ref1 = Pet.all.map(&:attributes)
+    Pet.delete_all
+    # --
+    
+    ar_time = Benchmark.realtime { blk.call(records) }
+    ref2 = Pet.all.map(&:attributes)
+    ref2.must_equal ref1
+    Pet.delete_all
+
+    upsert_time = Benchmark.realtime do
+      upsert = Upsert.new connection, :pets
+      upsert.multi do |xxx|
+        records.each do |selector, document|
+          xxx.row(selector, document)
+        end
+      end
+    end
+    ref3 = Pet.all.map(&:attributes)
+    ref3.must_equal ref1
+    upsert_time.must_be :<, ar_time
+    $stderr.puts "   Upsert was #{((ar_time - upsert_time) / ar_time * 100).round}% faster than #{competition}"
+  end
 end
 
 module MiniTest::Spec::SharedExamples

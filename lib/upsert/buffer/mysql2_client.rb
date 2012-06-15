@@ -1,52 +1,70 @@
 class Upsert
   class Buffer
     class Mysql2_Client < Buffer
-      def compose(targets)
-        columns = targets.first.columns
-        row_inserts = targets.map { |row| row.inserts }
-        column_tautologies = columns.map do |k|
-          [ quote_ident(k), "VALUES(#{quote_ident(k)})" ].join('=')
+      QUOTE_VALUE = SINGLE_QUOTE
+      QUOTE_IDENT = BACKTICK
+
+      include Quoter
+
+      def fits_in_single_query?(take)
+        sql_length(take) <= max_sql_length
+      end
+
+      def maximal?(take)
+        sql_length(take) >= max_sql_length
+      end
+
+      def columns
+        @columns ||= rows.first.columns
+      end
+
+      def insert_part
+        @insert_part ||= %{INSERT INTO "#{table_name}" (#{quote_idents(columns)}) VALUES }
+      end
+
+      def update_part
+        @update_part ||= begin
+          updaters = columns.map do |k|
+            qk = quote_ident k
+            [ qk, "VALUES(#{qk})" ].join('=')
+          end.join(',')
+          %{ ON DUPLICATE KEY UPDATE #{updaters}}
         end
-        sql = <<-EOS
-INSERT INTO "#{table_name}" (#{quote_idents(columns)}) VALUES (#{row_inserts.map { |row_insert| quote_values(row_insert) }.join('),(') })
-ON DUPLICATE KEY UPDATE #{column_tautologies.join(',')};
-EOS
-        sql
+      end
+
+      # where 2 is the parens
+      def static_sql_length
+        @static_sql_length ||= insert_part.length + update_part.length + 2
+      end
+
+      # where 3 is parens and comma
+      def variable_sql_length(take)
+        rows.first(take).inject(0) { |sum, row| sum + row.quoted_values_length + 3 }
+      end
+
+      def sql_length(take)
+        static_sql_length + variable_sql_length(take)
+      end
+
+      def sql(take)
+        values = rows.first(take).map { |row| row.quoted_values }
+        [ insert_part, '(', values.join('),('), ')', update_part ].join
       end
 
       def execute(sql)
         connection.query sql
       end
 
-      def max_targets
-        INFINITY
+      def max_sql_length
+        @max_sql_length ||= connection.query("SHOW VARIABLES LIKE 'max_allowed_packet'", :as => :hash).first['Value'].to_i
       end
 
-      def max_length
-        @max_length ||= connection.query("SHOW VARIABLES LIKE 'max_allowed_packet'", :as => :hash).first['Value'].to_i
-      end
-
-      include Quoter
-
-      def quote_value(v)
-        case v
-        when NilClass
-          'NULL'
-        when Symbol
-          quote_value v.to_s
-        when String
-          SINGLE_QUOTE + connection.escape(v) + SINGLE_QUOTE
-        when Time, DateTime
-          SINGLE_QUOTE + v.strftime(ISO8601_DATETIME) + SINGLE_QUOTE
-        when Date
-          SINGLE_QUOTE + v.strftime(ISO8601_DATE) + SINGLE_QUOTE
-        else
-          v
-        end
+      def escape_string(v)
+        connection.escape v
       end
       
-      def quote_ident(k)
-        BACKTICK + connection.escape(k.to_s) + BACKTICK
+      def escape_ident(k)
+        k
       end
     end
   end
