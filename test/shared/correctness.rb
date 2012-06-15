@@ -1,7 +1,7 @@
 shared_examples_for 'is just as correct as other ways' do
   describe :correctness do
     describe 'compared to native ActiveRecord' do
-      it "is faster than new/set/save" do
+      it "is as correct as than new/set/save" do
         assert_same_result lotsa_records do |records|
           records.each do |selector, document|
             if pet = Pet.where(selector).first
@@ -19,7 +19,7 @@ shared_examples_for 'is just as correct as other ways' do
           end
         end
       end
-      it "is faster than find_or_create + update_attributes" do
+      it "is as correct as than find_or_create + update_attributes" do
         assert_same_result lotsa_records do |records|
           dynamic_method = nil
           records.each do |selector, document|
@@ -29,7 +29,7 @@ shared_examples_for 'is just as correct as other ways' do
           end
         end
       end
-      it "is faster than create + rescue/find/update" do
+      it "is as correct as than create + rescue/find/update" do
         assert_same_result lotsa_records do |records|
           dynamic_method = nil
           records.each do |selector, document|
@@ -44,36 +44,5 @@ shared_examples_for 'is just as correct as other ways' do
         end
       end
     end
-
-    # describe 'compared to activerecord-import' do
-    #   assert_faster_than 'how it uses ON DUPLICATE KEY' do
-    #     columns = []
-    #     values = []
-    #     selector.each do |k, v|
-    #       columns << k
-    #       values << v
-    #     end
-    #     document.each do |k, v|
-    #       columns << k
-    #       values << v
-    #     end
-    #     on_duplicate_key_update = if insert_only
-    #       selector.keys
-    #     else
-    #       selector.keys + document.keys
-    #     end
-    #     attempt = 0
-    #     # until record = first(:conditions => selector)
-    #     begin
-    #       if attempt > 0
-    #         ::Kernel.srand
-    #         wait_time = ::Kernel.rand*(2**attempt)
-    #         $stderr.puts "Upsert #{name} with #{selector}: attempt #{attempt}, waiting #{wait_time}..."
-    #         ::Kernel.sleep wait_time
-    #       end
-    #       import columns, [values], :timestamps => false, :on_duplicate_key_update => on_duplicate_key_update
-
-    #   end
-    # end
   end
 end
