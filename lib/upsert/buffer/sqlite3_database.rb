@@ -5,7 +5,7 @@ class Upsert
       include Quoter
 
       def chunk
-        return false if rows.empty?
+        return if rows.empty?
         row = rows.shift
         %{
           INSERT OR IGNORE INTO "#{table_name}" (#{row.columns_sql}) VALUES (#{row.values_sql});

@@ -5,17 +5,16 @@ class Upsert
       include Quoter
 
       def chunk
-        return false if rows.empty?
+        return if rows.empty?
         take = rows.length
         until take == 1 or fits_in_single_query?(take)
           take -= 1
         end
-        if async? and not maximal?(take)
-          return false
+        if not async? or take < rows.length
+          sql = sql take
+          @rows = rows.drop(take)
+          sql
         end
-        sql = sql take
-        @rows = rows.drop(take)
-        sql
       end
 
       def execute(sql)
@@ -24,10 +23,6 @@ class Upsert
 
       def fits_in_single_query?(take)
         sql_length(take) <= max_sql_length
-      end
-
-      def maximal?(take)
-        sql_length(take) >= max_sql_length
       end
 
       def columns
