@@ -6,23 +6,39 @@ class Upsert
 
       def chunk
         return if rows.empty?
-        take = rows.length
-        while take > 1 and not fits_in_single_query?(take)
+        all = rows.length
+        take = all
+        while take > 1 and probably_oversize?(take)
           take -= 1
         end
-        if not async? or take < rows.length
-          sql = sql take
-          @rows = rows.drop(take)
-          sql
+        if async? and take == all
+          return
         end
+        while take > 1 and oversize?(take)
+          $stderr.puts "   Length prediction via sampling failed, shrinking" if ENV['UPSERT_DEBUG'] == 'true'
+          take -= 1
+        end
+        chunk = sql take
+        while take > 1 and chunk.length > max_sql_length
+          $stderr.puts "   Supposedly exact length guess failed, shrinking" if ENV['UPSERT_DEBUG'] == 'true'
+          take -= 1
+          chunk = sql take
+        end
+        $stderr.puts "   Chunk (#{take}/#{chunk.length}) was #{(chunk.length / max_sql_length.to_f * 100).round}% of the max" if ENV['UPSERT_DEBUG'] == 'true'
+        @rows = rows.drop(take)
+        chunk
       end
 
       def execute(sql)
         connection.query sql
       end
 
-      def fits_in_single_query?(take)
-        sql_length(take) <= max_sql_length
+      def probably_oversize?(take)
+        estimate_sql_length(take) > max_sql_length
+      end
+
+      def oversize?(take)
+        sql_length(take) > max_sql_length
       end
 
       def columns
@@ -53,8 +69,17 @@ class Upsert
         rows.first(take).inject(0) { |sum, row| sum + row.values_sql_length + 3 }
       end
 
+      def estimate_variable_sql_length(take)
+        p = (take / 10.0).ceil
+        10.0 * rows.sample(p).inject(0) { |sum, row| sum + row.values_sql_length + 3 }
+      end
+
       def sql_length(take)
         static_sql_length + variable_sql_length(take)
+      end
+
+      def estimate_sql_length(take)
+        static_sql_length + estimate_variable_sql_length(take)
       end
 
       def sql(take)
@@ -77,13 +102,12 @@ class Upsert
         when BigDecimal
           v.to_s('F').length
         when Upsert::Binary
-          # conservative
           v.length * 2 + 3
         when Numeric
           v.to_s.length
         when String
-          # conservative
-          v.length * 2 + 2
+          # FIXME will this work with "multibyte"?
+          v.length + 2
         when Time, DateTime
           24 + 2
         when Date
@@ -101,13 +125,14 @@ class Upsert
         SINGLE_QUOTE + connection.escape(v) + SINGLE_QUOTE
       end
 
-      # We **could** do this, but I don't think it's necessary.
-      # def quote_binary(v)
-      #   X_AND_SINGLE_QUOTE + v.unpack("H*")[0] + SINGLE_QUOTE
-      # end
+      # This doubles the size of the representation.
+      def quote_binary(v)
+        X_AND_SINGLE_QUOTE + v.unpack("H*")[0] + SINGLE_QUOTE
+      end
 
       # put raw binary straight into sql
-      alias_method :quote_binary, :quote_string
+      # might work if we could get the encoding issues fixed when joining together the values for the sql
+      # alias_method :quote_binary, :quote_string
 
       def quote_time(v)
         quote_string v.strftime(ISO8601_DATETIME)
