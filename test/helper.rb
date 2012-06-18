@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'bundler/setup'
+require 'securerandom'
 require 'zlib'
 require 'benchmark'
 require 'faker'
@@ -20,6 +21,7 @@ require 'active_record_inline_schema'
 class Pet < ActiveRecord::Base
   col :name
   col :gender
+  col :spiel
   col :good, :type => :boolean
   col :lovability, :type => :float
   col :morning_walk_time, :type => :datetime
@@ -44,17 +46,18 @@ MiniTest::Spec.class_eval do
       333.times do
         names << Faker::Name.name
       end
-      1000.times do
+      2000.times do
         selector = ActiveSupport::OrderedHash.new
         selector[:name] = names.sample(1).first
         document = {
           :lovability => BigDecimal.new(rand(1e11), 2),
           :tag_number => rand(1e8),
+          :spiel => SecureRandom.hex(rand(127)),
           :good => true,
           :birthday => Time.at(rand * Time.now.to_i).to_date,
           :morning_walk_time => Time.at(rand * Time.now.to_i),
-          :home_address => Faker::Address.street_address,
-          :zipped_biography => Upsert.binary(Zlib::Deflate.deflate(Faker::Lorem.paragraphs(10).join("\n\n"), Zlib::BEST_SPEED))
+          :home_address => SecureRandom.hex(rand(1000)),
+          :zipped_biography => Upsert.binary(Zlib::Deflate.deflate(SecureRandom.hex(rand(1000)), Zlib::BEST_SPEED))
         }
         memo << [selector, document]
       end
