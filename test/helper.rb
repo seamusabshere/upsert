@@ -41,10 +41,10 @@ MiniTest::Spec.class_eval do
     @records ||= begin
       memo = []
       names = []
-      50.times do
+      333.times do
         names << Faker::Name.name
       end
-      200.times do
+      1000.times do
         selector = ActiveSupport::OrderedHash.new
         selector[:name] = names.sample(1).first
         document = {
