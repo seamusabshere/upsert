@@ -7,7 +7,7 @@ class Upsert
       def chunk
         return if rows.empty?
         take = rows.length
-        until take == 1 or fits_in_single_query?(take)
+        while take > 1 and not fits_in_single_query?(take)
           take -= 1
         end
         if not async? or take < rows.length
