@@ -90,8 +90,18 @@ class Upsert
         [ insert_part, '(', all_value_sql.join('),('), ')', update_part ].join
       end
 
+      # since setting an option like :as => :hash actually persists that option to the client, don't pass any options
       def max_sql_bytesize
-        @max_sql_bytesize ||= connection.query("SHOW VARIABLES LIKE 'max_allowed_packet'", :as => :hash).first['Value'].to_i
+        @max_sql_bytesize ||= begin
+          case (row = connection.query("SHOW VARIABLES LIKE 'max_allowed_packet'").first)
+          when Array
+            row[1]
+          when Hash
+            row['Value']
+          else
+            raise "Don't know what to do if connection.query returns a #{row.class}"
+          end.to_i
+        end
       end
 
       def quoted_value_bytesize(v)

@@ -5,16 +5,16 @@ ActiveRecord::Base.establish_connection :adapter => 'mysql2', :username => 'root
 
 describe "using an ActiveRecord connection adapter" do
   before do
+    @opened_connections = []
     ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil
     Pet.auto_upgrade!
-    @opened_connections = []
     @connection = new_connection
   end
   after do
-    @opened_connections.each { |c| ActiveRecord::Base.connection_pool.checkin(c) }
+    @opened_connections.clear
   end
   def new_connection
-    c = ActiveRecord::Base.connection_pool.checkout
+    c = Pet.connection
     @opened_connections << c
     c
   end

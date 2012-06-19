@@ -7,9 +7,9 @@ ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => '
 
 describe "upserting on postgresql" do
   before do
+    @opened_connections = []
     ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil
     Pet.auto_upgrade!
-    @opened_connections = []
     @connection = new_connection
   end
   after do
