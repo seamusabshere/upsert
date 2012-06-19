@@ -120,6 +120,8 @@ class Upsert
           v.to_s.bytesize
         when String
           v.bytesize + 2
+        when Symbol
+          v.to_s.bytesize + 2
         when Time, DateTime
           24 + 2
         when Date
