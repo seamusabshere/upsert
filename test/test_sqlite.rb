@@ -32,7 +32,9 @@ describe "upserting on sqlite" do
 
   it_also 'can be speeded up with upserting'
 
-  it_also "supports multibyte"
+  it_also 'supports multibyte'
+
+  it_also 'is thread-safe'
 
   it_also "doesn't mess with timezones"
 

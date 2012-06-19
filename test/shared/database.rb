@@ -6,6 +6,13 @@ shared_examples_for 'is a database with an upsert trick' do
         upsert.row({:name => 'Jerry'}, {:gender => 'male'})
       end
     end
+    it "works for complex selectors" do
+      upsert = Upsert.new connection, :pets
+      assert_creates(Pet, [{:name => 'Jerry', :gender => 'male', :tag_number => 4}]) do
+        upsert.row({:name => 'Jerry', :gender => 'male'}, {:tag_number => 1})
+        upsert.row({:name => 'Jerry', :gender => 'male'}, {:tag_number => 4})
+      end
+    end
     it "works for a single row (not changing anything)" do
       upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
@@ -36,59 +43,31 @@ shared_examples_for 'is a database with an upsert trick' do
         upsert.row({:name => 'Inky'}, {:gender => nil})
       end
     end
-    # it "works for a single row upserted many times" do
-    #   assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-    #     ts = (0..5).map do
-    #       Thread.new do
-    #         upsert = Upsert.new new_connection, :pets
-    #         upsert.row({:name => 'Jerry'}, {:gender => 'male'})
-    #       end
-    #     end
-    #     ts.each { |t| t.join }
-    #   end
-    # end
   end
-  describe :multi do
+  describe :stream do
     it "works for multiple rows (base case)" do
-      upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-        upsert.multi do |xxx|
-          xxx.row({:name => 'Jerry'}, :gender => 'male')
+        Upsert.stream(connection, :pets) do |upsert|
+          upsert.row({:name => 'Jerry'}, :gender => 'male')
         end
       end
     end
     it "works for multiple rows (not changing anything)" do
-      upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-        upsert.multi do |xxx|
-          xxx.row({:name => 'Jerry'}, :gender => 'male')
-          xxx.row({:name => 'Jerry'}, :gender => 'male')
+        Upsert.stream(connection, :pets) do |upsert|
+          upsert.row({:name => 'Jerry'}, :gender => 'male')
+          upsert.row({:name => 'Jerry'}, :gender => 'male')
         end
       end
     end
     it "works for multiple rows (changing something)" do
-      upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
-        upsert.multi do |xxx|
-          xxx.row({:name => 'Jerry'}, :gender => 'male')
-          xxx.row({:name => 'Jerry'}, :gender => 'neutered')
+        Upsert.stream(connection, :pets) do |upsert|
+          upsert.row({:name => 'Jerry'}, :gender => 'male')
+          upsert.row({:name => 'Jerry'}, :gender => 'neutered')
         end
       end
       Pet.where(:gender => 'male').count.must_equal 0
     end
-    # it "works for multiple rows upserted many times" do
-    #   assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-    #     ts = (0..5).map do
-    #       Thread.new do
-    #         upsert = Upsert.new new_connection, :pets
-    #         upsert.multi do
-    #           row({:name => 'Jerry'}, :gender => 'male')
-    #           row({:name => 'Jerry'}, :gender => 'male')
-    #         end
-    #       end
-    #     end
-    #     ts.each { |t| t.join }
-    #   end
-    # end
   end
 end

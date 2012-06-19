@@ -7,20 +7,20 @@ class Upsert
         class << self
           def auto_increment_primary_key(connection, table_name)
             res = connection.exec <<-EOS
-              SELECT attr.attname, seq.relname
-              FROM pg_class      seq,
-                   pg_attribute  attr,
-                   pg_depend     dep,
-                   pg_namespace  name,
-                   pg_constraint cons
-              WHERE seq.oid           = dep.objid
-                AND seq.relkind       = 'S'
-                AND attr.attrelid     = dep.refobjid
-                AND attr.attnum       = dep.refobjsubid
-                AND attr.attrelid     = cons.conrelid
-                AND attr.attnum       = cons.conkey[1]
-                AND cons.contype      = 'p'
-                AND dep.refobjid      = '#{connection.quote_ident(table_name.to_s)}'::regclass
+SELECT attr.attname, seq.relname
+FROM pg_class      seq,
+     pg_attribute  attr,
+     pg_depend     dep,
+     pg_namespace  name,
+     pg_constraint cons
+WHERE seq.oid           = dep.objid
+  AND seq.relkind       = 'S'
+  AND attr.attrelid     = dep.refobjid
+  AND attr.attnum       = dep.refobjsubid
+  AND attr.attrelid     = cons.conrelid
+  AND attr.attnum       = cons.conkey[1]
+  AND cons.contype      = 'p'
+  AND dep.refobjid      = '#{connection.quote_ident(table_name.to_s)}'::regclass
 EOS
             if hit = res.first
               hit['attname']

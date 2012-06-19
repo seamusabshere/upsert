@@ -7,10 +7,7 @@ class Upsert
       def chunk
         return if rows.empty?
         row = rows.shift
-        %{
-          INSERT OR IGNORE INTO "#{table_name}" (#{row.columns_sql}) VALUES (#{row.values_sql});
-          UPDATE "#{table_name}" SET #{row.set_sql} WHERE #{row.where_sql}
-        }
+        %{INSERT OR IGNORE INTO "#{table_name}" (#{row.columns_sql}) VALUES (#{row.values_sql});UPDATE "#{table_name}" SET #{row.set_sql} WHERE #{row.where_sql}}
       end
 
       def execute(sql)

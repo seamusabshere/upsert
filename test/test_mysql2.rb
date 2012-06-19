@@ -31,7 +31,9 @@ describe "upserting on mysql2" do
 
   it_also 'supports binary upserts'
 
-  it_also "supports multibyte"
+  it_also 'supports multibyte'
+
+  it_also 'is thread-safe'
 
   it_also "doesn't mess with timezones"
 end

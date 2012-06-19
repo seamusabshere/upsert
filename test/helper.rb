@@ -32,6 +32,8 @@ class Pet < ActiveRecord::Base
   add_index :name, :unique => true
 end
 
+# ENV['UPSERT_DEBUG'] = 'true'
+
 require 'upsert'
 
 MiniTest::Spec.class_eval do
@@ -71,10 +73,9 @@ MiniTest::Spec.class_eval do
     
     Pet.delete_all
 
-    upsert = Upsert.new connection, :pets
-    upsert.multi do |xxx|
+    Upsert.stream(connection, :pets) do |upsert|
       records.each do |selector, document|
-        xxx.row(selector, document)
+        upsert.row(selector, document)
       end
     end
     ref2 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
@@ -104,10 +105,9 @@ MiniTest::Spec.class_eval do
     sleep 1
 
     upsert_time = Benchmark.realtime do
-      upsert = Upsert.new connection, :pets
-      upsert.multi do |xxx|
+      Upsert.stream(connection, :pets) do |upsert|
         records.each do |selector, document|
-          xxx.row(selector, document)
+          upsert.row(selector, document)
         end
       end
     end
@@ -122,9 +122,11 @@ module MiniTest::Spec::SharedExamples
   end
 
   def it_also(desc)
-    self.instance_eval do
-      MiniTest::Spec.shared_examples[desc].call
-    end
+    self.instance_eval(&MiniTest::Spec.shared_examples[desc])# do
+    #   describe desc do
+    #     .call
+    #   end
+    # end
   end
 end
 

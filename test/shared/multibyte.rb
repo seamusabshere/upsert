@@ -1,26 +1,37 @@
 # -*- encoding: utf-8 -*-
 shared_examples_for "supports multibyte" do
-  describe :multibyte do
-    it "works one-by-one" do
+  it "works one-by-one" do
+    assert_creates(Pet, [{:name => 'I♥NY', :gender => 'périferôl'}]) do
       upsert = Upsert.new connection, :pets
-      assert_creates(Pet, [{:name => 'I♥NY', :gender => 'périferôl'}]) do
-        upsert.row({:name => 'I♥NY'}, {:gender => 'périferôl'})
-      end
+      upsert.row({:name => 'I♥NY'}, {:gender => 'périferôl'})
     end
-    it "works serially" do
+  end
+  it "works serially" do
+    assert_creates(Pet, [{:name => 'I♥NY', :gender => 'jÚrgen'}]) do
       upsert = Upsert.new connection, :pets
-      assert_creates(Pet, [{:name => 'I♥NY', :gender => 'jÚrgen'}]) do
+      upsert.row({:name => 'I♥NY'}, {:gender => 'périferôl'})
+      upsert.row({:name => 'I♥NY'}, {:gender => 'jÚrgen'})
+    end
+  end
+  it "works streaming" do
+    assert_creates(Pet, [{:name => 'I♥NY', :gender => 'jÚrgen'}]) do
+      Upsert.stream(connection, :pets) do |upsert|
         upsert.row({:name => 'I♥NY'}, {:gender => 'périferôl'})
         upsert.row({:name => 'I♥NY'}, {:gender => 'jÚrgen'})
       end
     end
-    it "works multi" do
-      assert_creates(Pet, [{:name => 'I♥NY', :gender => 'jÚrgen'}]) do
-        Upsert.new(connection, :pets).multi do |xxx|
-          xxx.row({:name => 'I♥NY'}, {:gender => 'périferôl'})
-          xxx.row({:name => 'I♥NY'}, {:gender => 'jÚrgen'})
+  end
+  it "won't overflow" do
+    upsert = Upsert.new connection, :pets
+    if upsert.buffer.respond_to?(:max_sql_bytesize)
+      max = upsert.buffer.send(:max_sql_bytesize)
+      ticks = max / 3 - 2
+      lambda do
+        loop do
+          upsert.row({:name => 'Jerry'}, :home_address => ("日" * ticks))
+          ticks += 1
         end
-      end
+      end.must_raise Upsert::TooBig
     end
   end
 end

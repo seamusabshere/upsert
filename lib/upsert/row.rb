@@ -15,8 +15,8 @@ class Upsert
       @columns ||= (selector.keys + document.keys).uniq
     end
 
-    def values_sql_length
-      @values_sql_length ||= pairs.inject(0) { |sum, (_, v)| sum + buffer.quoted_value_length(v) }
+    def values_sql_bytesize
+      @values_sql_bytesize ||= pairs.inject(0) { |sum, (_, v)| sum + buffer.quoted_value_bytesize(v) }
     end
 
     def values_sql

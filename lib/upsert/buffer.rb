@@ -17,12 +17,11 @@ class Upsert
     E_AND_SINGLE_QUOTE = %{E'}
     X_AND_SINGLE_QUOTE = %{x'}
     USEC_SPRINTF = '%06d'
-    ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S' #FIXME ignores timezones i think
+    ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S'
 
     attr_reader :connection
     attr_reader :table_name
     attr_reader :rows
-    attr_writer :async
     
     def initialize(connection, table_name)
       @connection = connection
@@ -32,6 +31,15 @@ class Upsert
 
     def async?
       !!@async
+    end
+
+    def async!
+      @async = true
+    end
+
+    def sync!
+      @async = false
+      clear
     end
 
     def add(selector, document)
