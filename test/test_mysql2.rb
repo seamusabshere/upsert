@@ -36,4 +36,6 @@ describe "upserting on mysql2" do
   it_also 'is thread-safe'
 
   it_also "doesn't mess with timezones"
+
+  it_also "doesn't blow up on reserved words"
 end

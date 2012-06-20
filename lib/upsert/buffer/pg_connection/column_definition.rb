@@ -46,11 +46,13 @@ SELECT a.attname AS name, format_type(a.atttypid, a.atttypmod) AS sql_type, d.ad
         end
 
         attr_reader :name
+        attr_reader :input_name
         attr_reader :sql_type
         attr_reader :default
         
         def initialize(name, sql_type, default)
           @name = name
+          @input_name = "#{name}_input"
           @sql_type = sql_type
           @default = default
         end

@@ -46,7 +46,7 @@ class Upsert
       end
 
       def quote_ident(k)
-        DOUBLE_QUOTE + connection.quote_ident(k.to_s) + DOUBLE_QUOTE
+        connection.quote_ident k.to_s
       end
 
       def column_definitions
@@ -58,12 +58,12 @@ class Upsert
       def create_merge_function(example_row)
         @merge_function = "pg_temp.merge_#{table_name}_#{Kernel.rand(1e11)}"
         execute <<-EOS
-CREATE FUNCTION #{merge_function}(#{column_definitions.map { |c| "#{c.name}_input #{c.sql_type} DEFAULT #{c.default || 'NULL'}" }.join(',') }) RETURNS VOID AS
+CREATE FUNCTION #{merge_function}(#{column_definitions.map { |c| "#{quote_ident(c.input_name)} #{c.sql_type} DEFAULT #{c.default || 'NULL'}" }.join(',') }) RETURNS VOID AS
 $$
 BEGIN
     LOOP
         -- first try to update the key
-        UPDATE #{table_name} SET #{column_definitions.map { |c| "#{c.name} = #{c.name}_input" }.join(',')} WHERE #{example_row.selector.keys.map { |k| "#{k} = #{k}_input" }.join(' AND ') };
+        UPDATE #{table_name} SET #{column_definitions.map { |c| "#{quote_ident(c.name)} = #{quote_ident(c.input_name)}" }.join(',')} WHERE #{example_row.selector.keys.map { |k| "#{quote_ident(k)} = #{quote_ident([k,'input'].join('_'))}" }.join(' AND ') };
         IF found THEN
             RETURN;
         END IF;
@@ -71,7 +71,7 @@ BEGIN
         -- if someone else inserts the same key concurrently,
         -- we could get a unique-key failure
         BEGIN
-            INSERT INTO #{table_name}(#{column_definitions.map { |c| c.name }.join(',')}) VALUES (#{column_definitions.map { |c| "#{c.name}_input" }.join(',')});
+            INSERT INTO #{table_name}(#{column_definitions.map { |c| quote_ident(c.name) }.join(',')}) VALUES (#{column_definitions.map { |c| quote_ident(c.input_name) }.join(',')});
             RETURN;
         EXCEPTION WHEN unique_violation THEN
             -- Do nothing, and loop to try the UPDATE again.
