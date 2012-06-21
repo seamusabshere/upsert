@@ -77,7 +77,7 @@ MiniTest::Spec.class_eval do
     
     Pet.delete_all
 
-    Upsert.stream(connection, :pets) do |upsert|
+    Upsert.batch(connection, :pets) do |upsert|
       records.each do |selector, document|
         upsert.row(selector, document)
       end
@@ -109,7 +109,7 @@ MiniTest::Spec.class_eval do
     sleep 1
 
     upsert_time = Benchmark.realtime do
-      Upsert.stream(connection, :pets) do |upsert|
+      Upsert.batch(connection, :pets) do |upsert|
         records.each do |selector, document|
           upsert.row(selector, document)
         end

@@ -16,7 +16,7 @@ class Upsert
       Binary.new v
     end
 
-    # @yield [Upsert] An +Upsert+ object in streaming mode. You can call #row on it multiple times and it will try to optimize on speed.
+    # @yield [Upsert] An +Upsert+ object in batch mode. You can call #row on it multiple times and it will try to optimize on speed.
     #
     # @note Buffered in memory until it's efficient to send to the server a packet.
     #
@@ -25,16 +25,19 @@ class Upsert
     # @return [nil]
     #
     # @example Many at once
-    #   Upsert.stream(Pet.connection, Pet.table_name) do |upsert|
+    #   Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
     #     upsert.row({:name => 'Jerry'}, :breed => 'beagle')
     #     upsert.row({:name => 'Pierre'}, :breed => 'tabby')
     #   end
-    def stream(connection, table_name)
+    def batch(connection, table_name)
       upsert = new connection, table_name
       upsert.async!
       yield upsert
       upsert.sync!
     end
+
+    # @deprecated Use .batch instead.
+    alias :stream :batch
   end
 
   # Raised if a query would be too large to send in a single packet.

@@ -3,12 +3,13 @@ unreleased
 * Enhancements
 
   * Remove all the sampling - just keep a cumulative total of sql bytes as we build up an ON DUPLICATE KEY UPDATE query.
+  * Deprecate Upsert.stream in favor of Upsert.batch (but provide an alias for backwards compat)
 
 0.2.2 / 2012-06-21
 
 * Bug fixes
 
-  * Correct and simplify how sql length is calculated when batching (streaming) MySQL upserts.
+  * Correct and simplify how sql length is calculated when batching MySQL upserts.
 
 0.2.1 / 2012-06-21
 

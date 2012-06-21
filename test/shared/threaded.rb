@@ -13,9 +13,9 @@ shared_examples_for 'is thread-safe' do
       end
     end
   end
-  it "is safe to use streaming" do
+  it "is safe to use batch" do
     assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
-      Upsert.stream(connection, :pets) do |upsert|
+      Upsert.batch(connection, :pets) do |upsert|
         ts = []
         10.times do
           ts << Thread.new do

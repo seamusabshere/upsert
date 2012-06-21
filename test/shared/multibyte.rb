@@ -13,9 +13,9 @@ shared_examples_for "supports multibyte" do
       upsert.row({:name => 'I♥NY'}, {:gender => 'jÚrgen'})
     end
   end
-  it "works streaming" do
+  it "works batch" do
     assert_creates(Pet, [{:name => 'I♥NY', :gender => 'jÚrgen'}]) do
-      Upsert.stream(connection, :pets) do |upsert|
+      Upsert.batch(connection, :pets) do |upsert|
         upsert.row({:name => 'I♥NY'}, {:gender => 'périferôl'})
         upsert.row({:name => 'I♥NY'}, {:gender => 'jÚrgen'})
       end

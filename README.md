@@ -10,24 +10,24 @@ The second argument is currently (mis)named a "document" because this was inspir
 
 ### One by one
 
-Faster than just doing `Pet.create`... 85% faster on PostgreSQL, for example. But no validations or anything.
+Faster than just doing `Pet.create`... 85% faster on PostgreSQL, for example, than all the different native ActiveRecord methods I've tried. But no validations or anything.
 
     upsert = Upsert.new Pet.connection, Pet.table_name
     upsert.row({:name => 'Jerry'}, :breed => 'beagle')
     upsert.row({:name => 'Pierre'}, :breed => 'tabby')
 
-### Streaming
+### Batch mode
 
 Rows are buffered in memory until it's efficient to send them to the database. Currently this only provides an advantage on MySQL because it uses `ON DUPLICATE KEY UPDATE`... but if a similar method appears in PostgreSQL, the same code will still work.
 
-    Upsert.stream(Pet.connection, Pet.table_name) do |upsert|
+    Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
       upsert.row({:name => 'Jerry'}, :breed => 'beagle')
       upsert.row({:name => 'Pierre'}, :breed => 'tabby')
     end
 
 ### `ActiveRecord::Base.upsert` (optional)
 
-For bulk upserts, you probably still want to use `Upsert.stream`.
+For bulk upserts, you probably still want to use `Upsert.batch`.
 
     require 'upsert/active_record_upsert'
     Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
@@ -37,7 +37,7 @@ For bulk upserts, you probably still want to use `Upsert.stream`.
 
 Currently, the first row you pass in determines the columns that will be used. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
 
-    Upsert.stream(Pet.connection, Pet.table_name) do |upsert|
+    Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
       upsert.row({:name => 'Jerry'}, :breed => 'beagle')
       upsert.row({:tag_number => 456}, :spiel => 'great cat') # won't work - doesn't use same columns
     end
@@ -53,7 +53,7 @@ Pull requests for any of these would be greatly appreciated:
 
 1. Fix SQLite tests.
 2. If you think there's a fix for the "fixed column set" gotcha...
-3. Naming suggestions: should "document" be called "setters" or "attributes"? Should "stream" be "batch" instead?
+3. Naming suggestions: should "document" be called "setters" or "attributes"?
 
 ## Real-world usage
 
@@ -218,7 +218,7 @@ You could also use [activerecord-import](https://github.com/zdennis/activerecord
 
     Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
 
-This, however, only works on MySQL and requires ActiveRecord&mdash;and if all you are doing is upserts, `upsert` is tested to be 40% faster. And you don't have to put all of the rows to be upserted into a single huge array - you can stream them using `Upsert.stream`.
+This, however, only works on MySQL and requires ActiveRecord&mdash;and if all you are doing is upserts, `upsert` is tested to be 40% faster. And you don't have to put all of the rows to be upserted into a single huge array - you can batch them using `Upsert.batch`.
 
 ## Copyright
 

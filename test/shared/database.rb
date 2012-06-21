@@ -44,17 +44,17 @@ shared_examples_for 'is a database with an upsert trick' do
       end
     end
   end
-  describe :stream do
+  describe :batch do
     it "works for multiple rows (base case)" do
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-        Upsert.stream(connection, :pets) do |upsert|
+        Upsert.batch(connection, :pets) do |upsert|
           upsert.row({:name => 'Jerry'}, :gender => 'male')
         end
       end
     end
     it "works for multiple rows (not changing anything)" do
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
-        Upsert.stream(connection, :pets) do |upsert|
+        Upsert.batch(connection, :pets) do |upsert|
           upsert.row({:name => 'Jerry'}, :gender => 'male')
           upsert.row({:name => 'Jerry'}, :gender => 'male')
         end
@@ -62,7 +62,7 @@ shared_examples_for 'is a database with an upsert trick' do
     end
     it "works for multiple rows (changing something)" do
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
-        Upsert.stream(connection, :pets) do |upsert|
+        Upsert.batch(connection, :pets) do |upsert|
           upsert.row({:name => 'Jerry'}, :gender => 'male')
           upsert.row({:name => 'Jerry'}, :gender => 'neutered')
         end
