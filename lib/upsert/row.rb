@@ -1,12 +1,12 @@
 class Upsert
   # @private
   class Row
-    attr_reader :buffer
+    attr_reader :parent
     attr_reader :selector
     attr_reader :document
 
-    def initialize(buffer, selector, document)
-      @buffer = buffer
+    def initialize(parent, selector, document)
+      @parent = parent
       @selector = selector
       @document = document
     end
@@ -16,23 +16,23 @@ class Upsert
     end
 
     def values_sql_bytesize
-      @values_sql_bytesize ||= pairs.inject(0) { |sum, (_, v)| sum + buffer.quoted_value_bytesize(v) }
+      @values_sql_bytesize ||= pairs.inject(0) { |sum, (_, v)| sum + parent.quoted_value_bytesize(v) }
     end
 
     def values_sql
-      buffer.quote_values pairs.map { |_, v| v }
+      parent.quote_values pairs.map { |_, v| v }
     end
 
     def columns_sql
-      buffer.quote_idents columns
+      parent.quote_idents columns
     end
 
     def where_sql
-      buffer.quote_pairs selector
+      parent.quote_pairs selector
     end
 
     def set_sql
-      buffer.quote_pairs pairs
+      parent.quote_pairs pairs
     end
 
     def pairs

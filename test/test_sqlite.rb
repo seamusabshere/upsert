@@ -11,19 +11,20 @@ describe "upserting on sqlite" do
     @opened_connections = []
     ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil
     Pet.auto_upgrade!
-    @connection = new_connection
+    # @connection = new_connection
   end
-  after do
-    @opened_connections.each { |c| c.close }
-  end
+  # after do
+  #   @opened_connections.each { |c| c.close }
+  # end
 
-  def new_connection
-    c = SQLite3::Database.open(File.expand_path('../../tmp/test.sqlite3', __FILE__))
-    @opened_connections << c
-    c
-  end
+  # def new_connection
+  #   c = SQLite3::Database.open(File.expand_path('../../tmp/test.sqlite3', __FILE__))
+  #   @opened_connections << c
+  #   c
+  # end
   def connection
-    @connection
+    # @connection
+    ActiveRecord::Base.connection
   end
 
   it_also 'is a database with an upsert trick'
@@ -39,4 +40,6 @@ describe "upserting on sqlite" do
   it_also "doesn't mess with timezones"
 
   it_also 'supports binary upserts'
+
+  # it_also "doesn't blow up on reserved words"
 end

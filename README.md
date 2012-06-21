@@ -202,7 +202,6 @@ The `selector` and `document` arguments are inspired by the upsert functionality
 ## Wishlist
 
 1. `Pet.upsert`... duh
-2. Don't need a separate buffer class... just extend an instance of Upsert with the appropriate database driver module.
 
 ## Copyright
 

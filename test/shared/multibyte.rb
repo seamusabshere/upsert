@@ -23,8 +23,8 @@ shared_examples_for "supports multibyte" do
   end
   it "won't overflow" do
     upsert = Upsert.new connection, :pets
-    if upsert.buffer.respond_to?(:max_sql_bytesize)
-      max = upsert.buffer.send(:max_sql_bytesize)
+    if upsert.respond_to?(:max_sql_bytesize)
+      max = upsert.send(:max_sql_bytesize)
       ticks = max / 3 - 2
       lambda do
         loop do

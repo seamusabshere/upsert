@@ -2,12 +2,10 @@ require 'bigdecimal'
 
 require 'upsert/version'
 require 'upsert/binary'
-require 'upsert/buffer'
-require 'upsert/quoter'
 require 'upsert/row'
-require 'upsert/buffer/mysql2_client'
-require 'upsert/buffer/pg_connection'
-require 'upsert/buffer/sqlite3_database'
+require 'upsert/mysql2_client'
+require 'upsert/pg_connection'
+require 'upsert/sqlite3_database'
 
 class Upsert
   class << self
@@ -33,9 +31,9 @@ class Upsert
     #   end
     def stream(connection, table_name)
       upsert = new connection, table_name
-      upsert.buffer.async!
+      upsert.async!
       yield upsert
-      upsert.buffer.sync!
+      upsert.sync!
     end
   end
 
@@ -43,13 +41,38 @@ class Upsert
   class TooBig < RuntimeError
   end
 
+  SINGLE_QUOTE = %{'}
+  DOUBLE_QUOTE = %{"}
+  BACKTICK = %{`}
+  E_AND_SINGLE_QUOTE = %{E'}
+  X_AND_SINGLE_QUOTE = %{x'}
+  USEC_SPRINTF = '%06d'
+  ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S'
+  ISO8601_DATE = '%F'
+
+  # @return [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection]
+  attr_reader :connection
+
+  # @return [String,Symbol]
+  attr_reader :table_name
+
   # @private
-  attr_reader :buffer
+  attr_reader :rows
 
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
   def initialize(connection, table_name)
-    @buffer = Buffer.for connection, table_name
+    @table_name = table_name
+    @rows = []
+
+    @connection = if connection.respond_to?(:raw_connection)
+      # deal with ActiveRecord::Base.connection or ActiveRecord::Base.connection_pool.checkout
+       connection.raw_connection
+    else
+      connection
+    end
+
+    extend Upsert.const_get(@connection.class.name.gsub(/\W+/, '_'))
   end
 
   # Upsert a row given a selector and a document.
@@ -68,7 +91,69 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, document)
-    buffer.add selector, document
+    rows << Row.new(self, selector, document)
+    if sql = chunk
+      execute sql
+    end
     nil
+  end
+
+  # @private
+  def async?
+    !!@async
+  end
+
+  # @private
+  def async!
+    @async = true
+  end
+
+  # @private
+  def sync!
+    @async = false
+    while sql = chunk
+      execute sql
+    end
+  end
+
+  # @private
+  def quote_value(v)
+    case v
+    when NilClass
+      'NULL'
+    when Upsert::Binary
+      quote_binary v # must be defined by base
+    when String
+      quote_string v # must be defined by base
+    when TrueClass, FalseClass
+      quote_boolean v
+    when BigDecimal
+      quote_big_decimal v
+    when Numeric
+      v
+    when Symbol
+      quote_string v.to_s
+    when Time, DateTime
+      quote_time v # must be defined by base
+    when Date
+      quote_string v.strftime(ISO8601_DATE)
+    else
+      raise "not sure how to quote #{v.class}: #{v.inspect}"
+    end
+  end
+
+  # @private
+  def quote_idents(idents)
+    idents.map { |k| quote_ident(k) }.join(',') # must be defined by base
+  end
+
+  # @private
+  def quote_values(values)
+    values.map { |v| quote_value(v) }.join(',')
+  end
+  
+  # @private
+  def quote_pairs(pairs)
+    pairs.map { |k, v| [quote_ident(k),quote_value(v)].join('=') }.join(',')
   end
 end

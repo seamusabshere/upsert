@@ -28,7 +28,7 @@ shared_examples_for "doesn't blow up on reserved words" do
   end
 
   nasties.each do |nasty, words|
-    it "is ok with '#{words.join(',')}'" do
+    it "doesn't die on reserved words #{words.join(',')}" do
       upsert = Upsert.new connection, nasty.table_name
       random = rand(1e3).to_s
       selector = { :fake_primary_key => random, words.first => words.first }
