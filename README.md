@@ -1,43 +1,37 @@
 # Upsert
 
-Finally, all those SQL MERGE tricks codified so that you can do "upsert" on MySQL, PostgreSQL, and Sqlite.
+Finally, all those SQL MERGE tricks codified so that you can do "upsert" on MySQL, PostgreSQL, and SQLite.
+
+You pass a selector that uniquely identifies a row, whether it exists or not. You pass a set of attributes that should be set on that row. Based on what database is being used, one of a number of SQL MERGE-like tricks are used.
+
+The second argument is currently (mis)named a "document" because this was inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
 
 ## Usage
 
-Let's say you have...
+### One by one
 
-    class Pet < ActiveRecord::Base
-      # col :name
-      # col :breed
-    end
-
-### One at a time
+Faster than just doing `Pet.create`... 85% faster on PostgreSQL, for example. But no validations or anything.
 
     upsert = Upsert.new Pet.connection, Pet.table_name
-    selector = {:name => 'Jerry'}
-    document = {:breed => 'beagle'}
-    upsert.row selector, document
+    upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+    upsert.row({:name => 'Pierre'}, :breed => 'tabby')
 
-### Streaming upserts (fastest)
+### Streaming
 
-Rows are buffered in memory until it's efficient to send them to the database.
+Rows are buffered in memory until it's efficient to send them to the database. Currently this only provides an advantage on MySQL because it uses `ON DUPLICATE KEY UPDATE`... but if a similar method appears in PostgreSQL, the same code will still work.
 
     Upsert.stream(Pet.connection, Pet.table_name) do |upsert|
-      # [...]
       upsert.row({:name => 'Jerry'}, :breed => 'beagle')
-      # [...]
       upsert.row({:name => 'Pierre'}, :breed => 'tabby')
-      # [...]
     end
 
-### With a helper method
+### `ActiveRecord::Base.upsert` (optional)
 
 For bulk upserts, you probably still want to use `Upsert.stream`.
 
-    # be sure to require 'upsert/active_record_upsert' - it's not required by default
-    selector = {:name => 'Jerry'}
-    document = {:breed => 'beagle'}
-    Pet.upsert selector, document
+    require 'upsert/active_record_upsert'
+    Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
+    Pet.upsert({:name => 'Pierre'}, :breed => 'tabby')
 
 ## Real-world usage
 
@@ -203,10 +197,6 @@ You could also use [activerecord-import](https://github.com/zdennis/activerecord
     Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
 
 This, however, only works on MySQL and requires ActiveRecord&mdash;and if all you are doing is upserts, `upsert` is tested to be 40% faster. And you don't have to put all of the rows to be upserted into a single huge array - you can stream them using `Upsert.stream`.
-
-### Loosely based on mongo-ruby-driver's upsert functionality
-
-The `selector` and `document` arguments are inspired by the upsert functionality of the [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
 
 ## Copyright
 
