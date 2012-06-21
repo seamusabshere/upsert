@@ -18,7 +18,9 @@ Let's say you have...
     document = {:breed => 'beagle'}
     upsert.row selector, document
 
-### Multiple upserts bundled together for speed
+### Streaming upserts (fastest)
+
+Rows are buffered in memory until it's efficient to send them to the database.
 
     Upsert.stream(Pet.connection, Pet.table_name) do |upsert|
       # [...]
@@ -28,7 +30,14 @@ Let's say you have...
       # [...]
     end
 
-Rows are buffered in memory until it's efficient to send them to the database.
+### With a helper method
+
+For bulk upserts, you probably still want to use `Upsert.stream`.
+
+    # be sure to require 'upsert/active_record_upsert' - it's not required by default
+    selector = {:name => 'Jerry'}
+    document = {:breed => 'beagle'}
+    Pet.upsert selector, document
 
 ## Real-world usage
 
@@ -54,9 +63,9 @@ Using the [mysql2](https://rubygems.org/gems/mysql2) driver.
 From the tests:
 
     Upsert was 77% faster than find + new/set/save
-    Upsert was 84% faster than create + rescue/find/update
-    Upsert was 82% faster than find_or_create + update_attributes
-    Upsert was 47% faster than faking upserts with activerecord-import
+    Upsert was 58% faster than create + rescue/find/update
+    Upsert was 80% faster than find_or_create + update_attributes
+    Upsert was 39% faster than faking upserts with activerecord-import
 
 #### SQL MERGE trick
 
@@ -198,10 +207,6 @@ This, however, only works on MySQL and requires ActiveRecord&mdash;and if all yo
 ### Loosely based on mongo-ruby-driver's upsert functionality
 
 The `selector` and `document` arguments are inspired by the upsert functionality of the [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
-
-## Wishlist
-
-1. `Pet.upsert`... duh
 
 ## Copyright
 
