@@ -7,8 +7,8 @@ class Upsert
     attr_reader :merge_function
 
     def chunk
-      return if rows.empty?
-      row = rows.shift
+      return if buffer.empty?
+      row = buffer.shift
       unless merge_function
         create_merge_function row
       end

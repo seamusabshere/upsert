@@ -1,50 +1,34 @@
 class Upsert
   # @private
   module Mysql2_Client
-    SAMPLE = 0.1
-
     def chunk
-      return if rows.empty?
-      all = rows.length
-      take = all
-      while take > 1 and probably_oversize?(take)
-        take -= 1
+      return if buffer.empty?
+      if not async?
+        retval = sql
+        buffer.clear
+        return retval
       end
-      if async? and take == all
-        return
+      @cumulative_sql_bytesize ||= static_sql_bytesize
+      new_row = buffer.pop
+      d = new_row.values_sql_bytesize + 3 # ),(
+      if @cumulative_sql_bytesize + d > max_sql_bytesize
+        retval = sql
+        buffer.clear
+        @cumulative_sql_bytesize = static_sql_bytesize + d
+      else
+        retval = nil
+        @cumulative_sql_bytesize += d
       end
-      while take > 2 and oversize?(take)
-        $stderr.puts "   Length prediction via sampling failed, shrinking" if ENV['UPSERT_DEBUG'] == 'true'
-        take -= 2
-      end
-      chunk = sql take
-      while take > 1 and chunk.bytesize > max_sql_bytesize
-        $stderr.puts "   Supposedly exact bytesize guess failed, shrinking" if ENV['UPSERT_DEBUG'] == 'true'
-        take -= 1
-        chunk = sql take
-      end
-      if chunk.bytesize > max_sql_bytesize
-        raise TooBig
-      end
-      $stderr.puts "   Chunk (#{take}/#{chunk.bytesize}) was #{(chunk.bytesize / max_sql_bytesize.to_f * 100).round}% of the max" if ENV['UPSERT_DEBUG'] == 'true'
-      @rows = rows.drop(take)
-      chunk
+      buffer.push new_row
+      retval
     end
 
     def execute(sql)
       connection.query sql
     end
 
-    def probably_oversize?(take)
-      estimate_sql_bytesize(take) > max_sql_bytesize
-    end
-
-    def oversize?(take)
-      sql_bytesize(take) > max_sql_bytesize
-    end
-
     def columns
-      @columns ||= rows.first.columns
+      @columns ||= buffer.first.columns
     end
 
     def insert_part
@@ -65,48 +49,11 @@ class Upsert
       @static_sql_bytesize ||= insert_part.bytesize + update_part.bytesize + 2
     end
 
-    
-    def variable_sql_bytesize(take)
-      memo = rows.first(take).inject(0) { |sum, row| sum + row.values_sql_bytesize }
-      if take > 0
-        # parens and comma
-        memo += 3*(take-1)
-      end
-      memo
-    end
-
-    def estimate_variable_sql_bytesize(take)
-      n = (take * SAMPLE).ceil
-      sample = if RUBY_VERSION >= '1.9'
-        rows.first(take).sample(n)
-      else
-        # based on https://github.com/marcandre/backports/blob/master/lib/backports/1.8.7/array.rb
-        memo = rows.first(take)
-        n.times do |i|
-          r = i + Kernel.rand(take - i)
-          memo[i], memo[r] = memo[r], memo[i]
-        end
-        memo.first(n)
-      end
-      memo = sample.inject(0) { |sum, row| sum + row.values_sql_bytesize } / SAMPLE
-      if take > 0
-        # parens and comma
-        memo += 3*(take-1)
-      end
-      memo
-    end
-
-    def sql_bytesize(take)
-      static_sql_bytesize + variable_sql_bytesize(take)
-    end
-
-    def estimate_sql_bytesize(take)
-      static_sql_bytesize + estimate_variable_sql_bytesize(take)
-    end
-
-    def sql(take)
-      all_value_sql = rows.first(take).map { |row| row.values_sql }
-      [ insert_part, '(', all_value_sql.join('),('), ')', update_part ].join
+    def sql
+      all_value_sql = buffer.map { |row| row.values_sql }
+      retval = [ insert_part, '(', all_value_sql.join('),('), ')', update_part ].join
+      raise TooBig if retval.bytesize > max_sql_bytesize
+      retval
     end
 
     # since setting an option like :as => :hash actually persists that option to the client, don't pass any options

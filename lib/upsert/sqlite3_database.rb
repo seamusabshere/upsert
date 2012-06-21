@@ -2,8 +2,8 @@ class Upsert
   # @private
   module SQLite3_Database
     def chunk
-      return if rows.empty?
-      row = rows.shift
+      return if buffer.empty?
+      row = buffer.shift
       %{INSERT OR IGNORE INTO "#{table_name}" (#{row.columns_sql}) VALUES (#{row.values_sql});UPDATE "#{table_name}" SET #{row.set_sql} WHERE #{row.where_sql}}
     end
 

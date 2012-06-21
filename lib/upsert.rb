@@ -58,13 +58,13 @@ class Upsert
   attr_reader :table_name
 
   # @private
-  attr_reader :rows
+  attr_reader :buffer
 
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
   def initialize(connection, table_name)
     @table_name = table_name
-    @rows = []
+    @buffer = []
 
     @connection = if connection.respond_to?(:raw_connection)
       # deal with ActiveRecord::Base.connection or ActiveRecord::Base.connection_pool.checkout
@@ -92,7 +92,7 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, document)
-    rows << Row.new(self, selector, document)
+    buffer.push Row.new(self, selector, document)
     if sql = chunk
       execute sql
     end

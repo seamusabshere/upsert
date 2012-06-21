@@ -51,10 +51,9 @@ You would need to use a new `Upsert` object. On the other hand, this is totally 
 
 Pull requests for any of these would be greatly appreciated:
 
-1. Somebody who understands statistics should look at how I'm sampling rows in `Upsert::Mysql2_Client#estimate_variable_sql_bytesize`... I think we can assume that row sizes are random, so I don't think we actually have to select random elements.
-2. Fix SQLite tests.
-3. If you think there's a fix for the "fixed column set" gotcha...
-4. Naming suggestions: should "document" be called "setters" or "attributes"? Should "stream" be "batch" instead?
+1. Fix SQLite tests.
+2. If you think there's a fix for the "fixed column set" gotcha...
+3. Naming suggestions: should "document" be called "setters" or "attributes"? Should "stream" be "batch" instead?
 
 ## Real-world usage
 

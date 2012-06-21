@@ -1,3 +1,9 @@
+unreleased
+
+* Enhancements
+
+  * Remove all the sampling - just keep a cumulative total of sql bytes as we build up an ON DUPLICATE KEY UPDATE query.
+
 0.2.2 / 2012-06-21
 
 * Bug fixes
