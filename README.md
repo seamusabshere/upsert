@@ -33,6 +33,22 @@ For bulk upserts, you probably still want to use `Upsert.stream`.
     Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
     Pet.upsert({:name => 'Pierre'}, :breed => 'tabby')
 
+### Gotchas
+
+Currently, the first row you pass in determines the columns that will be used. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
+
+    Upsert.stream(Pet.connection, Pet.table_name) do |upsert|
+      upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+      upsert.row({:tag_number => 456}, :spiel => 'great cat') # won't work - doesn't use same columns
+    end
+
+You would need to use a new `Upsert` object. On the other hand, this is totally fine:
+
+    Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
+    Pet.upsert({:tag_number => 456}, :spiel => 'great cat')
+
+Please send in a pull request if you think there's a better way!
+
 ## Real-world usage
 
 <p><a href="http://brighterplanet.com"><img src="https://s3.amazonaws.com/static.brighterplanet.com/assets/logos/flush-left/inline/green/rasterized/brighter_planet-160-transparent.png" alt="Brighter Planet logo"/></a></p>
