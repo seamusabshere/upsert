@@ -6,7 +6,7 @@ FileUtils.mkdir_p File.dirname(db_path)
 FileUtils.rm_f db_path
 ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => db_path
 
-describe "upserting on sqlite" do
+describe Upsert::SQLite3_Database do
   before do
     @opened_connections = []
     ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil

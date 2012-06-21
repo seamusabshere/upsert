@@ -4,7 +4,7 @@ require 'mysql2'
 system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS test_upsert; CREATE DATABASE test_upsert CHARSET utf8" }
 ActiveRecord::Base.establish_connection :adapter => 'mysql2', :username => 'root', :password => 'password', :database => 'test_upsert'
 
-describe "upserting on mysql2" do
+describe Upsert::Mysql2_Client do
   before do
     @opened_connections = []
     ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil
@@ -38,4 +38,65 @@ describe "upserting on mysql2" do
   it_also "doesn't mess with timezones"
 
   it_also "doesn't blow up on reserved words"
+
+  describe '#sql_bytesize' do
+    def assert_exact(selector_proc, document_proc, show = false)
+      upsert = Upsert.new connection, :pets
+      0.upto(256) do |i|
+        upsert.rows << Upsert::Row.new(upsert, selector_proc.call(i), document_proc.call(i))
+        i.upto(upsert.rows.length) do |take|
+          expected_sql = upsert.sql(take)
+          actual = upsert.sql_bytesize(take)
+          if show and actual != expected_sql.bytesize
+            $stderr.puts
+            $stderr.puts "Expected: #{expected_sql.bytesize}"
+            $stderr.puts "Actual: #{actual}"
+            $stderr.puts expected_sql
+          end
+          actual.must_equal expected_sql.bytesize
+        end
+      end
+    end
+    def rand_string(length)
+      # http://www.dzone.com/snippets/generate-random-string-letters
+      # Array.new(length) { (rand(122-97) + 97).chr }.join
+      Array.new(length) { rand(512).chr(Encoding::UTF_8) }.join
+    end
+    it "is exact as selector length changes" do
+      selector_proc = proc do |i|
+        { :name => rand_string(i) }
+      end
+      document_proc = proc do |i|
+        {}
+      end
+      assert_exact selector_proc, document_proc
+    end
+    it "is exact as value length changes" do
+      selector_proc = proc do |i|
+        { :name => 'Jerry' }
+      end
+      document_proc = proc do |i|
+        { :spiel => rand_string(i) }
+      end
+      assert_exact selector_proc, document_proc
+    end
+    it "is exact as both selector and value length change" do
+      selector_proc = proc do |i|
+        { :name => rand_string(i) }
+      end
+      document_proc = proc do |i|
+        { :spiel => rand_string(i) }
+      end
+      assert_exact selector_proc, document_proc
+    end
+    it "is exact with numbers too" do
+      selector_proc = proc do |i|
+        { :tag_number => rand(1e5) }
+      end
+      document_proc = proc do |i|
+        { :lovability => rand }
+      end
+      assert_exact selector_proc, document_proc
+    end
+  end
 end

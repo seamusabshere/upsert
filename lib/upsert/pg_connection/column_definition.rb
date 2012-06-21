@@ -39,7 +39,7 @@ EOS
           res.reject do |row|
             row['name'] == auto_increment_primary_key
           end.map do |row|
-            new row['name'], row['sql_type'], row['default']
+            new connection, row['name'], row['sql_type'], row['default']
           end
         end
       end
@@ -49,9 +49,9 @@ EOS
       attr_reader :sql_type
       attr_reader :default
       
-      def initialize(name, sql_type, default)
-        @name = name
-        @input_name = "#{name}_input"
+      def initialize(connection, raw_name, sql_type, default)
+        @name = connection.quote_ident raw_name
+        @input_name = connection.quote_ident "#{raw_name}_input"
         @sql_type = sql_type
         @default = default
       end

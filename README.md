@@ -33,7 +33,7 @@ For bulk upserts, you probably still want to use `Upsert.stream`.
     Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
     Pet.upsert({:name => 'Pierre'}, :breed => 'tabby')
 
-### Gotchas
+### The "fixed column set" gotcha
 
 Currently, the first row you pass in determines the columns that will be used. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
 
@@ -47,7 +47,14 @@ You would need to use a new `Upsert` object. On the other hand, this is totally 
     Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
     Pet.upsert({:tag_number => 456}, :spiel => 'great cat')
 
-Please send in a pull request if you think there's a better way!
+## Wishlist
+
+Pull requests for any of these would be greatly appreciated:
+
+1. Somebody who understands statistics should look at how I'm sampling rows in `Upsert::Mysql2_Client#estimate_variable_sql_bytesize`... I think we can assume that row sizes are random, so I don't think we actually have to select random elements.
+2. Fix SQLite tests.
+3. If you think there's a fix for the "fixed column set" gotcha...
+4. Naming suggestions: should "document" be called "setters" or "attributes"? Should "stream" be "batch" instead?
 
 ## Real-world usage
 

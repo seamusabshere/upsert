@@ -2,13 +2,21 @@ class Upsert
   # @private
   class Row
     attr_reader :parent
+    attr_reader :raw_selector
     attr_reader :selector
     attr_reader :document
 
-    def initialize(parent, selector, document)
+    def initialize(parent, raw_selector, raw_document)
       @parent = parent
-      @selector = selector
-      @document = document
+      @raw_selector = raw_selector
+      @selector = raw_selector.inject({}) do |memo, (k, v)|
+        memo[parent.quote_ident(k)] = parent.quote_value(v)
+        memo
+      end
+      @document = raw_document.inject({}) do |memo, (k, v)|
+        memo[parent.quote_ident(k)] = parent.quote_value(v)
+        memo
+      end
     end
 
     def columns
@@ -16,40 +24,40 @@ class Upsert
     end
 
     def values_sql_bytesize
-      @values_sql_bytesize ||= pairs.inject(0) { |sum, (_, v)| sum + parent.quoted_value_bytesize(v) }
+      @values_sql_bytesize ||= pairs.inject(0) { |sum, (_, v)| sum + v.to_s.bytesize } + columns.length - 1
     end
 
     def values_sql
-      parent.quote_values pairs.map { |_, v| v }
+      pairs.map { |_, v| v }.join(',')
     end
 
     def columns_sql
-      parent.quote_idents columns
+      pairs.map { |k, _| k }.join(',')
     end
 
     def where_sql
-      parent.quote_pairs selector
+      selector.map { |k, v| [k, v].join('=') }.join(',')
     end
 
     def set_sql
-      parent.quote_pairs pairs
+      pairs.map { |k, v| [k, v].join('=') }.join(',')
     end
 
     def pairs
       @pairs ||= columns.map do |k|
-        value = if document.has_key?(k)
+        v = if document.has_key?(k)
           # prefer the document so that you can change rows
           document[k]
         else
           selector[k]
         end
-        [ k, value ]
+        [ k, v ]
       end
     end
 
     def to_hash
       @to_hash ||= pairs.inject({}) do |memo, (k, v)|
-        memo[k.to_s] = v
+        memo[k] = v
         memo
       end
     end

@@ -1,6 +1,8 @@
 class Upsert
   # @private
   module Mysql2_Client
+    SAMPLE = 0.1
+
     def chunk
       return if rows.empty?
       all = rows.length
@@ -11,9 +13,9 @@ class Upsert
       if async? and take == all
         return
       end
-      while take > 1 and oversize?(take)
+      while take > 2 and oversize?(take)
         $stderr.puts "   Length prediction via sampling failed, shrinking" if ENV['UPSERT_DEBUG'] == 'true'
-        take -= 1
+        take -= 2
       end
       chunk = sql take
       while take > 1 and chunk.bytesize > max_sql_bytesize
@@ -46,14 +48,13 @@ class Upsert
     end
 
     def insert_part
-      @insert_part ||= %{INSERT INTO "#{table_name}" (#{quote_idents(columns)}) VALUES }
+      @insert_part ||= %{INSERT INTO "#{table_name}" (#{columns.join(',')}) VALUES }
     end
 
     def update_part
       @update_part ||= begin
         updaters = columns.map do |k|
-          qk = quote_ident k
-          [ qk, "VALUES(#{qk})" ].join('=')
+          [ k, "VALUES(#{k})" ].join('=')
         end.join(',')
         %{ ON DUPLICATE KEY UPDATE #{updaters}}
       end
@@ -64,13 +65,18 @@ class Upsert
       @static_sql_bytesize ||= insert_part.bytesize + update_part.bytesize + 2
     end
 
-    # where 3 is parens and comma
+    
     def variable_sql_bytesize(take)
-      rows.first(take).inject(0) { |sum, row| sum + row.values_sql_bytesize + 3 }
+      memo = rows.first(take).inject(0) { |sum, row| sum + row.values_sql_bytesize }
+      if take > 0
+        # parens and comma
+        memo += 3*(take-1)
+      end
+      memo
     end
 
     def estimate_variable_sql_bytesize(take)
-      n = (take / 10.0).ceil
+      n = (take * SAMPLE).ceil
       sample = if RUBY_VERSION >= '1.9'
         rows.first(take).sample(n)
       else
@@ -82,7 +88,12 @@ class Upsert
         end
         memo.first(n)
       end
-      10.0 * sample.inject(0) { |sum, row| sum + row.values_sql_bytesize + 3 }
+      memo = sample.inject(0) { |sum, row| sum + row.values_sql_bytesize } / SAMPLE
+      if take > 0
+        # parens and comma
+        memo += 3*(take-1)
+      end
+      memo
     end
 
     def sql_bytesize(take)
@@ -109,33 +120,6 @@ class Upsert
         else
           raise "Don't know what to do if connection.query returns a #{row.class}"
         end.to_i
-      end
-    end
-
-    def quoted_value_bytesize(v)
-      case v
-      when NilClass
-        4
-      when TrueClass
-        4
-      when FalseClass
-        5
-      when BigDecimal
-        v.to_s('F').bytesize
-      when Upsert::Binary
-        v.bytesize * 2 + 3
-      when Numeric
-        v.to_s.bytesize
-      when String
-        v.bytesize + 2
-      when Symbol
-        v.to_s.bytesize + 2
-      when Time, DateTime
-        24 + 2
-      when Date
-        10 + 2
-      else
-        raise "not sure how to get quoted length of #{v.class}: #{v.inspect}"
       end
     end
 

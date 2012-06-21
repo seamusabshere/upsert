@@ -49,6 +49,7 @@ class Upsert
   USEC_SPRINTF = '%06d'
   ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S'
   ISO8601_DATE = '%F'
+  NULL_WORD = 'NULL'
 
   # @return [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection]
   attr_reader :connection
@@ -120,7 +121,7 @@ class Upsert
   def quote_value(v)
     case v
     when NilClass
-      'NULL'
+      NULL_WORD
     when Upsert::Binary
       quote_binary v # must be defined by base
     when String
@@ -140,20 +141,5 @@ class Upsert
     else
       raise "not sure how to quote #{v.class}: #{v.inspect}"
     end
-  end
-
-  # @private
-  def quote_idents(idents)
-    idents.map { |k| quote_ident(k) }.join(',') # must be defined by base
-  end
-
-  # @private
-  def quote_values(values)
-    values.map { |v| quote_value(v) }.join(',')
-  end
-  
-  # @private
-  def quote_pairs(pairs)
-    pairs.map { |k, v| [quote_ident(k),quote_value(v)].join('=') }.join(',')
   end
 end

@@ -5,7 +5,7 @@ system %{ dropdb test_upsert }
 system %{ createdb test_upsert }
 ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => 'test_upsert'
 
-describe "upserting on postgresql" do
+describe Upsert::PG_Connection do
   before do
     @opened_connections = []
     ActiveRecord::Base.connection.drop_table(Pet.table_name) rescue nil

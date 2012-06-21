@@ -1,3 +1,9 @@
+0.2.2 / 2012-06-21
+
+* Bug fixes
+
+  * Correct and simplify how sql length is calculated when batching (streaming) MySQL upserts.
+
 0.2.1 / 2012-06-21
 
 * Enhancements
