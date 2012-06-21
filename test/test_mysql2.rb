@@ -60,7 +60,11 @@ describe Upsert::Mysql2_Client do
     def rand_string(length)
       # http://www.dzone.com/snippets/generate-random-string-letters
       # Array.new(length) { (rand(122-97) + 97).chr }.join
-      Array.new(length) { rand(512).chr(Encoding::UTF_8) }.join
+      if RUBY_VERSION >= '1.9'
+        Array.new(length) { rand(512).chr(Encoding::UTF_8) }.join
+      else
+        Array.new(length) { rand(512) }.pack('C*')
+      end
     end
     it "is exact as selector length changes" do
       selector_proc = proc do |i|
