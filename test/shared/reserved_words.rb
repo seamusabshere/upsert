@@ -27,14 +27,16 @@ shared_examples_for "doesn't blow up on reserved words" do
     nasty.auto_upgrade!
   end
 
-  nasties.each do |nasty, words|
-    it "doesn't die on reserved words #{words.join(',')}" do
-      upsert = Upsert.new connection, nasty.table_name
-      random = rand(1e3).to_s
-      selector = { :fake_primary_key => random, words.first => words.first }
-      document = words[1..-1].inject({}) { |memo, word| memo[word] = word; memo }
-      assert_creates nasty, [selector.merge(document)] do
-        upsert.row selector, document
+  describe "reserved words" do
+    nasties.each do |nasty, words|
+      it "doesn't die on reserved words #{words.join(',')}" do
+        upsert = Upsert.new connection, nasty.table_name
+        random = rand(1e3).to_s
+        selector = { :fake_primary_key => random, words.first => words.first }
+        document = words[1..-1].inject({}) { |memo, word| memo[word] = word; memo }
+        assert_creates nasty, [selector.merge(document)] do
+          upsert.row selector, document
+        end
       end
     end
   end
