@@ -70,8 +70,19 @@ class Upsert
     end
 
     def estimate_variable_sql_bytesize(take)
-      p = (take / 10.0).ceil
-      10.0 * rows.sample(p).inject(0) { |sum, row| sum + row.values_sql_bytesize + 3 }
+      n = (take / 10.0).ceil
+      sample = if RUBY_VERSION >= '1.9'
+        rows.first(take).sample(n)
+      else
+        # based on https://github.com/marcandre/backports/blob/master/lib/backports/1.8.7/array.rb
+        memo = rows.first(take)
+        n.times do |i|
+          r = i + Kernel.rand(take - i)
+          memo[i], memo[r] = memo[r], memo[i]
+        end
+        memo.first(n)
+      end
+      10.0 * sample.inject(0) { |sum, row| sum + row.values_sql_bytesize + 3 }
     end
 
     def sql_bytesize(take)

@@ -50,9 +50,13 @@ MiniTest::Spec.class_eval do
       end
       2000.times do
         selector = ActiveSupport::OrderedHash.new
-        selector[:name] = names.sample(1).first
+        selector[:name] = if RUBY_VERSION >= '1.9'
+          names.sample(1).first
+        else
+          names.choice
+        end
         document = {
-          :lovability => BigDecimal.new(rand(1e11), 2),
+          :lovability => BigDecimal.new(rand(1e11).to_s, 2),
           :tag_number => rand(1e8),
           :spiel => SecureRandom.hex(rand(127)),
           :good => true,
