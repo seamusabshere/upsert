@@ -4,11 +4,15 @@ class Upsert
   # @private
   module PG_Connection
 
+    attr_reader :columns
     attr_reader :merge_function
 
     def chunk
       return if buffer.empty?
       row = buffer.shift
+      unless @columns.is_a?(Array)
+        @columns = row.columns
+      end
       unless merge_function
         create_merge_function row
       end
@@ -48,7 +52,7 @@ class Upsert
     end
 
     def column_definitions
-      @column_definitions ||= ColumnDefinition.all(connection, table_name)
+      @column_definitions ||= ColumnDefinition.all(connection, table_name).select { |cd| columns.include?(cd.name) }
     end
     
     private

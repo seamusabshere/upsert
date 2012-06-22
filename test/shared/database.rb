@@ -13,6 +13,14 @@ shared_examples_for 'is a database with an upsert trick' do
         upsert.row({:name => 'Jerry', :gender => 'male'}, {:tag_number => 4})
       end
     end
+    it "doesn't nullify columns that are not included in the selector or document" do
+      assert_creates(Pet, [{:name => 'Jerry', :gender => 'male', :tag_number => 4}]) do
+        one = Upsert.new connection, :pets
+        one.row({:name => 'Jerry'}, {:gender => 'male'})
+        two = Upsert.new connection, :pets
+        two.row({:name => 'Jerry'}, {:tag_number => 4})
+      end
+    end
     it "works for a single row (not changing anything)" do
       upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do

@@ -33,7 +33,13 @@ For bulk upserts, you probably still want to use `Upsert.batch`.
     Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
     Pet.upsert({:name => 'Pierre'}, :breed => 'tabby')
 
-### The "fixed column set" gotcha
+### Gotchas
+
+#### Undefined behavior if you use this without properly defining UNIQUE indexes
+
+Make sure you're upserting against either primary key columns or columns with UNIQUE indexes or both.
+
+#### Columns are set based on the first row you pass
 
 Currently, the first row you pass in determines the columns that will be used. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
 
@@ -52,6 +58,7 @@ You would need to use a new `Upsert` object. On the other hand, this is totally 
 Pull requests for any of these would be greatly appreciated:
 
 1. Fix SQLite tests.
+2. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
 2. If you think there's a fix for the "fixed column set" gotcha...
 3. Naming suggestions: should "document" be called "setters" or "attributes"?
 
