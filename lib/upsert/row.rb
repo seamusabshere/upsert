@@ -36,7 +36,7 @@ class Upsert
     end
 
     def where_sql
-      selector.map { |k, v| [k, v].join('=') }.join(',')
+      selector.map { |k, v| [k, v].join('=') }.join(' AND ')
     end
 
     def set_sql

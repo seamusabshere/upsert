@@ -3,6 +3,7 @@
 * Bug fixes
 
   * On PostgreSQL, stop nullifying columns that weren't even involved in the upsert
+  * On SQLite, properly join WHERE conditions with ' AND ' instead of ','
 
 0.3.0 / 2012-06-21
 
