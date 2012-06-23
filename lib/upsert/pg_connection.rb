@@ -85,4 +85,8 @@ LANGUAGE plpgsql;
 EOS
     end
   end
+
+  # @private
+  # backwards compatibility - https://github.com/seamusabshere/upsert/issues/2
+  PGconn = PG_Connection
 end

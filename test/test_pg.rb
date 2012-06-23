@@ -16,7 +16,8 @@ describe Upsert::PG_Connection do
     @opened_connections.each { |c| c.finish }
   end
   def new_connection
-    c = PG.connect(:dbname => 'test_upsert')
+    # c = PG::Connection.new(:dbname => 'test_upsert')
+    c = PGconn.new(:dbname => 'test_upsert')
     @opened_connections << c
     c
   end

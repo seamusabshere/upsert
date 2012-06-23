@@ -1,3 +1,9 @@
+0.3.2 / 2012-06-22
+
+* Enhancements
+
+  * Make sure ::PGconn is recognized as ::PG::Connection (thanks @joevandyk https://github.com/seamusabshere/upsert/issues/2)
+
 0.3.1 / 2012-06-21
 
 * Bug fixes
