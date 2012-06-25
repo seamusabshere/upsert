@@ -37,6 +37,8 @@ describe Upsert::SQLite3_Database do
 
   it_also 'is thread-safe'
 
+  it_also 'is precise'
+
   it_also "doesn't mess with timezones"
 
   it_also 'supports binary upserts'

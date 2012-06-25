@@ -35,6 +35,8 @@ describe Upsert::Mysql2_Client do
 
   it_also 'is thread-safe'
 
+  it_also 'is precise'
+
   it_also "doesn't mess with timezones"
 
   it_also "doesn't blow up on reserved words"
