@@ -1,37 +1,32 @@
 # Upsert
 
-Finally, all those SQL MERGE tricks codified so that you can do "upsert" on MySQL, PostgreSQL, and SQLite.
-
-You pass a selector that uniquely identifies a row, whether it exists or not. You pass a set of attributes that should be set on that row. Based on what database is being used, one of a number of SQL MERGE-like tricks are used.
-
-The second argument is currently (mis)named a "document" because this was inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
+MySQL, PostgreSQL, and SQLite all have different SQL MERGE tricks that you can use to simulate upsert. This library codifies them under a single syntax.
 
 ## Usage
 
-### One by one
+You pass a selector that uniquely identifies a row, whether it exists or not. You pass a set of attributes that should be set on that row. Syntax inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
 
-Faster than just doing `Pet.create`... 85% faster on PostgreSQL, for example, than all the different native ActiveRecord methods I've tried. But no validations or anything.
+### Single record
 
-    upsert = Upsert.new Pet.connection, Pet.table_name
+    # if you have required 'upsert/active_record_upsert'
+    Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
+
+    # if you're not using activerecord, that's ok
+    connection = Mysql2::Client.new([...])
+    upsert = Upsert.new connection, 'pets'
     upsert.row({:name => 'Jerry'}, :breed => 'beagle')
-    upsert.row({:name => 'Pierre'}, :breed => 'tabby')
 
-### Batch mode
+### Multiple records (batch mode)
 
-Rows are buffered in memory until it's efficient to send them to the database. Currently this only provides an advantage on MySQL because it uses `ON DUPLICATE KEY UPDATE`... but if a similar method appears in PostgreSQL, the same code will still work.
+Rows are buffered in memory until it's efficient to send them to the database.
 
-    Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
+    connection = Mysql2::Client.new([...])
+    Upsert.batch(connection, 'pets') do |upsert|
       upsert.row({:name => 'Jerry'}, :breed => 'beagle')
       upsert.row({:name => 'Pierre'}, :breed => 'tabby')
     end
 
-### `ActiveRecord::Base.upsert` (optional)
-
-For bulk upserts, you probably still want to use `Upsert.batch`.
-
-    require 'upsert/active_record_upsert'
-    Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
-    Pet.upsert({:name => 'Pierre'}, :breed => 'tabby')
+Tested to be much about 85% faster on PostgreSQL and 50% faster on MySQL than comparable methods (see the tests).
 
 ### Gotchas
 
@@ -58,9 +53,10 @@ You would need to use a new `Upsert` object. On the other hand, this is totally 
 Pull requests for any of these would be greatly appreciated:
 
 1. Fix SQLite tests.
-2. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
-2. If you think there's a fix for the "fixed column set" gotcha...
-3. Naming suggestions: should "document" be called "setters" or "attributes"?
+2. For PG, be smarter about when you create functions - try to re-use them within a connection.
+3. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
+4. Make `Upsert` instances accept arbitrary columns, which is what people probably expect.
+5. Naming suggestions: should "document" be called "setters" or "attributes"?
 
 ## Real-world usage
 
