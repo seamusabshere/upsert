@@ -58,16 +58,7 @@ class Upsert
 
     # since setting an option like :as => :hash actually persists that option to the client, don't pass any options
     def max_sql_bytesize
-      @max_sql_bytesize ||= begin
-        case (row = connection.query("SHOW VARIABLES LIKE 'max_allowed_packet'").first)
-        when Array
-          row[1]
-        when Hash
-          row['Value']
-        else
-          raise "Don't know what to do if connection.query returns a #{row.class}"
-        end.to_i
-      end
+      @max_sql_bytesize ||= database_variable_get(:MAX_ALLOWED_PACKET).to_i
     end
 
     def quote_boolean(v)
@@ -97,6 +88,17 @@ class Upsert
 
     def quote_big_decimal(v)
       v.to_s('F')
+    end
+
+    def database_variable_get(k)
+      case (row = connection.query("SHOW VARIABLES LIKE '#{k}'").first)
+      when Array
+        row[1]
+      when Hash
+        row['Value']
+      else
+        raise "Don't know what to do if connection.query returns a #{row.class}"
+      end
     end
   end
 end
