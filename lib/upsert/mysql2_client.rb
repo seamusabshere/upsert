@@ -32,7 +32,7 @@ class Upsert
     end
 
     def insert_part
-      @insert_part ||= %{INSERT INTO "#{table_name}" (#{columns.join(',')}) VALUES }
+      @insert_part ||= %{INSERT INTO #{quote_ident(table_name)} (#{columns.join(',')}) VALUES }
     end
 
     def update_part

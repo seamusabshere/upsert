@@ -1,3 +1,9 @@
+0.3.3 / 2012-06-26
+
+* Bug fixes
+
+  * Properly quote table names - don't assume that everybody has ANSI_QUOTES turned on in MySQL :)
+
 0.3.2 / 2012-06-22
 
 * Enhancements
