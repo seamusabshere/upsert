@@ -94,7 +94,7 @@ class Upsert
   #   upsert = Upsert.new Pet.connection, Pet.table_name
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
-  def row(selector, document)
+  def row(selector, document = {})
     buffer.push Row.new(self, selector, document)
     if sql = chunk
       execute sql

@@ -36,12 +36,18 @@ shared_examples_for 'is a database with an upsert trick' do
       end
       Pet.where(:gender => 'male').count.must_equal 0
     end
-
     it "works for a single row with implicit nulls" do
       upsert = Upsert.new connection, :pets
       assert_creates(Pet, [{:name => 'Inky', :gender => nil}]) do
         upsert.row({:name => 'Inky'}, {})
         upsert.row({:name => 'Inky'}, {})
+      end
+    end
+    it "works for a single row with empty document" do
+      upsert = Upsert.new connection, :pets
+      assert_creates(Pet, [{:name => 'Inky', :gender => nil}]) do
+        upsert.row(:name => 'Inky')
+        upsert.row(:name => 'Inky')
       end
     end
     it "works for a single row with explicit nulls" do
