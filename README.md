@@ -54,9 +54,10 @@ Pull requests for any of these would be greatly appreciated:
 
 1. Fix SQLite tests.
 2. For PG, be smarter about when you create functions - try to re-use them within a connection.
-3. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
-4. Make `Upsert` instances accept arbitrary columns, which is what people probably expect.
-5. Naming suggestions: should "document" be called "setters" or "attributes"?
+3. Provide optional SQL logging.
+4. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
+5. Make `Upsert` instances accept arbitrary columns, which is what people probably expect.
+6. Naming suggestions: should "document" be called "setters" or "attributes"?
 
 ## Real-world usage
 

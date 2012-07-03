@@ -57,6 +57,13 @@ shared_examples_for 'is a database with an upsert trick' do
         upsert.row({:name => 'Inky'}, {:gender => nil})
       end
     end
+    it "works with ids" do
+      jerry = Pet.create :name => 'Jerry', :lovability => 1.0
+      upsert = Upsert.new connection, :pets
+      assert_creates(Pet, [{:name => 'Jerry', :lovability => 2.0}]) do
+        upsert.row({:id => jerry.id}, :lovability => 2.0)
+      end
+    end
   end
   describe :batch do
     it "works for multiple rows (base case)" do
