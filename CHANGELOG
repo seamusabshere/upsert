@@ -1,3 +1,13 @@
+unreleased
+
+* Bug fixes
+
+  * Don't raise TooBig - rely on Mysql2 to complain about oversized packets
+
+* Enhancements
+
+  * For MySQL, increase speed for one-off upserts by not checking packet size
+
 0.3.4 / 2012-07-03
 
 * Bug fixes

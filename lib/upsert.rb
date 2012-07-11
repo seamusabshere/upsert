@@ -20,8 +20,6 @@ class Upsert
     #
     # @note Buffered in memory until it's efficient to send to the server a packet.
     #
-    # @raise [Upsert::TooBig] If any row is too big to fit inside a single packet.
-    #
     # @return [nil]
     #
     # @example Many at once
@@ -38,10 +36,6 @@ class Upsert
 
     # @deprecated Use .batch instead.
     alias :stream :batch
-  end
-
-  # Raised if a query would be too large to send in a single packet.
-  class TooBig < RuntimeError
   end
 
   SINGLE_QUOTE = %{'}
@@ -85,8 +79,6 @@ class Upsert
   #
   # @param [Hash] selector Key-value pairs that will be used to find or create a row.
   # @param [Hash] document Key-value pairs that will be set on the row, whether it previously existed or not.
-  #
-  # @raise [Upsert::TooBig] If any row is too big to fit inside a single packet.
   #
   # @return [nil]
   #

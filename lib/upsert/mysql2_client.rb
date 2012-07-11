@@ -52,7 +52,6 @@ class Upsert
     def sql
       all_value_sql = buffer.map { |row| row.values_sql }
       retval = [ insert_part, '(', all_value_sql.join('),('), ')', update_part ].join
-      raise TooBig if retval.bytesize > max_sql_bytesize
       retval
     end
 
