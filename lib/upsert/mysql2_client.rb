@@ -24,6 +24,7 @@ class Upsert
     end
 
     def execute(sql)
+      $stderr.write(%{Upsert: #{sql}\n}) if ENV['UPSERT_DEBUG'] == 'true'
       connection.query sql
     end
 
@@ -90,7 +91,9 @@ class Upsert
     end
 
     def database_variable_get(k)
-      case (row = connection.query("SHOW VARIABLES LIKE '#{k}'").first)
+      sql = "SHOW VARIABLES LIKE '#{k}'"
+      $stderr.write(%{Upsert: #{sql.inspect}\n}) if ENV['UPSERT_DEBUG'] == 'true'
+      case (row = connection.query(sql).first)
       when Array
         row[1]
       when Hash

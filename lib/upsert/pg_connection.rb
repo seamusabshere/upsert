@@ -24,6 +24,7 @@ class Upsert
     end
 
     def execute(sql)
+      $stderr.write(%{Upsert: #{sql}\n}) if ENV['UPSERT_DEBUG'] == 'true'
       connection.exec sql
     end
 
