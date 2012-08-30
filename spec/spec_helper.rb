@@ -4,7 +4,7 @@ require 'active_record'
 require 'active_record_inline_schema'
 require 'activerecord-import'
 
-ENV['ADAPTER'] ||= 'mysql'
+ENV['ADAPTER'] ||= 'mysql2'
 
 case ENV['ADAPTER']
 when 'postgresql'

@@ -7,7 +7,7 @@ unreleased
 * Enhancements
 
   * For MySQL, increase speed for one-off upserts by not checking packet size
-  * Log to $stderr if ENV['UPSERT_DEBUG'] == 'true'
+  * Log to whatever Upsert.logger is (defaults to Rails.logger if available, otherwise Logger.new($stderr))
 
 0.3.4 / 2012-07-03
 

@@ -8,7 +8,7 @@ class Upsert
     end
 
     def execute(sql)
-      $stderr.write(%{Upsert: #{sql}\n}) if ENV['UPSERT_DEBUG'] == 'true'
+      Upsert.logger.debug %{Upsert: #{sql}}
       connection.execute_batch sql
     end
 

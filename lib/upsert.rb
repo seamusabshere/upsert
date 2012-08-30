@@ -1,4 +1,6 @@
 require 'bigdecimal'
+require 'thread'
+require 'logger'
 
 require 'upsert/version'
 require 'upsert/binary'
@@ -9,6 +11,26 @@ require 'upsert/sqlite3_database'
 
 class Upsert
   class << self
+    # What logger to use.
+    # @return [#info,#warn,#debug]
+    attr_writer :logger
+    
+    # The current logger
+    # @return [#info,#warn,#debug]
+    def logger
+      @logger || Thread.exclusive do
+        @logger ||= if defined?(::Rails) and rails_logger = Rails.logger
+          rails_logger
+        else
+          Logger.new $stderr
+        end
+        if ENV['UPSERT_DEBUG'] == 'true'
+          @logger.level = Logger::DEBUG
+        end
+        @logger
+      end
+    end
+
     # @param [String] v A string containing binary data that should be inserted/escaped as such.
     #
     # @return [Upsert::Binary]
