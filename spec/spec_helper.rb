@@ -1,22 +1,36 @@
-require 'rubygems'
 require 'bundler/setup'
-require 'securerandom'
-require 'zlib'
-require 'benchmark'
-require 'faker'
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/reporters'
-MiniTest::Unit.runner = MiniTest::SuiteRunner.new
-MiniTest::Unit.runner.reporters << MiniTest::Reporters::SpecReporter.new
 
 require 'active_record'
-require 'activerecord-import'
 require 'active_record_inline_schema'
+require 'activerecord-import'
 
-# require 'logger'
-# ActiveRecord::Base.logger = Logger.new($stdout)
-# ActiveRecord::Base.logger.level = Logger::DEBUG
+ENV['ADAPTER'] ||= 'mysql'
+
+case ENV['ADAPTER']
+when 'postgresql'
+  system %{ dropdb upsert_test }
+  system %{ createdb upsert_test }
+  ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => 'upsert_test'
+  $conn = PGconn.new(:dbname => 'upsert_test')
+when 'mysql2'
+  system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS upsert_test" }
+  system %{ mysql -u root -ppassword -e "CREATE DATABASE upsert_test CHARSET utf8" }
+  ActiveRecord::Base.establish_connection 'mysql2://root:password@127.0.0.1/upsert_test'
+  $conn = Mysql2::Client.new(:username => 'root', :password => 'password', :database => 'upsert_test')
+when 'sqlite3'
+  ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
+  $conn = ActiveRecord::Base.connection.raw_connection
+else
+  raise "not supported"
+end
+
+ActiveRecord::Import
+
+if ENV['UPSERT_DEBUG'] == 'true'
+  require 'logger'
+  ActiveRecord::Base.logger = Logger.new($stdout)
+  ActiveRecord::Base.logger.level = Logger::DEBUG
+end
 
 class Pet < ActiveRecord::Base
   col :name
@@ -31,16 +45,14 @@ class Pet < ActiveRecord::Base
   col :home_address, :type => :text
   add_index :name, :unique => true
 end
+Pet.auto_upgrade!
 
-# ENV['UPSERT_DEBUG'] = 'true'
+require 'securerandom'
+require 'zlib'
+require 'benchmark'
+require 'faker'
 
-require 'upsert'
-
-MiniTest::Spec.class_eval do
-  def self.shared_examples
-    @shared_examples ||= {}
-  end
-
+module SpecHelper
   def lotsa_records
     @records ||= begin
       memo = []
@@ -77,22 +89,22 @@ MiniTest::Spec.class_eval do
     
     Pet.delete_all
 
-    Upsert.batch(connection, :pets) do |upsert|
+    Upsert.batch($conn, :pets) do |upsert|
       records.each do |selector, document|
         upsert.row(selector, document)
       end
     end
     ref2 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
-    ref2.must_equal ref1
+    ref2.should == ref1
   end
 
   def assert_creates(model, expected_records)
     expected_records.each do |conditions|
-      model.where(conditions).count.must_equal 0
+      model.where(conditions).count.should == 0
     end
     yield
     expected_records.each do |conditions|
-      model.where(conditions).count.must_equal 1
+      model.where(conditions).count.should == 1
     end
   end
 
@@ -109,32 +121,22 @@ MiniTest::Spec.class_eval do
     sleep 1
 
     upsert_time = Benchmark.realtime do
-      Upsert.batch(connection, :pets) do |upsert|
+      Upsert.batch($conn, :pets) do |upsert|
         records.each do |selector, document|
           upsert.row(selector, document)
         end
       end
     end
-    upsert_time.must_be :<, ar_time
+    upsert_time.should be < ar_time
     $stderr.puts "   Upsert was #{((ar_time - upsert_time) / ar_time * 100).round}% faster than #{competition}"
   end
 end
 
-module MiniTest::Spec::SharedExamples
-  def shared_examples_for(desc, &block)
-    MiniTest::Spec.shared_examples[desc] = block
-  end
-
-  def it_also(desc)
-    self.instance_eval(&MiniTest::Spec.shared_examples[desc])# do
-    #   describe desc do
-    #     .call
-    #   end
-    # end
+RSpec.configure do |c|
+  c.include SpecHelper
+  c.before do
+    Pet.delete_all
   end
 end
 
-Object.class_eval { include(MiniTest::Spec::SharedExamples) }
-Dir[File.expand_path("../shared/*.rb", __FILE__)].each do |path|
-  require path
-end
+require 'upsert'

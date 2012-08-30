@@ -15,14 +15,18 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = Upsert::VERSION
 
+  gem.add_development_dependency 'posix-spawn'
+  gem.add_development_dependency 'rspec-core'
+  gem.add_development_dependency 'rspec-expectations'
+  gem.add_development_dependency 'rspec-mocks'
+
+  gem.add_development_dependency 'pry'
   gem.add_development_dependency 'sqlite3'
   gem.add_development_dependency 'mysql2'
   gem.add_development_dependency 'pg'
   gem.add_development_dependency 'activerecord' # testing only
   gem.add_development_dependency 'active_record_inline_schema'
   gem.add_development_dependency 'faker'
-  gem.add_development_dependency 'minitest'
-  gem.add_development_dependency 'minitest-reporters'
   gem.add_development_dependency 'yard'
   gem.add_development_dependency 'activerecord-import'
 end

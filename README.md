@@ -28,13 +28,13 @@ Rows are buffered in memory until it's efficient to send them to the database.
 
 Tested to be much about 85% faster on PostgreSQL and 50% faster on MySQL than comparable methods (see the tests).
 
-### Gotchas
+## Gotchas
 
-#### Undefined behavior if you use this without properly defining UNIQUE indexes
+### Undefined behavior without real UNIQUE indexes
 
 Make sure you're upserting against either primary key columns or columns with UNIQUE indexes or both.
 
-#### Columns are set based on the first row you pass
+### Columns are set based on the first row you pass
 
 Currently, the first row you pass in determines the columns that will be used. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
 
@@ -52,12 +52,11 @@ You would need to use a new `Upsert` object. On the other hand, this is totally 
 
 Pull requests for any of these would be greatly appreciated:
 
-1. Fix SQLite tests.
-2. For PG, be smarter about when you create functions - try to re-use them within a connection.
-3. Provide optional SQL logging.
-4. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
-5. Make `Upsert` instances accept arbitrary columns, which is what people probably expect.
-6. Naming suggestions: should "document" be called "setters" or "attributes"?
+1. For PG, be smarter about when you create functions - try to re-use them within a connection.
+1. Provide optional SQL logging.
+1. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
+1. Make `Upsert` instances accept arbitrary columns, which is what people probably expect.
+1. Naming suggestions: should "document" be called "setters" or "attributes"?
 
 ## Real-world usage
 

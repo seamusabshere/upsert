@@ -1,25 +1,20 @@
 #!/usr/bin/env rake
 require "bundler/gem_tasks"
 
-require 'rake'
-require 'rake/testtask'
-Rake::TestTask.new(:_test) do |test|
-  test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/test_*.rb'
-  test.verbose = true
-end
-
-task :test_each_db_adapter do
-  %w{ active_record_upsert mysql2 sqlite pg active_record_connection_adapter }.each do |database|
+task :rspec_all_databases do
+  require 'posix-spawn'
+  %w{ postgresql mysql2 sqlite3 }.each do |adapter|
     puts
-    puts "#{'*'*10} Running #{database} tests"
+    puts '#'*50
+    puts "# Running specs against #{adapter}"
+    puts '#'*50
     puts
-    puts `rake _test TEST=test/test_#{database}.rb`
+    pid = POSIX::Spawn.spawn({'ADAPTER' => adapter}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
+    Process.waitpid pid
   end
 end
 
-task :default => :test_each_db_adapter
-task :test => :test_each_db_adapter
+task :default => :rspec_all_databases
 
 require 'yard'
 YARD::Rake::YardocTask.new
