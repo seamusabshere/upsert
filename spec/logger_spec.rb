@@ -4,11 +4,14 @@ describe Upsert do
     it "logs to stderr by default" do
       begin
         old_stderr = $stderr
+        old_logger = Upsert.logger
+        Upsert.logger = nil
         $stderr = StringIO.new
         Upsert.logger.warn "hello"
         $stderr.rewind
         $stderr.read.chomp.should == 'hello'
       ensure
+        Upsert.logger = old_logger
         $stderr = old_stderr
       end
     end

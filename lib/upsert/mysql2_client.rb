@@ -24,7 +24,7 @@ class Upsert
     end
 
     def execute(sql)
-      Upsert.logger.debug %{Upsert: #{sql}}
+      Upsert.logger.debug { %{Upsert (#{Upsert.logger.level}): #{sql}} }
       connection.query sql
     end
 
@@ -92,7 +92,7 @@ class Upsert
 
     def database_variable_get(k)
       sql = "SHOW VARIABLES LIKE '#{k}'"
-      Upsert.logger.debug %{Upsert: #{sql.inspect}}
+      Upsert.logger.debug { %{Upsert: #{sql}} }
       case (row = connection.query(sql).first)
       when Array
         row[1]

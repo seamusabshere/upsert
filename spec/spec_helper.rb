@@ -24,8 +24,6 @@ else
   raise "not supported"
 end
 
-ActiveRecord::Import
-
 if ENV['UPSERT_DEBUG'] == 'true'
   require 'logger'
   ActiveRecord::Base.logger = Logger.new($stdout)

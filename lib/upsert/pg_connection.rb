@@ -24,7 +24,7 @@ class Upsert
     end
 
     def execute(sql)
-      Upsert.logger.debug %{Upsert: #{sql}}
+      Upsert.logger.debug { %{Upsert: #{sql}} }
       connection.exec sql
     end
 

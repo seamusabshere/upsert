@@ -19,10 +19,12 @@ class Upsert
     # @return [#info,#warn,#debug]
     def logger
       @logger || Thread.exclusive do
-        @logger ||= if defined?(::Rails) and rails_logger = Rails.logger
+        @logger ||= if defined?(::Rails) and (rails_logger = Rails.logger)
           rails_logger
         else
-          Logger.new $stderr
+          my_logger = Logger.new $stderr
+          my_logger.level = Logger::INFO
+          my_logger
         end
         if ENV['UPSERT_DEBUG'] == 'true'
           @logger.level = Logger::DEBUG

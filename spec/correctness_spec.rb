@@ -45,28 +45,29 @@ describe Upsert do
         end
       end
     end
-    describe 'compared to activerecord-import' do
-      it "is as correct as faking upserts with activerecord-import" do
-        unless Pet.supports_on_duplicate_key_update?
-          raise "#{Pet.connection} does not support activerecord-import's :on_duplicate_key_update"
-        end
-        assert_same_result lotsa_records do |records|
-          columns = nil
-          all_values = []
-          records.each do |selector, document|
-            columns ||= (selector.keys + document.keys).uniq
-            all_values << columns.map do |k|
-              if document.has_key?(k)
-                # prefer the document so that you can change rows
-                document[k]
-              else
-                selector[k]
+
+    if ENV['ADAPTER'] == 'mysql2'
+      describe 'compared to activerecord-import' do
+        it "is as correct as faking upserts with activerecord-import" do
+          assert_same_result lotsa_records do |records|
+            columns = nil
+            all_values = []
+            records.each do |selector, document|
+              columns ||= (selector.keys + document.keys).uniq
+              all_values << columns.map do |k|
+                if document.has_key?(k)
+                  # prefer the document so that you can change rows
+                  document[k]
+                else
+                  selector[k]
+                end
               end
             end
+            Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
           end
-          Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
         end
       end
     end
+    
   end
 end
