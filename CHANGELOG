@@ -6,8 +6,9 @@ unreleased
 
 * Enhancements
 
+  * Re-use PostgreSQL merge functions across connections, even outside of batch mode. Huzzah!
   * For MySQL, increase speed for one-off upserts by not checking packet size
-  * Log to whatever Upsert.logger is (defaults to Rails.logger if available, otherwise Logger.new($stderr))
+  * Allow configuring Upsert.logger. Defaults to Rails.logger or Logger.new($stderr). If you set env var UPSERT_DEBUG=true then it will set log level to debug.
 
 0.3.4 / 2012-07-03
 

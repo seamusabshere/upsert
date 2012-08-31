@@ -29,4 +29,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'faker'
   gem.add_development_dependency 'yard'
   gem.add_development_dependency 'activerecord-import'
+  gem.add_development_dependency 'pry'
 end

@@ -4,10 +4,9 @@ require 'logger'
 
 require 'upsert/version'
 require 'upsert/binary'
+require 'upsert/buffer'
+require 'upsert/connection'
 require 'upsert/row'
-require 'upsert/mysql2_client'
-require 'upsert/pg_connection'
-require 'upsert/sqlite3_database'
 
 class Upsert
   class << self
@@ -53,9 +52,9 @@ class Upsert
     #   end
     def batch(connection, table_name)
       upsert = new connection, table_name
-      upsert.async!
+      upsert.buffer.async!
       yield upsert
-      upsert.sync!
+      upsert.buffer.sync!
     end
 
     # @deprecated Use .batch instead.
@@ -72,10 +71,10 @@ class Upsert
   ISO8601_DATE = '%F'
   NULL_WORD = 'NULL'
 
-  # @return [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection]
+  # @return [Upsert::Connection]
   attr_reader :connection
 
-  # @return [String,Symbol]
+  # @return [String]
   attr_reader :table_name
 
   # @private
@@ -84,17 +83,11 @@ class Upsert
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
   def initialize(connection, table_name)
-    @table_name = table_name
-    @buffer = []
-
-    @connection = if connection.respond_to?(:raw_connection)
-      # deal with ActiveRecord::Base.connection or ActiveRecord::Base.connection_pool.checkout
-       connection.raw_connection
-    else
-      connection
-    end
-
-    extend Upsert.const_get(@connection.class.name.gsub(/\W+/, '_'))
+    @table_name = table_name.to_s
+    raw_connection = connection.respond_to?(:raw_connection) ? connection.raw_connection : connection
+    n = raw_connection.class.name.gsub(/\W+/, '_')
+    @connection = Connection.const_get(n).new self, raw_connection
+    @buffer = Buffer.const_get(n).new self
   end
 
   # Upsert a row given a selector and a document.
@@ -111,54 +104,12 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, document = {})
-    buffer.push Row.new(self, selector, document)
-    if sql = chunk
-      execute sql
-    end
+    buffer << Row.new(self, selector, document)
     nil
   end
 
   # @private
-  def async?
-    !!@async
-  end
-
-  # @private
-  def async!
-    @async = true
-  end
-
-  # @private
-  def sync!
-    @async = false
-    while sql = chunk
-      execute sql
-    end
-  end
-
-  # @private
-  def quote_value(v)
-    case v
-    when NilClass
-      NULL_WORD
-    when Upsert::Binary
-      quote_binary v # must be defined by base
-    when String
-      quote_string v # must be defined by base
-    when TrueClass, FalseClass
-      quote_boolean v
-    when BigDecimal
-      quote_big_decimal v
-    when Numeric
-      v
-    when Symbol
-      quote_string v.to_s
-    when Time, DateTime
-      quote_time v # must be defined by base
-    when Date
-      quote_string v.strftime(ISO8601_DATE)
-    else
-      raise "not sure how to quote #{v.class}: #{v.inspect}"
-    end
+  def quoted_table_name
+    @quoted_table_name ||= connection.quote_ident table_name
   end
 end

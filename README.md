@@ -52,10 +52,8 @@ You would need to use a new `Upsert` object. On the other hand, this is totally 
 
 Pull requests for any of these would be greatly appreciated:
 
-1. For PG, be smarter about when you create functions - try to re-use them within a connection.
-1. Provide optional SQL logging.
 1. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
-1. Make `Upsert` instances accept arbitrary columns, which is what people probably expect.
+1. Make `Upsert` instances accept arbitrary columns, which is what people probably expect. (this should work on PG already)
 1. Naming suggestions: should "document" be called "setters" or "attributes"?
 
 ## Real-world usage
