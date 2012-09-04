@@ -3,7 +3,7 @@ class Upsert
     # @private
     class Mysql2_Client < Connection
       def execute(sql)
-        Upsert.logger.debug { %{[upsert] (#{Upsert.logger.level}): #{sql}} }
+        Upsert.logger.debug { %{[upsert] #{sql}} }
         raw_connection.query sql
       end
 

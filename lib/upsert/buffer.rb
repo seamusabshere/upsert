@@ -3,6 +3,7 @@ require 'upsert/buffer/pg_connection'
 require 'upsert/buffer/sqlite3_database'
 
 class Upsert
+  # @private
   class Buffer
     attr_reader :parent
     attr_reader :rows
@@ -17,17 +18,14 @@ class Upsert
       ready
     end
 
-    # @private
     def async?
       !!@async
     end
 
-    # @private
     def async!
       @async = true
     end
 
-    # @private
     def sync!
       @async = false
       until rows.empty?

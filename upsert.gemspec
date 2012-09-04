@@ -20,7 +20,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rspec-expectations'
   gem.add_development_dependency 'rspec-mocks'
 
-  gem.add_development_dependency 'pry'
   gem.add_development_dependency 'sqlite3'
   gem.add_development_dependency 'mysql2'
   gem.add_development_dependency 'pg'

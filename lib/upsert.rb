@@ -18,8 +18,10 @@ class Upsert
     # @return [#info,#warn,#debug]
     def logger
       @logger || Thread.exclusive do
-        @logger ||= if defined?(::Rails) and (rails_logger = Rails.logger)
+        @logger ||= if defined?(::Rails) and (rails_logger = ::Rails.logger)
           rails_logger
+        elsif defined?(::ActiveRecord) and ::ActiveRecord.const_defined?(:Base) and (ar_logger = ::ActiveRecord::Base.logger)
+          ar_logger
         else
           my_logger = Logger.new $stderr
           my_logger.level = Logger::INFO

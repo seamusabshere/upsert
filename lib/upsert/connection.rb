@@ -3,6 +3,7 @@ require 'upsert/connection/pg_connection'
 require 'upsert/connection/sqlite3_database'
 
 class Upsert
+  # @private
   class Connection
     attr_reader :parent
     attr_reader :raw_connection
@@ -12,7 +13,6 @@ class Upsert
       @raw_connection = raw_connection
     end
     
-    # @private
     def quote_value(v)
       case v
       when NilClass
