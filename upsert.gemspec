@@ -4,8 +4,8 @@ require File.expand_path('../lib/upsert/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Seamus Abshere"]
   gem.email         = ["seamus@abshere.net"]
-  gem.description   = %q{Upsert for MySQL, PostgreSQL, and SQLite. Codifies various SQL MERGE tricks like MySQL's ON DUPLICATE KEY UPDATE, PostgreSQL's CREATE FUNCTION merge_db, and SQLite's INSERT OR IGNORE.}
-  gem.summary       = %q{Upsert for MySQL, PostgreSQL, and SQLite. Finally, all those SQL MERGE tricks codified.}
+  gem.description   = %q{Upsert for MySQL, PostgreSQL, and SQLite3. Codifies various SQL MERGE tricks like MySQL's ON DUPLICATE KEY UPDATE, PostgreSQL's CREATE FUNCTION merge_db, and SQLite's INSERT OR IGNORE.}
+  gem.summary       = %q{Upsert for MySQL, PostgreSQL, and SQLite3. Finally, all those SQL MERGE tricks codified.}
   gem.homepage      = "https://github.com/seamusabshere/upsert"
 
   gem.files         = `git ls-files`.split($\)
@@ -28,4 +28,9 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'faker'
   gem.add_development_dependency 'yard'
   gem.add_development_dependency 'activerecord-import'
+  gem.add_development_dependency 'pry'
+
+  unless RUBY_VERSION >= '1.9'
+    gem.add_development_dependency 'orderedhash'
+  end
 end

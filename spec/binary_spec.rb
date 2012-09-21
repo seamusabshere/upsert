@@ -13,7 +13,9 @@ describe Upsert do
         upsert = Upsert.new $conn, :pets
         assert_creates(Pet, [{:name => name, :zipped_biography => zipped_biography}]) do
           upsert.row({:name => name}, {:zipped_biography => Upsert.binary(zipped_biography)})
+          # binding.pry
         end
+
         Zlib::Inflate.inflate(Pet.find_by_name(name).zipped_biography).should == biography
       end
     end

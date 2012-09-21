@@ -7,6 +7,7 @@ require 'upsert/binary'
 require 'upsert/buffer'
 require 'upsert/connection'
 require 'upsert/row'
+require 'upsert/cell'
 
 class Upsert
   class << self
@@ -66,12 +67,17 @@ class Upsert
   SINGLE_QUOTE = %{'}
   DOUBLE_QUOTE = %{"}
   BACKTICK = %{`}
-  E_AND_SINGLE_QUOTE = %{E'}
   X_AND_SINGLE_QUOTE = %{x'}
   USEC_SPRINTF = '%06d'
   ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S'
   ISO8601_DATE = '%F'
   NULL_WORD = 'NULL'
+  HANDLER = {
+    'SQLite3::Database' => 'SQLite3_Database',
+    'PGConn'            => 'PG_Connection',
+    'PG::Connection'    => 'PG_Connection',
+    'Mysql2::Client'    => 'Mysql2_Client',
+  }
 
   # @return [Upsert::Connection]
   attr_reader :connection
@@ -82,22 +88,30 @@ class Upsert
   # @private
   attr_reader :buffer
 
+  # @private
+  attr_reader :row_class
+
+  # @private
+  attr_reader :cell_class
+
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
   def initialize(connection, table_name)
     @table_name = table_name.to_s
     raw_connection = connection.respond_to?(:raw_connection) ? connection.raw_connection : connection
-    n = raw_connection.class.name.gsub(/\W+/, '_')
-    @connection = Connection.const_get(n).new self, raw_connection
-    @buffer = Buffer.const_get(n).new self
+    connection_class_name = HANDLER[raw_connection.class.name]
+    @connection = Connection.const_get(connection_class_name).new self, raw_connection
+    @buffer = Buffer.const_get(connection_class_name).new self
+    @row_class = Row.const_get connection_class_name
+    @cell_class = Cell.const_get connection_class_name
   end
 
-  # Upsert a row given a selector and a document.
+  # Upsert a row given a selector and a setter.
   #
   # @see http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method Loosely based on the upsert functionality of the mongo-ruby-driver #update method
   #
   # @param [Hash] selector Key-value pairs that will be used to find or create a row.
-  # @param [Hash] document Key-value pairs that will be set on the row, whether it previously existed or not.
+  # @param [Hash] setter Key-value pairs that will be set on the row, whether it previously existed or not.
   #
   # @return [nil]
   #
@@ -105,8 +119,8 @@ class Upsert
   #   upsert = Upsert.new Pet.connection, Pet.table_name
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
-  def row(selector, document = {})
-    buffer << Row.new(self, selector, document)
+  def row(selector, setter = {})
+    buffer << row_class.new(self, selector, setter)
     nil
   end
 

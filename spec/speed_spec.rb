@@ -4,15 +4,15 @@ describe Upsert do
     describe 'compared to native ActiveRecord' do
       it "is faster than new/set/save" do
         assert_faster_than 'find + new/set/save', lotsa_records do |records|
-          records.each do |selector, document|
+          records.each do |selector, setter|
             if pet = Pet.where(selector).first
-              pet.update_attributes document, :without_protection => true
+              pet.update_attributes setter, :without_protection => true
             else
               pet = Pet.new
               selector.each do |k, v|
                 pet.send "#{k}=", v
               end
-              document.each do |k, v|
+              setter.each do |k, v|
                 pet.send "#{k}=", v
               end
               pet.save!
@@ -23,23 +23,23 @@ describe Upsert do
       it "is faster than find_or_create + update_attributes" do
         assert_faster_than 'find_or_create + update_attributes', lotsa_records do |records|
           dynamic_method = nil
-          records.each do |selector, document|
+          records.each do |selector, setter|
             dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"
             pet = Pet.send(dynamic_method, *selector.values)
-            pet.update_attributes document, :without_protection => true
+            pet.update_attributes setter, :without_protection => true
           end
         end
       end
       it "is faster than create + rescue/find/update" do
         assert_faster_than 'create + rescue/find/update', lotsa_records do |records|
           dynamic_method = nil
-          records.each do |selector, document|
+          records.each do |selector, setter|
             dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"
             begin
-              Pet.create selector.merge(document), :without_protection => true
+              Pet.create selector.merge(setter), :without_protection => true
             rescue
               pet = Pet.send(dynamic_method, *selector.values)
-              pet.update_attributes document, :without_protection => true
+              pet.update_attributes setter, :without_protection => true
             end
           end
         end
@@ -52,12 +52,12 @@ describe Upsert do
           assert_faster_than 'faking upserts with activerecord-import', lotsa_records do |records|
             columns = nil
             all_values = []
-            records.each do |selector, document|
-              columns ||= (selector.keys + document.keys).uniq
+            records.each do |selector, setter|
+              columns ||= (selector.keys + setter.keys).uniq
               all_values << columns.map do |k|
-                if document.has_key?(k)
-                  # prefer the document so that you can change rows
-                  document[k]
+                if setter.has_key?(k)
+                  # prefer the setter so that you can change rows
+                  setter[k]
                 else
                   selector[k]
                 end

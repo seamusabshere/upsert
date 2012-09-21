@@ -15,7 +15,7 @@ describe Upsert do
           upsert.row({:name => 'Jerry', :gender => 'male'}, {:tag_number => 4})
         end
       end
-      it "doesn't nullify columns that are not included in the selector or document" do
+      it "doesn't nullify columns that are not included in the selector or setter" do
         assert_creates(Pet, [{:name => 'Jerry', :gender => 'male', :tag_number => 4}]) do
           one = Upsert.new $conn, :pets
           one.row({:name => 'Jerry'}, {:gender => 'male'})
@@ -45,7 +45,7 @@ describe Upsert do
           upsert.row({:name => 'Inky'}, {})
         end
       end
-      it "works for a single row with empty document" do
+      it "works for a single row with empty setter" do
         upsert = Upsert.new $conn, :pets
         assert_creates(Pet, [{:name => 'Inky', :gender => nil}]) do
           upsert.row(:name => 'Inky')

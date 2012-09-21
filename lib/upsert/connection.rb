@@ -18,7 +18,7 @@ class Upsert
       when NilClass
         NULL_WORD
       when Upsert::Binary
-        quote_binary v # must be defined by base
+        quote_binary v.value # must be defined by base
       when String
         quote_string v # must be defined by base
       when TrueClass, FalseClass

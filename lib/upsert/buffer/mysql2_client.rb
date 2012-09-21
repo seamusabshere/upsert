@@ -24,24 +24,32 @@ class Upsert
         nil
       end
 
-      def columns
-        @columns ||= rows.first.columns
+      def setter
+        @setter ||= rows.first.setter.keys
+      end
+
+      def original_setter
+        @original_setter ||= rows.first.original_setter_keys
       end
 
       def insert_part
         @insert_part ||= begin
           connection = parent.connection
-          columns_sql = columns.map { |k| connection.quote_ident(k) }.join(',')
-          %{INSERT INTO #{parent.quoted_table_name} (#{columns_sql}) VALUES }
+          %{INSERT INTO #{parent.quoted_table_name} (#{setter.map { |k| connection.quote_ident(k) }.join(',')}) VALUES }
         end
       end
 
       def update_part
         @update_part ||= begin
           connection = parent.connection
-          updaters = columns.map do |k|
+          updaters = setter.map do |k|
             qk = connection.quote_ident(k)
-            [ qk, "VALUES(#{qk})" ].join('=')
+            if original_setter.include?(k)
+              "#{qk}=VALUES(#{qk})"
+            else
+              # NOOP
+              "#{qk}=#{qk}"
+            end
           end.join(',')
           %{ ON DUPLICATE KEY UPDATE #{updaters}}
         end
@@ -53,9 +61,13 @@ class Upsert
       end
 
       def sql
-        all_value_sql = rows.map { |row| row.values_sql }
-        retval = [ insert_part, '(', all_value_sql.join('),('), ')', update_part ].join
-        retval
+        [
+          insert_part,
+          '(',
+          rows.map { |row| row.quoted_setter_values.join(',') }.join('),('),
+          ')',
+          update_part
+        ].join
       end
 
       # since setting an option like :as => :hash actually persists that option to the client, don't pass any options

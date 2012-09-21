@@ -11,6 +11,7 @@ task :rspec_all_databases do
     puts
     pid = POSIX::Spawn.spawn({'ADAPTER' => adapter}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
     Process.waitpid pid
+    raise unless $?.success?
   end
 end
 

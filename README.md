@@ -36,6 +36,8 @@ Make sure you're upserting against either primary key columns or columns with UN
 
 ### Columns are set based on the first row you pass
 
+What if you pass the same columns in a different order?
+
 Currently, the first row you pass in determines the columns that will be used. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
 
     Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
@@ -54,7 +56,6 @@ Pull requests for any of these would be greatly appreciated:
 
 1. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
 1. Make `Upsert` instances accept arbitrary columns, which is what people probably expect. (this should work on PG already)
-1. Naming suggestions: should "document" be called "setters" or "attributes"?
 
 ## Real-world usage
 

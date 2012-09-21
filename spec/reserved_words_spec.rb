@@ -35,9 +35,9 @@ describe Upsert do
           upsert = Upsert.new $conn, nasty.table_name
           random = rand(1e3).to_s
           selector = { :fake_primary_key => random, words.first => words.first }
-          document = words[1..-1].inject({}) { |memo, word| memo[word] = word; memo }
-          assert_creates nasty, [selector.merge(document)] do
-            upsert.row selector, document
+          setter = words[1..-1].inject({}) { |memo, word| memo[word] = word; memo }
+          assert_creates nasty, [selector.merge(setter)] do
+            upsert.row selector, setter
           end
         end
       end

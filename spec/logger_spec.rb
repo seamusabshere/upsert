@@ -27,7 +27,7 @@ describe Upsert do
         u = Upsert.new(db, :cats)
         u.row :name => 'you'
         io.rewind
-        io.read.chomp.should =~ /INSERT OR IGNORE.*you/i
+        io.read.chomp.should =~ /INSERT OR IGNORE.*you/mi
       ensure
         Upsert.logger = old_logger
       end

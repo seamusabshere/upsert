@@ -1,4 +1,7 @@
+# -*- encoding: utf-8 -*-
 require 'bundler/setup'
+
+require 'pry'
 
 require 'active_record'
 require 'active_record_inline_schema'
@@ -15,7 +18,7 @@ when 'postgresql'
 when 'mysql2'
   system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS upsert_test" }
   system %{ mysql -u root -ppassword -e "CREATE DATABASE upsert_test CHARSET utf8" }
-  ActiveRecord::Base.establish_connection 'mysql2://root:password@127.0.0.1/upsert_test'
+  ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://root:password@127.0.0.1/upsert_test"
   $conn = Mysql2::Client.new(:username => 'root', :password => 'password', :database => 'upsert_test')
 when 'sqlite3'
   ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
@@ -45,7 +48,6 @@ class Pet < ActiveRecord::Base
 end
 Pet.auto_upgrade!
 
-require 'securerandom'
 require 'zlib'
 require 'benchmark'
 require 'faker'
@@ -65,17 +67,18 @@ module SpecHelper
         else
           names.choice
         end
-        document = {
+        setter = {
           :lovability => BigDecimal.new(rand(1e11).to_s, 2),
           :tag_number => rand(1e8),
-          :spiel => SecureRandom.hex(rand(127)),
+          :spiel => Faker::Lorem.sentences.join,
           :good => true,
           :birthday => Time.at(rand * Time.now.to_i).to_date,
           :morning_walk_time => Time.at(rand * Time.now.to_i),
-          :home_address => SecureRandom.hex(rand(1000)),
-          :zipped_biography => Upsert.binary(Zlib::Deflate.deflate(SecureRandom.hex(rand(1000)), Zlib::BEST_SPEED))
+          :home_address => Faker::Lorem.sentences.join,
+          # hard to know how to have AR insert this properly unless Upsert::Binary subclasses String
+          # :zipped_biography => Upsert.binary(Zlib::Deflate.deflate(Faker::Lorem.paragraphs.join, Zlib::BEST_SPEED))
         }
-        memo << [selector, document]
+        memo << [selector, setter]
       end
       memo
     end
@@ -88,12 +91,15 @@ module SpecHelper
     Pet.delete_all
 
     Upsert.batch($conn, :pets) do |upsert|
-      records.each do |selector, document|
-        upsert.row(selector, document)
+      records.each do |selector, setter|
+        upsert.row(selector, setter)
       end
     end
     ref2 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
-    ref2.should == ref1
+    ref2.each_with_index do |ref2a, i|
+      ref2a.to_yaml.should == ref1[i].to_yaml
+    end
+    # ref2.should == ref1
   end
 
   def assert_creates(model, expected_records)
@@ -120,8 +126,8 @@ module SpecHelper
 
     upsert_time = Benchmark.realtime do
       Upsert.batch($conn, :pets) do |upsert|
-        records.each do |selector, document|
-          upsert.row(selector, document)
+        records.each do |selector, setter|
+          upsert.row(selector, setter)
         end
       end
     end
