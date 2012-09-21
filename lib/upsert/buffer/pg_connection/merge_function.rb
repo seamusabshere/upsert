@@ -1,9 +1,9 @@
 require 'digest/md5'
 
 class Upsert
-  # @private
   class Buffer
     class PG_Connection < Buffer
+      # @private
       class MergeFunction
         class << self
           def execute(buffer, row)
@@ -12,7 +12,6 @@ class Upsert
           end
 
           def unique_name(table_name, selector, setter)
-            # $stderr.puts "AAA #{table_name}/#{selector}/#{setter}"
             parts = [
               'upsert',
               table_name,
@@ -21,15 +20,53 @@ class Upsert
               'SET',
               setter.join('_A_')
             ].join('_')
+            # maybe i should md5 instead
             crc32 = Zlib.crc32(parts).to_s
             [ parts.first(MAX_NAME_LENGTH-11), crc32 ].join
           end
 
           def lookup(buffer, row)
             @lookup ||= {}
-            s = row.selector.keys
-            c = row.setter.keys
-            @lookup[unique_name(buffer.parent.table_name, s, c)] ||= new(buffer, s, c)
+            selector = row.selector.keys
+            setter = row.setter.keys
+            key = [buffer.parent.table_name, selector, setter]
+            @lookup[key] ||= new(buffer, selector, setter)
+          end
+
+          def clear(buffer)
+            connection = buffer.parent.connection
+            # http://stackoverflow.com/questions/7622908/postgresql-drop-function-without-knowing-the-number-type-of-parameters
+            connection.execute <<-EOS
+CREATE OR REPLACE FUNCTION pg_temp.upsert_delfunc(text)
+  RETURNS void AS
+$BODY$
+DECLARE
+   _sql text;
+BEGIN
+
+FOR _sql IN
+   SELECT 'DROP FUNCTION ' || quote_ident(n.nspname)
+                    || '.' || quote_ident(p.proname)
+           || '(' || pg_catalog.pg_get_function_identity_arguments(p.oid) || ');'
+   FROM   pg_catalog.pg_proc p
+   LEFT   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+   WHERE  p.proname = $1
+   AND    pg_catalog.pg_function_is_visible(p.oid) -- you may or may not want this
+LOOP
+   EXECUTE _sql;
+END LOOP;
+
+END;
+$BODY$
+  LANGUAGE plpgsql;
+EOS
+            res = connection.execute(%{SELECT proname FROM pg_proc WHERE proname LIKE 'upsert_%'})
+            res.each do |row|
+              k = row['proname']
+              next if k == 'upsert_delfunc'
+              Upsert.logger.info %{[upsert] Dropping function #{k.inspect}}
+              connection.execute %{SELECT pg_temp.upsert_delfunc('#{k}')}
+            end
           end
         end
 
@@ -47,7 +84,7 @@ class Upsert
         end
 
         def name
-          @name ||= MergeFunction.unique_name buffer.parent.table_name, selector, setter
+          @name ||= MergeFunction.unique_name table_name, selector, setter
         end
 
         def execute(row)
@@ -87,63 +124,19 @@ class Upsert
           buffer.parent.connection
         end
 
+        def table_name
+          buffer.parent.table_name
+        end
+
         def quoted_table_name
           buffer.parent.quoted_table_name
-        end
-
-        # [upsert] SELECT upsert_pets_SEL_name_SET_birthday_A_good_A_home_addr2097355686($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-
-        class ColumnDefinition
-          attr_reader :name, :sql_type, :default, :quoted_name, :quoted_selector_name, :quoted_setter_name
-          def initialize(connection, name, sql_type, default)
-            @name = name
-            @sql_type = sql_type
-            @default = default
-            @quoted_name = connection.quote_ident name
-            @quoted_selector_name = connection.quote_ident "#{name}_selector"
-            @quoted_setter_name = connection.quote_ident "#{name}_setter"
-          end
-
-          def to_selector_arg
-            [ quoted_selector_name, sql_type ].join ' '
-            # [ quoted_selector_name, sql_type, 'DEFAULT', (default || 'NULL') ].join ' '
-          end
-
-          def to_setter_arg
-            [ quoted_setter_name, sql_type ].join ' '
-            # [ quoted_setter_name, sql_type, 'DEFAULT', (default || 'NULL') ].join ' '
-          end
-
-          def to_setter
-            "#{quoted_name} = #{quoted_setter_name}"
-          end
-
-          def to_selector
-            "#{quoted_name} = #{quoted_selector_name}"
-          end
-        end
-
-        # activerecord-3.2.5/lib/active_record/connection_adapters/postgresql_adapter.rb#column_definitions
-        def get_column_definitions
-          res = connection.execute <<-EOS
-SELECT a.attname AS name, format_type(a.atttypid, a.atttypmod) AS sql_type, d.adsrc AS default
-FROM pg_attribute a LEFT JOIN pg_attrdef d
-  ON a.attrelid = d.adrelid AND a.attnum = d.adnum
-WHERE a.attrelid = '#{quoted_table_name}'::regclass
-  AND a.attnum > 0 AND NOT a.attisdropped
-EOS
-          res.map do |row|
-            ColumnDefinition.new connection, row['name'], row['sql_type'], row['default']
-          end.sort_by do |cd|
-            cd.name
-          end
         end
 
         # the "canonical example" from http://www.postgresql.org/docs/9.1/static/plpgsql-control-structures.html#PLPGSQL-UPSERT-EXAMPLE
         # differentiate between selector and setter
         def create!
-          Upsert.logger.info "[upsert] Creating or replacing database function #{name.inspect} on table #{buffer.parent.table_name.inspect} for selector #{selector.map(&:inspect).join(', ')} and setter #{setter.map(&:inspect).join(', ')}"
-          column_definitions = get_column_definitions
+          Upsert.logger.info "[upsert] Creating or replacing database function #{name.inspect} on table #{table_name.inspect} for selector #{selector.map(&:inspect).join(', ')} and setter #{setter.map(&:inspect).join(', ')}"
+          column_definitions = ColumnDefinition.all buffer, table_name
           selector_column_definitions = column_definitions.select { |cd| selector.include?(cd.name) }
           setter_column_definitions = column_definitions.select { |cd| setter.include?(cd.name) }
           connection.execute <<-EOS
@@ -166,8 +159,9 @@ BEGIN
           INSERT INTO #{quoted_table_name}(#{setter_column_definitions.map(&:quoted_name).join(', ')}) VALUES (#{setter_column_definitions.map(&:quoted_setter_name).join(', ')});
           RETURN;
       EXCEPTION WHEN unique_violation THEN
-          IF (first_try) THEN
-            first_try = 0;
+          -- seamusabshere 9/20/12 only retry once
+          IF (first_try = 1) THEN
+            first_try := 0;
           ELSE
             RETURN;
           END IF;
@@ -179,7 +173,6 @@ $$
 LANGUAGE plpgsql;
 EOS
         end
-
       end
     end
   end

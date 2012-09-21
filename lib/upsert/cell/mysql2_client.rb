@@ -2,7 +2,10 @@ class Upsert
   class Cell
     # @private
     class Mysql2_Client < Cell
-      attr_reader :name, :value, :quoted_value
+      attr_reader :name
+      attr_reader :value
+      attr_reader :quoted_value
+
       def initialize(connection, name, value)
         @name = name
         @value = value

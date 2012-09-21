@@ -1,3 +1,25 @@
+0.5.0 / 2012-09-21
+
+* Breaking changes (well, not really)
+
+  * "document" (as in the second argument to #row) has been renamed to "setter"!
+
+* Bug fixes
+
+  * If you say upsert({:name => 'Jerry', :color => 'red'}), make sure that it only affects rows really meeting those conditions
+  * Always sort selector and setter keys - i.e., column names - before doing anything with them
+  * Support PostgreSQL 9.1+
+  * Support MRI 1.8
+
+* Enhancements
+
+  * Slightly faster benchmarks for SQlite3 and MySQL
+  * Slightly slower on PostgreSQL (probably because the merge function requires more arguments), but more accurate
+  * Slightly clearer code structure
+  * Use bind parameters instead of quoting for PostgreSQL and SQLite3.
+  * Provide Upsert.clear_database_functions(connection) (currently only for PostgreSQL)
+  * Don't subclass String for Upset::Binary... hopefully save some strcpy()s?
+
 0.4.0 / 2012-09-04
 
 * Bug fixes

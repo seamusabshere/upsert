@@ -2,12 +2,16 @@ class Upsert
   class Cell
     # @private
     class SQLite3_Database < Cell
-      attr_reader :name, :value, :quoted_name
+      attr_reader :name
+      attr_reader :value
+      attr_reader :quoted_name
+
       def initialize(connection, name, value)
         @name = name
         @value = value
         @quoted_name = connection.quote_ident name
       end
+
       def bind_value
         return @bind_value if defined?(@bind_value)
         @bind_value = case value

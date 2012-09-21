@@ -10,13 +10,13 @@ describe Upsert do
           Upsert.logger = Logger.new io, Logger::INFO
 
           # clear
-          Upsert.new(PGconn.new(:dbname => 'upsert_test'), :pets).buffer.clear_database_functions
+          Upsert.clear_database_functions(PGconn.new(:dbname => 'upsert_test'))
           
           # create
           Upsert.new(PGconn.new(:dbname => 'upsert_test'), :pets).row :name => 'hello'
 
           # clear
-          Upsert.new(PGconn.new(:dbname => 'upsert_test'), :pets).buffer.clear_database_functions
+          Upsert.clear_database_functions(PGconn.new(:dbname => 'upsert_test'))
 
           # create (#2)
           Upsert.new(PGconn.new(:dbname => 'upsert_test'), :pets).row :name => 'hello'

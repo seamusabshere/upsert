@@ -35,6 +35,16 @@ class Upsert
       end
     end
 
+    # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
+    #
+    # Clear any database functions that may have been created.
+    #
+    # Currently only applies to PostgreSQL.
+    def clear_database_functions(connection)
+      dummy = new(connection, :dummy)
+      dummy.buffer.clear_database_functions
+    end
+
     # @param [String] v A string containing binary data that should be inserted/escaped as such.
     #
     # @return [Upsert::Binary]
@@ -42,9 +52,14 @@ class Upsert
       Binary.new v
     end
 
-    # @yield [Upsert] An +Upsert+ object in batch mode. You can call #row on it multiple times and it will try to optimize on speed.
+    # Guarantee that the most efficient way of buffering rows is used.
     #
-    # @note Buffered in memory until it's efficient to send to the server a packet.
+    # Currently mostly helps for MySQL, but you should use it whenever possible in case future buffering-based optimizations become possible.
+    #
+    # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
+    # @param [String,Symbol] table_name The name of the table into which you will be upserting.
+    #
+    # @yield [Upsert] An +Upsert+ object in batch mode. You can call #row on it multiple times and it will try to optimize on speed.
     #
     # @return [nil]
     #
@@ -107,6 +122,8 @@ class Upsert
   end
 
   # Upsert a row given a selector and a setter.
+  #
+  # The selector values are used as setters if it's a new row. So if your selector is `name=Jerry` and your setter is `age=4`, and there is no Jerry yet, then a new row will be created with name Jerry and age 4.
   #
   # @see http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method Loosely based on the upsert functionality of the mongo-ruby-driver #update method
   #

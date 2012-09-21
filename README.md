@@ -26,7 +26,7 @@ Rows are buffered in memory until it's efficient to send them to the database.
       upsert.row({:name => 'Pierre'}, :breed => 'tabby')
     end
 
-Tested to be much about 85% faster on PostgreSQL and 50% faster on MySQL than comparable methods (see the tests).
+Tested to be much about 60% faster on PostgreSQL and 60&ndash;90% faster on MySQL and SQLite3 than comparable methods (see the tests, which fail if they are not faster).
 
 ## Gotchas
 
@@ -34,11 +34,9 @@ Tested to be much about 85% faster on PostgreSQL and 50% faster on MySQL than co
 
 Make sure you're upserting against either primary key columns or columns with UNIQUE indexes or both.
 
-### Columns are set based on the first row you pass
+### For MySQL, columns are set based on the first row you pass
 
-What if you pass the same columns in a different order?
-
-Currently, the first row you pass in determines the columns that will be used. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
+Currently, on MySQL, the first row you pass in determines the columns that will be used for all future upserts using the same Upsert object. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
 
     Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
       upsert.row({:name => 'Jerry'}, :breed => 'beagle')
@@ -54,8 +52,11 @@ You would need to use a new `Upsert` object. On the other hand, this is totally 
 
 Pull requests for any of these would be greatly appreciated:
 
+1. More correctness tests! What is the dictionary definition of "upsert," anyway?
+1. Sanity check my three benchmarks (four if you include activerecord-import on MySQL). Do they accurately represent optimized alternatives?
 1. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
-1. Make `Upsert` instances accept arbitrary columns, which is what people probably expect. (this should work on PG already)
+1. Make `Upsert` instances accept arbitrary columns, which is what people probably expect. (this should work on PostgreSQL and SQLite3 already)
+1. JRuby support
 
 ## Real-world usage
 
@@ -74,16 +75,16 @@ Originally written to speed up the [`data_miner`](https://github.com/seamusabshe
 
 Using the [mysql2](https://rubygems.org/gems/mysql2) driver.
 
-    Upsert.new Mysql2::Connection.new([...]), :pets
+    upsert = Upsert.new(Mysql2::Connection.new(:username => 'root', :password => 'password', :database => 'upsert_test'), :pets)
 
 #### Speed
 
-From the tests:
+From the tests (updated 9/21/12):
 
-    Upsert was 77% faster than find + new/set/save
-    Upsert was 58% faster than create + rescue/find/update
-    Upsert was 80% faster than find_or_create + update_attributes
-    Upsert was 39% faster than faking upserts with activerecord-import
+    Upsert was 88% faster than find + new/set/save
+    Upsert was 90% faster than create + rescue/find/update
+    Upsert was 90% faster than find_or_create + update_attributes
+    Upsert was 60% faster than faking upserts with activerecord-import
 
 #### SQL MERGE trick
 
@@ -93,21 +94,25 @@ From the tests:
     INSERT INTO table (a,b,c) VALUES (1,2,3), (4,5,6)
       ON DUPLICATE KEY UPDATE a=VALUES(a),b=VALUES(b),c=VALUES(c);
 
+If `a` only appeared in the selector, then we avoid updating it in case of a duplicate key:
+
+    ON DUPLICATE KEY UPDATE a=a,b=VALUES(b),c=VALUES(c);
+
 Since this is an upsert helper library, not a general-use ON DUPLICATE KEY UPDATE wrapper, you **can't** do things like `c=c+1`.
 
 ### PostgreSQL
 
 Using the [pg](https://rubygems.org/gems/pg) driver.
 
-    Upsert.new PG.connect([...]), :pets
+    upsert = Upsert.new(PG.connect(:dbname => 'upsert_test'), :pets)
 
 #### Speed
 
-From the tests:
+From the tests (updated 9/21/12):
 
-    Upsert was 73% faster than find + new/set/save
-    Upsert was 84% faster than find_or_create + update_attributes
-    Upsert was 87% faster than create + rescue/find/update
+    Upsert was 65% faster than find + new/set/save
+    Upsert was 79% faster than find_or_create + update_attributes
+    Upsert was 76% faster than create + rescue/find/update
     # (can't compare to activerecord-import because you can't fake it on pg)
 
 #### SQL MERGE trick
@@ -139,6 +144,8 @@ From the tests:
     SELECT merge_db(1, 'david');
     SELECT merge_db(1, 'dennis');
 
+I slightly modified it so that it only retries once - don't want infinite loops.
+
 The decision was made **not** to use the following because it's not straight from the manual:
 
     # http://stackoverflow.com/questions/1109061/insert-on-duplicate-update-postgresql
@@ -167,11 +174,16 @@ This was also rejected because there's something we can use in the manual:
 
 Using the [sqlite3](https://rubygems.org/gems/sqlite3) driver.
 
-    Upsert.new SQLite3::Database.open([...]), :pets
+    upsert = Upsert.new(SQLite3::Database.open(':memory:'), :pets)
 
 #### Speed
 
-FIXME tests are segfaulting. Pull request would be lovely.
+From the tests (updated 9/21/12):
+
+    Upsert was 77% faster than find + new/set/save
+    Upsert was 80% faster than find_or_create + update_attributes
+    Upsert was 85% faster than create + rescue/find/update
+    # (can't compare to activerecord-import because you can't fake it on sqlite3)
 
 #### SQL MERGE trick
 

@@ -19,17 +19,18 @@ class Upsert
     attr_reader :selector
     attr_reader :setter
 
+
     def initialize(parent, raw_selector, raw_setter)
-      conn = parent.connection
+      connection = parent.connection
       cell_class = parent.cell_class
 
       @selector = raw_selector.inject({}) do |memo, (k, v)|
-        memo[k.to_s] = cell_class.new(conn, k, v)
+        memo[k.to_s] = cell_class.new(connection, k, v)
         memo
       end
 
       @setter = raw_setter.inject({}) do |memo, (k, v)|
-        memo[k.to_s] = cell_class.new(conn, k, v)
+        memo[k.to_s] = cell_class.new(connection, k, v)
         memo
       end
 
@@ -37,6 +38,7 @@ class Upsert
         setter[missing] = selector[missing]
       end
 
+      # there is probably a more clever way to incrementally sort these hashes
       @selector = sort_hash selector
       @setter = sort_hash setter
     end

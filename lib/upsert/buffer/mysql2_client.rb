@@ -4,9 +4,9 @@ class Upsert
     class Mysql2_Client < Buffer
       def ready
         return if rows.empty?
-        c = parent.connection
+        connection = parent.connection
         if not async?
-          c.execute sql
+          connection.execute sql
           rows.clear
           return
         end
@@ -14,7 +14,7 @@ class Upsert
         new_row = rows.pop
         d = new_row.values_sql_bytesize + 3 # ),(
         if @cumulative_sql_bytesize + d > max_sql_bytesize
-          c.execute sql
+          connection.execute sql
           rows.clear
           @cumulative_sql_bytesize = static_sql_bytesize + d
         else
@@ -35,7 +35,8 @@ class Upsert
       def insert_part
         @insert_part ||= begin
           connection = parent.connection
-          %{INSERT INTO #{parent.quoted_table_name} (#{setter.map { |k| connection.quote_ident(k) }.join(',')}) VALUES }
+          column_names = setter.map { |k| connection.quote_ident(k) }
+          %{INSERT INTO #{parent.quoted_table_name} (#{column_names.join(',')}) VALUES }
         end
       end
 
@@ -43,12 +44,12 @@ class Upsert
         @update_part ||= begin
           connection = parent.connection
           updaters = setter.map do |k|
-            qk = connection.quote_ident(k)
+            quoted_name = connection.quote_ident(k)
             if original_setter.include?(k)
-              "#{qk}=VALUES(#{qk})"
+              "#{quoted_name}=VALUES(#{quoted_name})"
             else
               # NOOP
-              "#{qk}=#{qk}"
+              "#{quoted_name}=#{quoted_name}"
             end
           end.join(',')
           %{ ON DUPLICATE KEY UPDATE #{updaters}}
