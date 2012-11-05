@@ -25,13 +25,14 @@ class Upsert
           ar_logger
         else
           my_logger = Logger.new $stderr
-          my_logger.level = Logger::INFO
+          case ENV['UPSERT_DEBUG']
+          when 'true'
+            my_logger.level = Logger::DEBUG
+          when 'false'
+            my_logger.level = Logger::INFO
+          end
           my_logger
         end
-        if ENV['UPSERT_DEBUG'] == 'true'
-          @logger.level = Logger::DEBUG
-        end
-        @logger
       end
     end
 
