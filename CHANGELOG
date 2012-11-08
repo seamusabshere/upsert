@@ -1,3 +1,19 @@
+1.0.0 / 2012-11-07
+
+* Breaking changes (well, not really)
+
+  * Not using INSERT ... ON DUPLICATE KEY UPDATE for MySQL!
+
+* Enhancements
+
+  * Replaced ON DUPLICATE KEY with a true merge function (procedure)
+  * Simplified code - buffering is no longer used anywhere
+  * Clarified documentation
+
+* Bug fixes
+
+  * MySQL upserts won't fail if you have a multi-key selector and no multi-column UNIQUE index to cover them (https://github.com/seamusabshere/upsert/issues/6)
+
 0.5.0 / 2012-09-21
 
 * Breaking changes (well, not really)

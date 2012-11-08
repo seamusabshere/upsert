@@ -27,6 +27,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'active_record_inline_schema'
   gem.add_development_dependency 'faker'
   gem.add_development_dependency 'yard'
+  gem.add_development_dependency 'redcarpet' # github-flavored markdown
   gem.add_development_dependency 'activerecord-import'
   gem.add_development_dependency 'pry'
 

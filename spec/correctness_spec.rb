@@ -32,6 +32,20 @@ describe Upsert do
       u.row(selector, setter)
       Pet.find_by_name('Jerry').tag_number.should == 20
     end
+
+    it "really limits its effects to the selector" do
+      p = Pet.new
+      p.name = 'Jerry'
+      p.gender = 'blue'
+      p.tag_number = 777
+      p.save!
+      Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
+      u = Upsert.new($conn, :pets)
+      selector = {name: 'Jerry', gender: 'red'} # this shouldn't select anything
+      setter = {tag_number: 888}
+      u.row(selector, setter)
+      Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
+    end
   end
   describe "is just as correct as other ways" do
     describe 'compared to native ActiveRecord' do
@@ -101,6 +115,6 @@ describe Upsert do
         end
       end
     end
-    
+
   end
 end

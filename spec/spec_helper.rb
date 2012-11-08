@@ -14,23 +14,29 @@ when 'postgresql'
   system %{ dropdb upsert_test }
   system %{ createdb upsert_test }
   ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => 'upsert_test'
-  $conn = PGconn.new(:dbname => 'upsert_test')
+  $conn_config = { :dbname => 'upsert_test' }
+  $conn = PGconn.new $conn_config
 when 'mysql2'
   system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS upsert_test" }
   system %{ mysql -u root -ppassword -e "CREATE DATABASE upsert_test CHARSET utf8" }
   ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://root:password@127.0.0.1/upsert_test"
-  $conn = Mysql2::Client.new(:username => 'root', :password => 'password', :database => 'upsert_test')
+  $conn_config = { :username => 'root', :password => 'password', :database => 'upsert_test'}
+  $conn = Mysql2::Client.new $conn_config
 when 'sqlite3'
   ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
   $conn = ActiveRecord::Base.connection.raw_connection
+  $conn_config = :use_active_record_raw_connection_yo
 else
   raise "not supported"
 end
 
-if ENV['UPSERT_DEBUG'] == 'true'
-  require 'logger'
-  ActiveRecord::Base.logger = Logger.new($stdout)
+require 'logger'
+ActiveRecord::Base.logger = Logger.new('test.log')
+
+if ENV['VERBOSE'] == 'true'
   ActiveRecord::Base.logger.level = Logger::DEBUG
+else
+  ActiveRecord::Base.logger.level = Logger::WARN
 end
 
 class Pet < ActiveRecord::Base

@@ -1,7 +1,3 @@
-require 'upsert/row/mysql2_client'
-require 'upsert/row/pg_connection'
-require 'upsert/row/sqlite3_database'
-
 class Upsert
   # @private
   class Row
@@ -20,9 +16,9 @@ class Upsert
     attr_reader :setter
 
 
-    def initialize(parent, raw_selector, raw_setter)
-      connection = parent.connection
-      cell_class = parent.cell_class
+    def initialize(controller, raw_selector, raw_setter)
+      connection = controller.connection
+      cell_class = controller.cell_class
 
       @selector = raw_selector.inject({}) do |memo, (k, v)|
         memo[k.to_s] = cell_class.new(connection, k, v)

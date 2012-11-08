@@ -7,46 +7,75 @@ MySQL, PostgreSQL, and SQLite all have different SQL MERGE tricks that you can u
 You pass a selector that uniquely identifies a row, whether it exists or not. You pass a set of attributes that should be set on that row. Syntax inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
 
 ### Single record
+    
+```ruby
+connection = Mysql2::Client.new([...])
+table_name = :pets
+upsert = Upsert.new connection, table_name
+upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+```
 
-    # if you have required 'upsert/active_record_upsert'
-    Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
+If you want to use an `ActiveRecord` helper method, try:
 
-    # if you're not using activerecord, that's ok
-    connection = Mysql2::Client.new([...])
-    upsert = Upsert.new connection, 'pets'
-    upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+```ruby
+require 'upsert/active_record_upsert'
+Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
+```
+
+So just to reiterate you've got a `selector` and a `setter`:
+
+```ruby
+connection = Mysql2::Client.new([...])
+table_name = :pets
+upsert = Upsert.new connection, table_name
+selector = { :name => 'Jerry' }
+setter = { :breed => 'beagle' }
+upsert.row(selector, setter)
+```
 
 ### Multiple records (batch mode)
 
-Rows are buffered in memory until it's efficient to send them to the database.
+Slightly faster.
 
-    connection = Mysql2::Client.new([...])
-    Upsert.batch(connection, 'pets') do |upsert|
-      upsert.row({:name => 'Jerry'}, :breed => 'beagle')
-      upsert.row({:name => 'Pierre'}, :breed => 'tabby')
-    end
+```ruby
+connection = Mysql2::Client.new([...])
+Upsert.batch(connection, :pets) do |upsert|
+  upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+  upsert.row({:name => 'Pierre'}, :breed => 'tabby')
+end
+```
 
-Tested to be much about 60% faster on PostgreSQL and 60&ndash;90% faster on MySQL and SQLite3 than comparable methods (see the tests, which fail if they are not faster).
+Tested to be much about 80% faster on PostgreSQL, MySQL, and SQLite3 than comparable methods (see the tests, which fail if they are not faster).
 
 ## Gotchas
 
-### Undefined behavior without real UNIQUE indexes
+### In PostgreSQL, trying to put strings into integer fields fails confusingly
 
-Make sure you're upserting against either primary key columns or columns with UNIQUE indexes or both.
+We currently don't have any logic to convert integers into strings, strings into integers, etc. in order to satisfy PostgreSQL's strictness on this issue.
 
-### For MySQL, columns are set based on the first row you pass
+Tracking [the issue on Github](https://github.com/seamusabshere/upsert/issues/7).
 
-Currently, on MySQL, the first row you pass in determines the columns that will be used for all future upserts using the same Upsert object. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example, this won't work:
+### Within a batch, it's assumed that you're always passing the same columns
 
-    Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
-      upsert.row({:name => 'Jerry'}, :breed => 'beagle')
-      upsert.row({:tag_number => 456}, :spiel => 'great cat') # won't work - doesn't use same columns
-    end
+Currently, on MySQL, the first row you pass in determines the columns that will be used for all future upserts using the same Upsert object. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example:
+
+```ruby
+# won't work - doesn't use same columns
+Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
+  upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+  upsert.row({:tag_number => 456}, :spiel => 'great cat')
+end
+```
 
 You would need to use a new `Upsert` object. On the other hand, this is totally fine:
 
-    Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
-    Pet.upsert({:tag_number => 456}, :spiel => 'great cat')
+```ruby
+# totally fine
+Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
+Pet.upsert({:tag_number => 456}, :spiel => 'great cat')
+```
+
+Hopefully this surprising behavior won't exist in the future!
 
 ## Wishlist
 
@@ -75,106 +104,129 @@ Originally written to speed up the [`data_miner`](https://github.com/seamusabshe
 
 Using the [mysql2](https://rubygems.org/gems/mysql2) driver.
 
-    upsert = Upsert.new(Mysql2::Connection.new(:username => 'root', :password => 'password', :database => 'upsert_test'), :pets)
+```ruby
+connection = Mysql2::Connection.new(:username => 'root', :password => 'password', :database => 'upsert_test')
+table_name = :pets
+upsert = Upsert.new(connection, table_name)
+```
 
 #### Speed
 
-From the tests (updated 9/21/12):
+From the tests (updated 11/7/12):
 
-    Upsert was 88% faster than find + new/set/save
+    Upsert was 82% faster than find + new/set/save
+    Upsert was 85% faster than find_or_create + update_attributes
     Upsert was 90% faster than create + rescue/find/update
-    Upsert was 90% faster than find_or_create + update_attributes
-    Upsert was 60% faster than faking upserts with activerecord-import
+    Upsert was 46% faster than faking upserts with activerecord-import
 
 #### SQL MERGE trick
 
-"ON DUPLICATE KEY UPDATE" where we just set everything to the value of the insert.
+Thanks to [Dennis Hennen's StackOverflow response!](http://stackoverflow.com/questions/11371479/how-to-translate-postgresql-merge-db-aka-upsert-function-into-mysql/)!
 
-    # http://dev.mysql.com/doc/refman/5.0/en/insert-on-duplicate.html
-    INSERT INTO table (a,b,c) VALUES (1,2,3), (4,5,6)
-      ON DUPLICATE KEY UPDATE a=VALUES(a),b=VALUES(b),c=VALUES(c);
+```sql
+CREATE PROCEDURE upsert_pets_SEL_name_A_tag_number_SET_name_A_tag_number(`name_sel` varchar(255), `tag_number_sel` int(11), `name_set` varchar(255), `tag_number_set` int(11))
+BEGIN
+  DECLARE done BOOLEAN;
+  REPEAT
+    BEGIN
+      -- If there is a unique key constraint error then 
+      -- someone made a concurrent insert. Reset the sentinel
+      -- and try again.
+      DECLARE ER_DUP_UNIQUE CONDITION FOR 23000;
+      DECLARE ER_INTEG CONDITION FOR 1062;
+      DECLARE CONTINUE HANDLER FOR ER_DUP_UNIQUE BEGIN
+        SET done = FALSE;
+      END;
+      
+      DECLARE CONTINUE HANDLER FOR ER_INTEG BEGIN
+        SET done = TRUE;
+      END;
 
-If `a` only appeared in the selector, then we avoid updating it in case of a duplicate key:
-
-    ON DUPLICATE KEY UPDATE a=a,b=VALUES(b),c=VALUES(c);
-
-Since this is an upsert helper library, not a general-use ON DUPLICATE KEY UPDATE wrapper, you **can't** do things like `c=c+1`.
+      SET done = TRUE;
+      SELECT COUNT(*) INTO @count FROM `pets` WHERE `name` = `name_sel` AND `tag_number` = `tag_number_sel`;
+      -- Race condition here. If a concurrent INSERT is made after
+      -- the SELECT but before the INSERT below we'll get a duplicate
+      -- key error. But the handler above will take care of that.
+      IF @count > 0 THEN 
+        -- UPDATE table_name SET b = b_SET WHERE a = a_SEL;
+        UPDATE `pets` SET `name` = `name_set`, `tag_number` = `tag_number_set` WHERE `name` = `name_sel` AND `tag_number` = `tag_number_sel`;
+      ELSE
+        -- INSERT INTO table_name (a, b) VALUES (k, data);
+        INSERT INTO `pets` (`name`, `tag_number`) VALUES (`name_set`, `tag_number_set`);
+      END IF;
+    END;
+  UNTIL done END REPEAT;
+END
+```
 
 ### PostgreSQL
 
 Using the [pg](https://rubygems.org/gems/pg) driver.
 
-    upsert = Upsert.new(PG.connect(:dbname => 'upsert_test'), :pets)
+```ruby
+connection = PG.connect(:dbname => 'upsert_test')
+table_name = :pets
+upsert = Upsert.new(connection, table_name)
+```
 
 #### Speed
 
 From the tests (updated 9/21/12):
 
-    Upsert was 65% faster than find + new/set/save
+    Upsert was 72% faster than find + new/set/save
     Upsert was 79% faster than find_or_create + update_attributes
-    Upsert was 76% faster than create + rescue/find/update
+    Upsert was 83% faster than create + rescue/find/update
     # (can't compare to activerecord-import because you can't fake it on pg)
 
 #### SQL MERGE trick
 
-    # http://www.postgresql.org/docs/current/interactive/plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING
-    CREATE TABLE db (a INT PRIMARY KEY, b TEXT);
-    CREATE FUNCTION merge_db(key INT, data TEXT) RETURNS VOID AS
-    $$
+Adapted from the [canonical PostgreSQL upsert example](http://www.postgresql.org/docs/current/interactive/plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING):
+
+```sql
+CREATE OR REPLACE FUNCTION upsert_pets_SEL_name_A_tag_number_SET_name_A_tag_number("name_sel" character varying(255), "tag_number_sel" integer, "name_set" character varying(255), "tag_number_set" integer) RETURNS VOID AS
+$$
+DECLARE
+  first_try INTEGER := 1;
+BEGIN
+  LOOP
+    -- first try to update the key
+    UPDATE "pets" SET "name" = "name_set", "tag_number" = "tag_number_set"
+      WHERE "name" = "name_sel" AND "tag_number" = "tag_number_sel";
+    IF found THEN
+      RETURN;
+    END IF;
+    -- not there, so try to insert the key
+    -- if someone else inserts the same key concurrently,
+    -- we could get a unique-key failure
     BEGIN
-        LOOP
-            -- first try to update the key
-            UPDATE db SET b = data WHERE a = key;
-            IF found THEN
-                RETURN;
-            END IF;
-            -- not there, so try to insert the key
-            -- if someone else inserts the same key concurrently,
-            -- we could get a unique-key failure
-            BEGIN
-                INSERT INTO db(a,b) VALUES (key, data);
-                RETURN;
-            EXCEPTION WHEN unique_violation THEN
-                -- Do nothing, and loop to try the UPDATE again.
-            END;
-        END LOOP;
+      INSERT INTO "pets"("name", "tag_number") VALUES ("name_set", "tag_number_set");
+      RETURN;
+    EXCEPTION WHEN unique_violation THEN
+      -- seamusabshere 9/20/12 only retry once
+      IF (first_try = 1) THEN
+        first_try := 0;
+      ELSE
+        RETURN;
+      END IF;
+      -- Do nothing, and loop to try the UPDATE again.
     END;
-    $$
-    LANGUAGE plpgsql;
-    SELECT merge_db(1, 'david');
-    SELECT merge_db(1, 'dennis');
+  END LOOP;
+END;
+$$
+LANGUAGE plpgsql;
+```
 
 I slightly modified it so that it only retries once - don't want infinite loops.
-
-The decision was made **not** to use the following because it's not straight from the manual:
-
-    # http://stackoverflow.com/questions/1109061/insert-on-duplicate-update-postgresql
-    UPDATE table SET field='C', field2='Z' WHERE id=3;
-    INSERT INTO table (id, field, field2)
-      SELECT 3, 'C', 'Z'
-      WHERE NOT EXISTS (SELECT 1 FROM table WHERE id=3);
-
-This was also rejected because there's something we can use in the manual:
-
-    # http://stackoverflow.com/questions/5269590/why-doesnt-this-rule-prevent-duplicate-key-violations
-    BEGIN;
-    CREATE TEMP TABLE stage_data(key_column, data_columns...) ON COMMIT DROP;
-    \copy stage_data from data.csv with csv header
-    -- prevent any other updates while we are merging input (omit this if you don't need it)
-    LOCK target_data IN SHARE ROW EXCLUSIVE MODE;
-    -- insert into target table
-    INSERT INTO target_data(key_column, data_columns...)
-       SELECT key_column, data_columns...
-       FROM stage_data
-       WHERE NOT EXISTS (SELECT 1 FROM target_data
-                         WHERE target_data.key_column = stage_data.key_column)
-    END;
 
 ### Sqlite
 
 Using the [sqlite3](https://rubygems.org/gems/sqlite3) driver.
 
-    upsert = Upsert.new(SQLite3::Database.open(':memory:'), :pets)
+```ruby
+connection = SQLite3::Database.open(':memory:')
+table_name = :pets
+upsert = Upsert.new(connection, table_name)
+```
 
 #### Speed
 
@@ -187,16 +239,20 @@ From the tests (updated 9/21/12):
 
 #### SQL MERGE trick
 
-    # http://stackoverflow.com/questions/2717590/sqlite-upsert-on-duplicate-key-update
-    # bad example because we're not doing on-duplicate-key update
-    INSERT OR IGNORE INTO visits VALUES (127.0.0.1, 1);
-    UPDATE visits SET visits = 1 WHERE ip LIKE 127.0.0.1;
+Thanks to [@dan04's answer on StackOverflow](http://stackoverflow.com/questions/2717590/sqlite-upsert-on-duplicate-key-update):
+
+```sql
+INSERT OR IGNORE INTO visits VALUES (127.0.0.1, 1);
+UPDATE visits SET visits = 1 WHERE ip LIKE 127.0.0.1;
+```
 
 ### Rails / ActiveRecord
 
 (assuming that one of the other three supported drivers is being used under the covers)
 
-    Upsert.new Pet.connection, Pet.table_name
+```ruby
+Upsert.new Pet.connection, Pet.table_name
+```
 
 #### Speed
 
@@ -219,22 +275,26 @@ In addition to correctness, the library's tests check that it is
 
 As below, all you need is a raw database connection like a `Mysql2::Connection`, `PG::Connection` or a `SQLite3::Database`. These are equivalent:
 
-    # with activerecord
-    Upsert.new ActiveRecord::Base.connection, :pets
-    # with activerecord, prettier
-    Upsert.new Pet.connection, Pet.table_name
-    # without activerecord
-    Upsert.new Mysql2::Connection.new([...]), :pets
+```ruby
+# with activerecord
+Upsert.new ActiveRecord::Base.connection, :pets
+# with activerecord, prettier
+Upsert.new Pet.connection, Pet.table_name
+# without activerecord
+Upsert.new Mysql2::Connection.new([...]), :pets
+```
 
 ### For a specific use case, faster and more portable than `activerecord-import`
 
 You could also use [activerecord-import](https://github.com/zdennis/activerecord-import) to upsert:
 
-    Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
+```ruby
+Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
+```
 
 This, however, only works on MySQL and requires ActiveRecord&mdash;and if all you are doing is upserts, `upsert` is tested to be 40% faster. And you don't have to put all of the rows to be upserted into a single huge array - you can batch them using `Upsert.batch`.
 
 ## Copyright
 
-Copyright 2012 Brighter Planet, Inc.
+Copyright 2012 Seamus Abshere
 

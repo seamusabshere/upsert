@@ -4,7 +4,7 @@ class Upsert
     class Mysql2_Client < Row
       attr_reader :original_setter_keys
 
-      def initialize(parent, raw_selector, raw_setter)
+      def initialize(controller, raw_selector, raw_setter)
         super
         @original_setter_keys = raw_setter.keys.map(&:to_s)
       end

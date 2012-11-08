@@ -4,8 +4,9 @@ require 'logger'
 
 require 'upsert/version'
 require 'upsert/binary'
-require 'upsert/buffer'
 require 'upsert/connection'
+require 'upsert/merge_function'
+require 'upsert/column_definition'
 require 'upsert/row'
 require 'upsert/cell'
 
@@ -43,7 +44,7 @@ class Upsert
     # Currently only applies to PostgreSQL.
     def clear_database_functions(connection)
       dummy = new(connection, :dummy)
-      dummy.buffer.clear_database_functions
+      dummy.clear_database_functions
     end
 
     # @param [String] v A string containing binary data that should be inserted/escaped as such.
@@ -53,9 +54,7 @@ class Upsert
       Binary.new v
     end
 
-    # Guarantee that the most efficient way of buffering rows is used.
-    #
-    # Currently mostly helps for MySQL, but you should use it whenever possible in case future buffering-based optimizations become possible.
+    # More efficient way of upserting multiple rows at once.
     #
     # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
     # @param [String,Symbol] table_name The name of the table into which you will be upserting.
@@ -71,9 +70,7 @@ class Upsert
     #   end
     def batch(connection, table_name)
       upsert = new connection, table_name
-      upsert.buffer.async!
       yield upsert
-      upsert.buffer.sync!
     end
 
     # @deprecated Use .batch instead.
@@ -102,13 +99,16 @@ class Upsert
   attr_reader :table_name
 
   # @private
-  attr_reader :buffer
-
-  # @private
   attr_reader :row_class
 
   # @private
   attr_reader :cell_class
+
+  # @private
+  attr_reader :column_definition_class
+
+  # @private
+  attr_reader :merge_function_class
 
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
@@ -116,10 +116,14 @@ class Upsert
     @table_name = table_name.to_s
     raw_connection = connection.respond_to?(:raw_connection) ? connection.raw_connection : connection
     connection_class_name = HANDLER[raw_connection.class.name]
+    Dir[File.expand_path("../upsert/**/#{connection_class_name}.rb", __FILE__)].each do |path|
+      require path
+    end
     @connection = Connection.const_get(connection_class_name).new self, raw_connection
-    @buffer = Buffer.const_get(connection_class_name).new self
     @row_class = Row.const_get connection_class_name
     @cell_class = Cell.const_get connection_class_name
+    @column_definition_class = ColumnDefinition.const_get connection_class_name
+    @merge_function_class = MergeFunction.const_get connection_class_name
   end
 
   # Upsert a row given a selector and a setter.
@@ -138,12 +142,22 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, setter = {})
-    buffer << row_class.new(self, selector, setter)
+    merge_function_class.execute self, row_class.new(self, selector, setter)
     nil
+  end
+
+  # @private
+  def clear_database_functions
+    merge_function_class.clear connection
   end
 
   # @private
   def quoted_table_name
     @quoted_table_name ||= connection.quote_ident table_name
+  end
+
+  # @private
+  def column_definitions
+    @column_definitions ||= column_definition_class.all connection, table_name
   end
 end

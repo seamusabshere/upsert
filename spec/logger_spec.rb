@@ -1,18 +1,18 @@
 require 'spec_helper'
 describe Upsert do
   describe "logger" do
-    it "logs to stderr by default" do
+    it "logs where you tell it" do
       begin
-        old_stderr = $stderr
         old_logger = Upsert.logger
-        Upsert.logger = nil
-        $stderr = StringIO.new
-        Upsert.logger.warn "hello"
-        $stderr.rewind
-        $stderr.read.chomp.should == 'hello'
+        io = StringIO.new
+        Thread.exclusive do
+          Upsert.logger = Logger.new(io)
+          Upsert.logger.warn "hello"
+          io.rewind
+          io.read.chomp.should == 'hello'
+        end
       ensure
         Upsert.logger = old_logger
-        $stderr = old_stderr
       end
     end
 

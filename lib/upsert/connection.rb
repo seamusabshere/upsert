@@ -1,15 +1,11 @@
-require 'upsert/connection/mysql2_client'
-require 'upsert/connection/pg_connection'
-require 'upsert/connection/sqlite3_database'
-
 class Upsert
   # @private
   class Connection
-    attr_reader :parent
+    attr_reader :controller
     attr_reader :raw_connection
 
-    def initialize(parent, raw_connection)
-      @parent = parent
+    def initialize(controller, raw_connection)
+      @controller = controller
       @raw_connection = raw_connection
     end
     
