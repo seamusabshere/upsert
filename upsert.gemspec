@@ -4,7 +4,7 @@ require File.expand_path('../lib/upsert/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Seamus Abshere"]
   gem.email         = ["seamus@abshere.net"]
-  t = %{Ruby library to make it easy to upsert on MySQL, PostgreSQL, and SQLite3. Uses MySQL's ON DUPLICATE KEY UPDATE, PostgreSQL's CREATE FUNCTION merge_db, and SQLite's INSERT OR IGNORE.}
+  t = %{Make it easy to upsert on MySQL, PostgreSQL, and SQLite3. Transparently creates merge functions for MySQL and PostgreSQL; on SQLite3, uses INSERT OR IGNORE.}
   gem.description   = t
   gem.summary       = t
   gem.homepage      = "https://github.com/seamusabshere/upsert"
