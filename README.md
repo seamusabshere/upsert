@@ -49,11 +49,11 @@ Tested to be much about 80% faster on PostgreSQL, MySQL, and SQLite3 than compar
 
 ## Gotchas
 
-### In PostgreSQL, trying to put strings into integer fields fails confusingly
+### No automatic typecasting beyond what the adapter/driver provides
 
-We currently don't have any logic to convert integers into strings, strings into integers, etc. in order to satisfy PostgreSQL's strictness on this issue.
+We don't have any logic to convert integers into strings, strings into integers, etc. in order to satisfy PostgreSQL's strictness on this issue.
 
-Tracking [the issue on Github](https://github.com/seamusabshere/upsert/issues/7).
+So if you try to upsert a blank string (`''`) into an integer field in PostgreSQL, you will get a `PG::Error`.
 
 ### Within a batch, it's assumed that you're always passing the same columns
 
