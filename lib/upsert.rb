@@ -116,7 +116,7 @@ class Upsert
     @table_name = table_name.to_s
     raw_connection = connection.respond_to?(:raw_connection) ? connection.raw_connection : connection
     connection_class_name = HANDLER[raw_connection.class.name]
-    Dir[File.expand_path("../upsert/**/#{connection_class_name}.rb", __FILE__)].each do |path|
+    Dir[File.expand_path("../upsert/**/#{connection_class_name.downcase}.rb", __FILE__)].each do |path|
       require path
     end
     @connection = Connection.const_get(connection_class_name).new self, raw_connection
