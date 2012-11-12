@@ -1,3 +1,10 @@
+1.0.2 / 2012-11-12
+
+* Bug fixes
+
+  * Fix filenames - they were updated on an apparently case-insensitive setup. Thanks @ihough! (https://github.com/seamusabshere/upsert/pull/8)
+  * Deliberately drop MySQL procedures before creating them. Also thanks to @ihough!
+
 1.0.1 / 2012-11-07
 
 * Bug fixes
