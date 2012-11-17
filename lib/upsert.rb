@@ -8,7 +8,6 @@ require 'upsert/connection'
 require 'upsert/merge_function'
 require 'upsert/column_definition'
 require 'upsert/row'
-require 'upsert/cell'
 
 class Upsert
   class << self
@@ -37,7 +36,7 @@ class Upsert
       end
     end
 
-    # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
+    # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
     #
     # Clear any database functions that may have been created.
     #
@@ -56,7 +55,7 @@ class Upsert
 
     # More efficient way of upserting multiple rows at once.
     #
-    # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
+    # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
     # @param [String,Symbol] table_name The name of the table into which you will be upserting.
     #
     # @yield [Upsert] An +Upsert+ object in batch mode. You can call #row on it multiple times and it will try to optimize on speed.
@@ -75,6 +74,66 @@ class Upsert
 
     # @deprecated Use .batch instead.
     alias :stream :batch
+
+    # @private
+    def class_name(metal)
+      if RUBY_PLATFORM == 'java'
+        metal.class.name || metal.get_class.name
+      else
+        metal.class.name
+      end
+    end
+
+    # @private
+    def flavor(metal)
+      case class_name(metal)
+      when /sqlite/i
+        'Sqlite3'
+      when /mysql/i
+        'Mysql'
+      when /pg/i, /postgres/i
+        'Postgresql'
+      else
+        raise "[upsert] #{metal} not supported"
+      end
+    end
+
+    # @private
+    def adapter(metal)
+      metal_class_name = class_name metal
+      METAL_CLASS_ALIAS.fetch(metal_class_name, metal_class_name).gsub /\W+/, '_'
+    end
+
+    # @private
+    def metal(connection)
+      metal = connection.respond_to?(:raw_connection) ? connection.raw_connection : connection
+      if metal.class.name.to_s.start_with?('ActiveRecord::ConnectionAdapters')
+        metal = metal.connection
+      end
+      metal
+    end
+
+    # @private
+    def utc(time)
+      if time.is_a? DateTime
+        usec = time.sec_fraction * SEC_FRACTION
+        if time.offset != 0
+          time = time.new_offset(0)
+        end
+        Time.utc time.year, time.month, time.day, time.hour, time.min, time.sec, usec
+      elsif time.utc?
+        time
+      else
+        time.utc
+      end
+    end
+
+    # @private
+    def utc_iso8601(time, tz = true)
+      t = utc time
+      s = t.strftime(ISO8601_DATETIME) + '.' + (USEC_SPRINTF % t.usec)
+      tz ? (s + UTC_TZ) : s
+    end
   end
 
   SINGLE_QUOTE = %{'}
@@ -82,14 +141,20 @@ class Upsert
   BACKTICK = %{`}
   X_AND_SINGLE_QUOTE = %{x'}
   USEC_SPRINTF = '%06d'
+  if RUBY_VERSION >= '1.9.0'
+    SEC_FRACTION = 1e6
+    NANO_FRACTION = 1e9
+  else
+    SEC_FRACTION = 8.64e10
+    NANO_FRACTION = 8.64e13
+  end
   ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S'
   ISO8601_DATE = '%F'
+  UTC_TZ = '+00:00'
   NULL_WORD = 'NULL'
-  HANDLER = {
-    'SQLite3::Database' => 'SQLite3_Database',
-    'PGConn'            => 'PG_Connection',
-    'PG::Connection'    => 'PG_Connection',
-    'Mysql2::Client'    => 'Mysql2_Client',
+  METAL_CLASS_ALIAS = {
+    'PGConn'           => 'PG::Connection',
+    'org.sqlite.Conn'  => 'Java::OrgSqliteConn' # for some reason, org.sqlite.Conn doesn't have a ruby class name
   }
 
   # @return [Upsert::Connection]
@@ -99,31 +164,27 @@ class Upsert
   attr_reader :table_name
 
   # @private
-  attr_reader :row_class
-
-  # @private
-  attr_reader :cell_class
-
-  # @private
-  attr_reader :column_definition_class
-
-  # @private
   attr_reader :merge_function_class
 
-  # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#raw_connection] connection A supported database connection.
+  # @private
+  attr_reader :flavor
+
+  # @private
+  attr_reader :adapter
+
+  # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
   def initialize(connection, table_name)
     @table_name = table_name.to_s
-    raw_connection = connection.respond_to?(:raw_connection) ? connection.raw_connection : connection
-    connection_class_name = HANDLER[raw_connection.class.name]
-    Dir[File.expand_path("../upsert/**/#{connection_class_name}.rb", __FILE__)].each do |path|
+    metal = Upsert.metal connection
+    @flavor = Upsert.flavor metal
+    @adapter = Upsert.adapter metal
+    # todo memoize
+    Dir[File.expand_path("../upsert/**/{#{flavor.downcase},#{adapter}}.rb", __FILE__)].each do |path|
       require path
     end
-    @connection = Connection.const_get(connection_class_name).new self, raw_connection
-    @row_class = Row.const_get connection_class_name
-    @cell_class = Cell.const_get connection_class_name
-    @column_definition_class = ColumnDefinition.const_get connection_class_name
-    @merge_function_class = MergeFunction.const_get connection_class_name
+    @connection = Connection.const_get(adapter).new self, metal
+    @merge_function_class = MergeFunction.const_get adapter
   end
 
   # Upsert a row given a selector and a setter.
@@ -142,7 +203,7 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, setter = {})
-    merge_function_class.execute self, row_class.new(self, selector, setter)
+    merge_function_class.execute self, Row.new(selector, setter)
     nil
   end
 
@@ -158,6 +219,6 @@ class Upsert
 
   # @private
   def column_definitions
-    @column_definitions ||= column_definition_class.all connection, table_name
+    @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, table_name
   end
 end

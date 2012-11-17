@@ -47,6 +47,7 @@ describe Upsert do
       Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
     end
   end
+
   describe "is just as correct as other ways" do
     describe 'compared to native ActiveRecord' do
       it "is as correct as than new/set/save" do
@@ -67,33 +68,33 @@ describe Upsert do
           end
         end
       end
-      it "is as correct as than find_or_create + update_attributes" do
-        assert_same_result lotsa_records do |records|
-          dynamic_method = nil
-          records.each do |selector, setter|
-            dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"
-            pet = Pet.send(dynamic_method, *selector.values)
-            pet.update_attributes setter, :without_protection => true
-          end
-        end
-      end
-      it "is as correct as than create + rescue/find/update" do
-        assert_same_result lotsa_records do |records|
-          dynamic_method = nil
-          records.each do |selector, setter|
-            dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"
-            begin
-              Pet.create selector.merge(setter), :without_protection => true
-            rescue
-              pet = Pet.send(dynamic_method, *selector.values)
-              pet.update_attributes setter, :without_protection => true
-            end
-          end
-        end
-      end
+      # it "is as correct as than find_or_create + update_attributes" do
+      #   assert_same_result lotsa_records do |records|
+      #     dynamic_method = nil
+      #     records.each do |selector, setter|
+      #       dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"
+      #       pet = Pet.send(dynamic_method, *selector.values)
+      #       pet.update_attributes setter, :without_protection => true
+      #     end
+      #   end
+      # end
+      # it "is as correct as than create + rescue/find/update" do
+      #   assert_same_result lotsa_records do |records|
+      #     dynamic_method = nil
+      #     records.each do |selector, setter|
+      #       dynamic_method ||= "find_or_create_by_#{selector.keys.join('_or_')}"
+      #       begin
+      #         Pet.create selector.merge(setter), :without_protection => true
+      #       rescue
+      #         pet = Pet.send(dynamic_method, *selector.values)
+      #         pet.update_attributes setter, :without_protection => true
+      #       end
+      #     end
+      #   end
+      # end
     end
 
-    if ENV['ADAPTER'] == 'mysql2'
+    if ENV['DB'] == 'mysql'
       describe 'compared to activerecord-import' do
         it "is as correct as faking upserts with activerecord-import" do
           assert_same_result lotsa_records do |records|

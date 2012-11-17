@@ -1,14 +1,6 @@
 require 'spec_helper'
 require 'stringio'
 describe Upsert do
-  def fresh_connection
-    case ENV['ADAPTER']
-    when 'postgresql'
-      PGconn.new $conn_config
-    when 'mysql2'
-      Mysql2::Client.new $conn_config
-    end
-  end
   describe 'database functions' do
     it "re-uses merge functions across connections" do
       begin
@@ -17,19 +9,19 @@ describe Upsert do
         Upsert.logger = Logger.new io, Logger::INFO
 
         # clear
-        Upsert.clear_database_functions(fresh_connection)
+        Upsert.clear_database_functions($conn_factory.new_connection)
         
         # create
-        Upsert.new(fresh_connection, :pets).row :name => 'hello'
+        Upsert.new($conn_factory.new_connection, :pets).row :name => 'hello'
 
         # clear
-        Upsert.clear_database_functions(fresh_connection)
+        Upsert.clear_database_functions($conn_factory.new_connection)
 
         # create (#2)
-        Upsert.new(fresh_connection, :pets).row :name => 'hello'
+        Upsert.new($conn_factory.new_connection, :pets).row :name => 'hello'
 
         # no create!
-        Upsert.new(fresh_connection, :pets).row :name => 'hello'
+        Upsert.new($conn_factory.new_connection, :pets).row :name => 'hello'
         
         io.rewind
         hits = io.read.split("\n").grep(/Creating or replacing/)
@@ -39,4 +31,4 @@ describe Upsert do
       end
     end
   end
-end if %w{ postgresql mysql2 }.include?(ENV['ADAPTER'])
+end if %w{ postgresql mysql }.include?(ENV['DB'])

@@ -1,7 +1,7 @@
 class Upsert
   class ColumnDefinition
     # @private
-    class PG_Connection < ColumnDefinition
+    class Postgresql < ColumnDefinition
       class << self
         # activerecord-3.2.5/lib/active_record/connection_adapters/postgresql_adapter.rb#column_definitions
         def all(connection, table_name)

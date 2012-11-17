@@ -1,3 +1,10 @@
+unreleased
+
+* Enhancements
+
+  * Works on JRuby using bare-metal JDBC!
+  * Simplified.
+
 1.0.2 / 2012-11-12
 
 * Bug fixes

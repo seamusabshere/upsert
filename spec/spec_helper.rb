@@ -4,33 +4,83 @@ require 'bundler/setup'
 require 'pry'
 
 require 'active_record'
+ActiveRecord::Base.default_timezone = :utc
+
 require 'active_record_inline_schema'
 require 'activerecord-import'
 
-ENV['ADAPTER'] ||= 'mysql2'
+ENV['DB'] ||= 'mysql'
 
-case ENV['ADAPTER']
-when 'postgresql'
-  system %{ dropdb upsert_test }
-  system %{ createdb upsert_test }
-  ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => 'upsert_test'
-  $conn_config = { :dbname => 'upsert_test' }
-  $conn = PGconn.new $conn_config
-when 'mysql2'
-  system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS upsert_test" }
-  system %{ mysql -u root -ppassword -e "CREATE DATABASE upsert_test CHARSET utf8" }
-  ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://root:password@127.0.0.1/upsert_test"
-  $conn_config = { :username => 'root', :password => 'password', :database => 'upsert_test'}
-  $conn = Mysql2::Client.new $conn_config
-when 'sqlite3'
-  ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
-  $conn = ActiveRecord::Base.connection.raw_connection
-  $conn_config = :use_active_record_raw_connection_yo
-else
-  raise "not supported"
+class RawConnectionFactory
+  DATABASE = 'upsert_test'
+  CURRENT_USER = `whoami`.chomp
+  PASSWORD = 'password'
+
+  case ENV['DB']
+
+  when 'postgresql'
+    Kernel.system %{ dropdb upsert_test }
+    Kernel.system %{ createdb upsert_test }
+    if RUBY_PLATFORM == 'java'
+      CONFIG = "jdbc:postgresql://localhost/#{DATABASE}?user=#{CURRENT_USER}"
+      require 'jdbc/postgres'
+      # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
+      java.sql.DriverManager.register_driver org.postgresql.Driver.new
+      def new_connection
+        java.sql.DriverManager.get_connection CONFIG
+      end
+    else
+      CONFIG = { :dbname => DATABASE }
+      require 'pg'
+      def new_connection
+        PG::Connection.new CONFIG
+      end
+    end
+    ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
+
+  when 'mysql'
+    Kernel.system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -u root -ppassword -e "CREATE DATABASE #{DATABASE} CHARSET utf8" }
+    if RUBY_PLATFORM == 'java'
+      CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=root&password=password"
+      require 'jdbc/mysql'
+      java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
+      def new_connection
+        java.sql.DriverManager.get_connection CONFIG
+      end
+    else
+      CONFIG = { :username => 'root', :password => PASSWORD, :database => DATABASE}
+      require 'mysql2'
+      def new_connection
+        Mysql2::Client.new CONFIG
+      end
+    end
+    ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://root:password@127.0.0.1/#{DATABASE}"
+
+  when 'sqlite3'
+    if RUBY_PLATFORM == 'java'
+      def new_connection
+        ActiveRecord::Base.connection.raw_connection.connection
+      end
+    else
+      require 'sqlite3'
+      def new_connection
+        ActiveRecord::Base.connection.raw_connection
+      end
+    end
+    ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
+
+  else
+    raise "not supported"
+  end
 end
 
+$conn_factory = RawConnectionFactory.new
+$conn = $conn_factory.new_connection
+
 require 'logger'
+require 'fileutils'
+FileUtils.rm_f 'test.log'
 ActiveRecord::Base.logger = Logger.new('test.log')
 
 if ENV['VERBOSE'] == 'true'
@@ -59,6 +109,17 @@ require 'benchmark'
 require 'faker'
 
 module SpecHelper
+  def random_time_or_datetime
+    time = Time.at(rand * Time.now.to_i)
+    if ENV['DB'] == 'mysql'
+      time = time.change(:usec => 0)
+    end
+    if rand > 0.5
+      time = time.change(:usec => 0).to_datetime
+    end
+    time
+  end
+
   def lotsa_records
     @records ||= begin
       memo = []
@@ -69,7 +130,7 @@ module SpecHelper
       2000.times do
         selector = ActiveSupport::OrderedHash.new
         selector[:name] = if RUBY_VERSION >= '1.9'
-          names.sample(1).first
+          names.sample
         else
           names.choice
         end
@@ -79,7 +140,7 @@ module SpecHelper
           :spiel => Faker::Lorem.sentences.join,
           :good => true,
           :birthday => Time.at(rand * Time.now.to_i).to_date,
-          :morning_walk_time => Time.at(rand * Time.now.to_i),
+          :morning_walk_time => random_time_or_datetime,
           :home_address => Faker::Lorem.sentences.join,
           # hard to know how to have AR insert this properly unless Upsert::Binary subclasses String
           # :zipped_biography => Upsert.binary(Zlib::Deflate.deflate(Faker::Lorem.paragraphs.join, Zlib::BEST_SPEED))
@@ -102,19 +163,42 @@ module SpecHelper
       end
     end
     ref2 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
-    ref2.each_with_index do |ref2a, i|
-      ref2a.to_yaml.should == ref1[i].to_yaml
-    end
-    # ref2.should == ref1
+    compare_attribute_sets ref1, ref2
   end
 
   def assert_creates(model, expected_records)
-    expected_records.each do |conditions|
-      model.where(conditions).count.should == 0
+    expected_records.each do |selector, setter|
+      # should i use setter in where?
+      model.where(selector).count.should == 0
     end
     yield
-    expected_records.each do |conditions|
-      model.where(conditions).count.should == 1
+    expected_records.each do |selector, setter|
+      setter ||= {}
+      found = model.where(selector).map { |record| record.attributes.except('id') }
+      expected = [ selector.stringify_keys.merge(setter.stringify_keys) ]
+      compare_attribute_sets expected, found
+    end
+  end
+
+  def compare_attribute_sets(expected, found)
+    e = expected.map { |attrs| simplify_attributes attrs }
+    f = found.map { |attrs| simplify_attributes attrs }
+    f.each_with_index do |fa, i|
+      fa.should == e[i]
+    end
+  end
+
+  def simplify_attributes(attrs)
+    attrs.select do |k, v|
+      v.present?
+    end.inject({}) do |memo, (k, v)|
+      memo[k] = case v
+      when Time, DateTime
+        v.to_time.to_f
+      else
+        v
+      end
+      memo
     end
   end
 

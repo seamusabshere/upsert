@@ -1,91 +1,73 @@
 # Upsert
 
-MySQL, PostgreSQL, and SQLite all have different SQL MERGE tricks that you can use to simulate upsert. This library codifies them under a single syntax.
+Make it easy to upsert on traditional RDBMS like MySQL, PostgreSQL, and SQLite3&mdash;hey look NoSQL!. Transparently creates (and re-uses) stored procedures/functions when necessary.
+
+You pass it a bare-metal connection to the database like `Mysql2::Client` (from `mysql2` gem on MRI) or `Java::OrgPostgresqlJdbc4::Jdbc4Connection` (from `jdbc-postgres` on Jruby).
+
+As databases start to natively support SQL MERGE (which is basically upsert), this library will take advantage (but you won't have to change your code).
+
+Does **not** depend on ActiveRecord.
+
+70&ndash;90%+ faster than emulating upsert with ActiveRecord.
+
+Supports MRI and JRuby.
 
 ## Usage
 
-You pass a selector that uniquely identifies a row, whether it exists or not. You pass a set of attributes that should be set on that row. Syntax inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
+You pass a __selector__ that uniquely identifies a row, whether it exists or not. You also pass a __setter__, attributes that should be set on that row.
 
-### Single record
+Syntax inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
+
+### Basic
     
 ```ruby
 connection = Mysql2::Client.new([...])
 table_name = :pets
 upsert = Upsert.new connection, table_name
+# N times...
 upsert.row({:name => 'Jerry'}, :breed => 'beagle')
 ```
 
-If you want to use an `ActiveRecord` helper method, try:
+So just to reiterate you've got a __selector__ and a __setter__:
 
 ```ruby
-require 'upsert/active_record_upsert'
-Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
-```
-
-So just to reiterate you've got a `selector` and a `setter`:
-
-```ruby
-connection = Mysql2::Client.new([...])
-table_name = :pets
-upsert = Upsert.new connection, table_name
 selector = { :name => 'Jerry' }
 setter = { :breed => 'beagle' }
 upsert.row(selector, setter)
 ```
 
-### Multiple records (batch mode)
+### Batch mode
 
-Slightly faster.
+By organizing your upserts into a batch, we can do work behind the scenes to make them faster.
 
 ```ruby
 connection = Mysql2::Client.new([...])
 Upsert.batch(connection, :pets) do |upsert|
+  # N times...
   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
 end
 ```
 
-Tested to be much about 80% faster on PostgreSQL, MySQL, and SQLite3 than comparable methods (see the tests, which fail if they are not faster).
+Batch mode is tested to be about 80% faster on PostgreSQL, MySQL, and SQLite3 than other ways to emulate upsert (see the tests, which fail if they are not faster).
 
-## Gotchas
-
-### No automatic typecasting beyond what the adapter/driver provides
-
-We don't have any logic to convert integers into strings, strings into integers, etc. in order to satisfy PostgreSQL's strictness on this issue.
-
-So if you try to upsert a blank string (`''`) into an integer field in PostgreSQL, you will get a `PG::Error`.
-
-### Within a batch, it's assumed that you're always passing the same columns
-
-Currently, on MySQL, the first row you pass in determines the columns that will be used for all future upserts using the same Upsert object. That's useful for mass importing of many rows with the same columns, but is surprising if you're trying to use a single `Upsert` object to add arbitrary data. For example:
+### ActiveRecord helper method
 
 ```ruby
-# won't work - doesn't use same columns
-Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
-  upsert.row({:name => 'Jerry'}, :breed => 'beagle')
-  upsert.row({:tag_number => 456}, :spiel => 'great cat')
-end
-```
-
-You would need to use a new `Upsert` object. On the other hand, this is totally fine:
-
-```ruby
-# totally fine
+require 'upsert/active_record_upsert'
+# N times...
 Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
-Pet.upsert({:tag_number => 456}, :spiel => 'great cat')
 ```
-
-Hopefully this surprising behavior won't exist in the future!
 
 ## Wishlist
 
 Pull requests for any of these would be greatly appreciated:
 
-1. More correctness tests! What is the dictionary definition of "upsert," anyway?
+1. Cache JDBC PreparedStatement objects.
+1. Optional "assume-merge-function-exists" mode. Currently, the fact that a merge function has been created is memoized per-process.
 1. Sanity check my three benchmarks (four if you include activerecord-import on MySQL). Do they accurately represent optimized alternatives?
 1. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
-1. Make `Upsert` instances accept arbitrary columns, which is what people probably expect. (this should work on PostgreSQL and SQLite3 already)
-1. JRuby support
+1. Test that `Upsert` instances accept arbitrary columns, even within a batch, which is what people probably expect.
 
 ## Real-world usage
 
@@ -98,16 +80,64 @@ We use `upsert` for [big data processing at Brighter Planet](http://brighterplan
 
 Originally written to speed up the [`data_miner`](https://github.com/seamusabshere/data_miner) data mining library.
 
-## Supported databases
+## Supported databases/drivers
+
+<table>
+  <tr>
+    <th>*</th>
+    <th>MySQL</th>
+    <th>PostgreSQL</th>
+    <th>SQLite3</th>
+  </tr>
+  <tr>
+    <th>MRI</th>
+    <td><a href="https://rubygems.org/gems/mysql2">mysql2</a></td>
+    <td><a href="https://rubygems.org/gems/pg">pg</a></td>
+    <td><a href="https://rubygems.org/gems/sqlite3">sqlite3</a></td>
+  </tr>
+  <tr>
+    <th>JRuby</th>
+    <td><a href="https://rubygems.org/gems/jdbc-mysql">jdbc-mysql</a></td>
+    <td><a href="https://rubygems.org/gems/jdbc-postgres">jdbc-postgres</a></td>
+    <td><a href="https://rubygems.org/gems/jdbc-sqlite3">jdbc-sqlite3</a></td>
+  </tr>
+</table>
+
+See below for details about what SQL MERGE trick (emulation of upsert) is used, performance, code examples, etc.
+
+### Rails / ActiveRecord
+
+(assuming that one of the other three supported drivers is being used under the covers)
+
+```ruby
+Upsert.new Pet.connection, Pet.table_name
+```
+
+#### Speed
+
+Depends on the driver being used!
+
+#### SQL MERGE trick
+
+Depends on the driver being used!
 
 ### MySQL
 
-Using the [mysql2](https://rubygems.org/gems/mysql2) driver.
+On MRI, use the [mysql2](https://rubygems.org/gems/mysql2) driver.
 
 ```ruby
+require 'mysql2'
 connection = Mysql2::Connection.new(:username => 'root', :password => 'password', :database => 'upsert_test')
 table_name = :pets
 upsert = Upsert.new(connection, table_name)
+```
+
+On JRuby, use the [jdbc-mysql](https://rubygems.org/gems/jdbc-mysql) driver.
+
+```ruby
+require 'jdbc/mysql'
+java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
+connection = java.sql.DriverManager.get_connection "jdbc:mysql://127.0.0.1/mydatabase?user=root&password=password"
 ```
 
 #### Speed
@@ -161,12 +191,21 @@ END
 
 ### PostgreSQL
 
-Using the [pg](https://rubygems.org/gems/pg) driver.
+On MRI, use the [pg](https://rubygems.org/gems/pg) driver.
 
 ```ruby
+require 'pg'
 connection = PG.connect(:dbname => 'upsert_test')
 table_name = :pets
 upsert = Upsert.new(connection, table_name)
+```
+
+On JRuby, use the [jdbc-postgres](https://rubygems.org/gems/jdbc-postgres) driver.
+
+```ruby
+require 'jdbc/postgres'
+java.sql.DriverManager.register_driver org.postgresql.Driver.new
+connection = java.sql.DriverManager.get_connection "jdbc:postgresql://127.0.0.1/mydatabase?user=root&password=password"
 ```
 
 #### Speed
@@ -220,12 +259,22 @@ I slightly modified it so that it only retries once - don't want infinite loops.
 
 ### Sqlite
 
-Using the [sqlite3](https://rubygems.org/gems/sqlite3) driver.
+On MRI, use the [sqlite3](https://rubygems.org/gems/sqlite3) driver.
 
 ```ruby
+require 'sqlite3'
 connection = SQLite3::Database.open(':memory:')
 table_name = :pets
 upsert = Upsert.new(connection, table_name)
+```
+
+On JRuby, use the [jdbc-sqlite3](https://rubygems.org/gems/jdbc-sqlite3) driver.
+
+```ruby
+# TODO somebody please verify
+require 'jdbc/sqlite3'
+java.sql.DriverManager.register_driver org.sqlite.Driver.new
+connection = java.sql.DriverManager.get_connection "jdbc:sqlite://127.0.0.1/mydatabase?user=root&password=password"
 ```
 
 #### Speed
@@ -245,22 +294,6 @@ Thanks to [@dan04's answer on StackOverflow](http://stackoverflow.com/questions/
 INSERT OR IGNORE INTO visits VALUES (127.0.0.1, 1);
 UPDATE visits SET visits = 1 WHERE ip LIKE 127.0.0.1;
 ```
-
-### Rails / ActiveRecord
-
-(assuming that one of the other three supported drivers is being used under the covers)
-
-```ruby
-Upsert.new Pet.connection, Pet.table_name
-```
-
-#### Speed
-
-Depends on the driver being used!
-
-#### SQL MERGE trick
-
-Depends on the driver being used!
 
 ## Features
 
@@ -292,7 +325,23 @@ You could also use [activerecord-import](https://github.com/zdennis/activerecord
 Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
 ```
 
-This, however, only works on MySQL and requires ActiveRecord&mdash;and if all you are doing is upserts, `upsert` is tested to be 40% faster. And you don't have to put all of the rows to be upserted into a single huge array - you can batch them using `Upsert.batch`.
+`activerecord-import`, however, only works on MySQL and requires ActiveRecord&mdash;and if all you are doing is upserts, `upsert` is tested to be 40% faster. And you don't have to put all of the rows to be upserted into a single huge array - you can batch them using `Upsert.batch`.
+
+## Gotchas
+
+### No automatic typecasting beyond what the adapter/driver provides
+
+We don't have any logic to convert integers into strings, strings into integers, etc. in order to satisfy PostgreSQL/etc.'s strictness on this issue.
+
+So if you try to upsert a blank string (`''`) into an integer field in PostgreSQL, you will get an error.
+
+### Dates and times are converted to UTC
+
+Datetimes are immediately converted to UTC and sent to the database as ISO8601 strings.
+
+If you're using MySQL, make sure server/connection timezone is UTC. If you're using Rails and/or ActiveRecord, you might want to check `ActiveRecord::Base.default_timezone`... it should probably be `:utc`.
+
+In general, run some upserts and make sure datetimes get persisted like you expect.
 
 ## Copyright
 

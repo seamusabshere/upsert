@@ -16,17 +16,14 @@ class Upsert
     attr_reader :setter
 
 
-    def initialize(controller, raw_selector, raw_setter)
-      connection = controller.connection
-      cell_class = controller.cell_class
-
+    def initialize(raw_selector, raw_setter)
       @selector = raw_selector.inject({}) do |memo, (k, v)|
-        memo[k.to_s] = cell_class.new(connection, k, v)
+        memo[k.to_s] = v
         memo
       end
 
       @setter = raw_setter.inject({}) do |memo, (k, v)|
-        memo[k.to_s] = cell_class.new(connection, k, v)
+        memo[k.to_s] = v
         memo
       end
 

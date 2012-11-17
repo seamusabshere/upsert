@@ -16,23 +16,35 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = Upsert::VERSION
 
-  gem.add_development_dependency 'posix-spawn'
+  # NOTE: no runtime dependencies!
+
   gem.add_development_dependency 'rspec-core'
   gem.add_development_dependency 'rspec-expectations'
   gem.add_development_dependency 'rspec-mocks'
 
-  gem.add_development_dependency 'sqlite3'
-  gem.add_development_dependency 'mysql2'
-  gem.add_development_dependency 'pg'
-  gem.add_development_dependency 'activerecord' # testing only
+  gem.add_development_dependency 'activerecord'
   gem.add_development_dependency 'active_record_inline_schema'
   gem.add_development_dependency 'faker'
   gem.add_development_dependency 'yard'
-  gem.add_development_dependency 'redcarpet' # github-flavored markdown
   gem.add_development_dependency 'activerecord-import'
   gem.add_development_dependency 'pry'
 
   unless RUBY_VERSION >= '1.9'
     gem.add_development_dependency 'orderedhash'
+  end
+
+  if RUBY_PLATFORM == 'java'
+    gem.add_development_dependency 'jruby-openssl'
+    gem.add_development_dependency 'jdbc-postgres'
+    gem.add_development_dependency 'jdbc-mysql'
+    gem.add_development_dependency 'jdbc-sqlite3'
+    gem.add_development_dependency 'activerecord-jdbcsqlite3-adapter'
+    gem.add_development_dependency 'activerecord-jdbcmysql-adapter'
+    gem.add_development_dependency 'activerecord-jdbcpostgresql-adapter'
+  else
+    gem.add_development_dependency 'sqlite3'
+    gem.add_development_dependency 'mysql2'
+    gem.add_development_dependency 'pg'
+    gem.add_development_dependency 'redcarpet' # github-flavored markdown
   end
 end

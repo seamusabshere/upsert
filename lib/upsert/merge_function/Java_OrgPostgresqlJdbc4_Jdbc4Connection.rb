@@ -3,7 +3,7 @@ require 'upsert/merge_function/postgresql'
 class Upsert
   class MergeFunction
     # @private
-    class PG_Connection < MergeFunction
+    class Java_OrgPostgresqlJdbc4_Jdbc4Connection < MergeFunction
       include Postgresql
 
       def execute(row)
@@ -12,7 +12,7 @@ class Upsert
         bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
         begin
           connection.execute sql, (bind_selector_values + bind_setter_values)
-        rescue PG::Error => pg_error
+        rescue org.postgresql.util.PSQLException => pg_error
           if pg_error.message =~ /function #{name}.* does not exist/i
             if first_try
               Upsert.logger.info %{[upsert] Function #{name.inspect} went missing, trying to recreate}
@@ -29,14 +29,7 @@ class Upsert
         end
       end
 
-      # strangely ? can't be used as a placeholder
-      def sql
-        @sql ||= begin
-          bind_params = []
-          1.upto(selector_keys.length + setter_keys.length) { |i| bind_params << "$#{i}" }
-          %{SELECT #{name}(#{bind_params.join(', ')})}
-        end
-      end
+
     end
   end
 end

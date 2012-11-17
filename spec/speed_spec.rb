@@ -46,7 +46,7 @@ describe Upsert do
       end
     end
   
-    if ENV['ADAPTER'] == 'mysql2'
+    if ENV['DB'] == 'mysql'
       describe 'compared to activerecord-import' do
         it "is faster than faking upserts with activerecord-import" do
           assert_faster_than 'faking upserts with activerecord-import', lotsa_records do |records|

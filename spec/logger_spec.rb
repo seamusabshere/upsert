@@ -7,7 +7,9 @@ describe Upsert do
         io = StringIO.new
         Thread.exclusive do
           Upsert.logger = Logger.new(io)
+
           Upsert.logger.warn "hello"
+
           io.rewind
           io.read.chomp.should == 'hello'
         end
@@ -17,21 +19,31 @@ describe Upsert do
     end
 
     it "logs queries" do
-      require 'sqlite3'
-      db = SQLite3::Database.open(':memory:')
-      db.execute_batch "CREATE TABLE cats (name CHARACTER VARYING(255))"
       begin
-        io = StringIO.new
         old_logger = Upsert.logger
-        Upsert.logger = Logger.new io, Logger::DEBUG
-        u = Upsert.new(db, :cats)
-        u.row :name => 'you'
-        io.rewind
-        io.read.chomp.should =~ /INSERT OR IGNORE.*you/mi
+        io = StringIO.new
+        Thread.exclusive do
+          Upsert.logger = Logger.new(io)
+          
+          u = Upsert.new($conn, :pets)
+          u.row(name: 'Jerry')
+
+          io.rewind
+          log = io.read.chomp
+          case u.connection.class.name
+          when /sqlite/i
+            log.should =~ /insert or ignore/i
+          when /mysql/i
+            log.should =~ /call upsert_pets_SEL_name/i
+          when /p.*g/i
+            log.should =~ /select upsert_pets_SEL_name/i
+          else
+            raise "not sure"
+          end
+        end
       ensure
         Upsert.logger = old_logger
       end
     end
-
   end
 end

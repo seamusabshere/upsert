@@ -8,6 +8,8 @@ class Upsert
       end
     end
 
+    TIME_DETECTOR = /date|time/i
+
     attr_reader :name
     attr_reader :sql_type
     attr_reader :default
@@ -18,6 +20,7 @@ class Upsert
     def initialize(connection, name, sql_type, default)
       @name = name
       @sql_type = sql_type
+      @temporal_query = !!(sql_type =~ TIME_DETECTOR)
       @default = default
       @quoted_name = connection.quote_ident name
       @quoted_selector_name = connection.quote_ident "#{name}_sel"
@@ -25,19 +28,40 @@ class Upsert
     end
 
     def to_selector_arg
-      "#{quoted_selector_name} #{sql_type}"
+      "#{quoted_selector_name} #{arg_type}"
     end
 
     def to_setter_arg
-      "#{quoted_setter_name} #{sql_type}"
+      "#{quoted_setter_name} #{arg_type}"
     end
 
     def to_setter
-      "#{quoted_name} = #{quoted_setter_name}"
+      "#{quoted_name} = #{to_setter_value}"
     end
 
     def to_selector
       "#{quoted_name} = #{quoted_selector_name}"
     end
+
+    def temporal?
+      @temporal_query
+    end
+
+    def arg_type
+      if temporal?
+        'character varying(255)'
+      else
+        sql_type
+      end
+    end
+
+    def to_setter_value
+      if temporal?
+        "CAST(#{quoted_setter_name} AS #{sql_type})"
+      else
+        quoted_setter_name
+      end
+    end
+
   end
 end

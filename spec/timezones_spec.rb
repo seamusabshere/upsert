@@ -1,28 +1,49 @@
 require 'spec_helper'
 describe Upsert do
-  describe "doesn't mess with timezones" do
-    before do
-      @old_default_tz = ActiveRecord::Base.default_timezone
-    end
-    after do
-      ActiveRecord::Base.default_timezone = @old_default_tz
-    end
-  
-    it "deals fine with UTC" do
-      ActiveRecord::Base.default_timezone = :utc
-      time = Time.now.utc
+  describe "timezone support" do
+    it "takes times in UTC" do
+      time = Time.new.utc
+      if ENV['DB'] == 'mysql'
+        time = time.change(:usec => 0)
+      end
       upsert = Upsert.new $conn, :pets
-      assert_creates(Pet, [{:name => 'Jerry', :morning_walk_time => time}]) do
+      assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
         upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
       end
     end
-    it "won't mess with UTC" do
-      ActiveRecord::Base.default_timezone = :local
-      time = Time.now
+
+    it "takes times in local" do
+      time = Time.new
+      if ENV['DB'] == 'mysql'
+        time = time.change(:usec => 0)
+      end
       upsert = Upsert.new $conn, :pets
-      assert_creates(Pet, [{:name => 'Jerry', :morning_walk_time => time}]) do
+      assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
         upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
       end
     end
+
+    it "takes datetimes in UTC" do
+      time = DateTime.now.new_offset(Rational(0, 24))
+      if ENV['DB'] == 'mysql'
+        time = time.change(:usec => 0)
+      end
+      upsert = Upsert.new $conn, :pets
+      assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
+        upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
+      end
+    end
+
+    it "takes datetimes in local" do
+      time = DateTime.now
+      if ENV['DB'] == 'mysql'
+        time = time.change(:usec => 0)
+      end
+      upsert = Upsert.new $conn, :pets
+      assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
+        upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
+      end
+    end
+
   end
 end

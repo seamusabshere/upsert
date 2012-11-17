@@ -5,15 +5,19 @@ class Upsert
       def execute(sql, params = nil)
         if params
           Upsert.logger.debug { %{[upsert] #{sql} with #{params.inspect}} }
-          raw_connection.exec sql, params
+          metal.exec sql, convert_binary(params)
         else
           Upsert.logger.debug { %{[upsert] #{sql}} }
-          raw_connection.exec sql
+          metal.exec sql
         end
       end
 
       def quote_ident(k)
-        raw_connection.quote_ident k.to_s
+        metal.quote_ident k.to_s
+      end
+
+      def binary(v)
+        { :value => v.value, :format => 1 }
       end
     end
   end
