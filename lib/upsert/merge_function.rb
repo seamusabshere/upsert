@@ -3,7 +3,7 @@ require 'zlib'
 class Upsert
   # @private
   class MergeFunction
-    MAX_NAME_LENGTH = 63
+    MAX_NAME_LENGTH = 62
 
     class << self
       def execute(controller, row)
@@ -23,7 +23,7 @@ class Upsert
         if parts.length > MAX_NAME_LENGTH
           # maybe i should md5 instead
           crc32 = Zlib.crc32(parts).to_s
-          [ parts.first(MAX_NAME_LENGTH-11), crc32 ].join
+          [ parts[0..MAX_NAME_LENGTH-10], crc32 ].join
         else
           parts
         end

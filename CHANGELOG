@@ -1,3 +1,9 @@
+1.1.1 / 2012-12-03
+
+* Bug fixes
+
+  * Removed inadvertent dependency on ActiveSupport - thanks @thbar! https://github.com/seamusabshere/upsert/issues/10
+
 1.1.0 / 2012-11-26
 
 * Enhancements

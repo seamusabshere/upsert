@@ -2,8 +2,6 @@ class Upsert
   class MergeFunction
     # @private
     module Mysql
-      MAX_NAME_LENGTH = 63
-
       def self.included(klass)
         klass.extend ClassMethods
       end
