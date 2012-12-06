@@ -49,7 +49,8 @@ EOS
 
       def to_setter
         if hstore?
-          "#{quoted_name} = #{quoted_name} || #{to_setter_value}"
+          # http://stackoverflow.com/questions/9317971/adding-a-key-to-an-empty-hstore-column
+          "#{quoted_name} = COALESCE(#{quoted_name}, hstore(array[]::varchar[])) || #{to_setter_value}"
         else
           super
         end

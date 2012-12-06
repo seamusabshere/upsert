@@ -7,6 +7,19 @@ describe Upsert do
       Pet.connection.execute "ALTER TABLE pets ADD COLUMN crazy HSTORE"
       upsert = Upsert.new $conn, :pets
 
+      upsert.row({name: 'Bill'}, crazy: nil)
+      row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
+      row['crazy'].should == nil
+
+      upsert.row({name: 'Bill'}, crazy: {a: 1})
+      row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
+      crazy = HStore.parse row['crazy']
+      crazy.should == { a: '1' }
+
+      upsert.row({name: 'Bill'}, crazy: nil)
+      row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
+      row['crazy'].should == nil
+
       upsert.row({name: 'Bill'}, crazy: {a: 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = HStore.parse row['crazy']
