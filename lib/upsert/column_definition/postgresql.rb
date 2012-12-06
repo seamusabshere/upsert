@@ -19,6 +19,41 @@ EOS
           end
         end
       end
+
+      HSTORE_DETECTOR = /hstore/i
+
+      def initialize(*)
+        super
+        @hstore_query = !!(sql_type =~ HSTORE_DETECTOR)
+      end
+
+      def hstore?
+        @hstore_query
+      end
+
+      def arg_type
+        if hstore?
+          'text'
+        else
+          super
+        end
+      end
+
+      def to_setter_value
+        if hstore?
+          "#{quoted_setter_name}::hstore"
+        else
+          super
+        end
+      end
+
+      def to_setter
+        if hstore?
+          "#{quoted_name} = #{quoted_name} || #{to_setter_value}"
+        else
+          super
+        end
+      end
     end
   end
 end

@@ -208,6 +208,14 @@ java.sql.DriverManager.register_driver org.postgresql.Driver.new
 connection = java.sql.DriverManager.get_connection "jdbc:postgresql://127.0.0.1/mydatabase?user=root&password=password"
 ```
 
+If you want to use HStore, make the `pg-hstore` gem available and pass a Hash in setters:
+
+```ruby
+gem 'pg-hstore'
+require 'hstore'
+upsert.row({:name => 'Bill'}, :mydata => {:a => 1, :b => 2})
+```
+
 #### Speed
 
 From the tests (updated 9/21/12):
