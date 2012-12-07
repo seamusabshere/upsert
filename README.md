@@ -212,7 +212,7 @@ If you want to use HStore, make the `pg-hstore` gem available and pass a Hash in
 
 ```ruby
 gem 'pg-hstore'
-require 'hstore'
+require 'pg_hstore'
 upsert.row({:name => 'Bill'}, :mydata => {:a => 1, :b => 2})
 ```
 

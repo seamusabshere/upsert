@@ -5,8 +5,8 @@ class Upsert
       def bind_value(v)
         case v
         when Hash
-          # you must require 'hstore' from the 'pg-hstore' gem yourself
-          ::HStore.dump(v)[1...-1]
+          # you must require 'pg_hstore' from the 'pg-hstore' gem yourself
+          ::PgHstore.dump(v)[1...-1]
         else
           super
         end
