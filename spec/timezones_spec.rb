@@ -45,5 +45,14 @@ describe Upsert do
       end
     end
 
+    if ENV['DB'] == 'postgresql'
+      it "doesn't die on timestamp without time zone (postgresql)" do
+        time = Time.new.utc
+        upsert = Upsert.new $conn, :pets
+        assert_creates(Pet, [[{:name => 'Jerry'}, {:tsntz => time}]]) do
+          upsert.row({:name => 'Jerry'}, {:tsntz => time})
+        end
+      end
+    end
   end
 end

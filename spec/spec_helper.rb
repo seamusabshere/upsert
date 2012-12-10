@@ -100,6 +100,9 @@ class Pet < ActiveRecord::Base
   col :tag_number, :type => :integer
   col :birthday, :type => :date
   col :home_address, :type => :text
+  if ENV['DB'] == 'postgresql'
+    col :tsntz, :type => 'timestamp without time zone'
+  end
   add_index :name, :unique => true
 end
 Pet.auto_upgrade!
