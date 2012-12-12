@@ -36,7 +36,6 @@ class Upsert
 
     # @deprecated Use .batch instead.
     alias :stream :batch
-    end
     
     # example Many at once method that accepts an array of attribute hashes and automatically finds the conncetion and table_name via activerecord
     #   Upsert.ar_batch_many(Pet, [{:name => 'Jerry', :breed => 'beagle'}, {:name => 'Pierre', :breed => 'tabby'}], :name)
@@ -54,6 +53,8 @@ class Upsert
         end          
       end
     end
+    
+  end
 
   SINGLE_QUOTE = %{'}
   DOUBLE_QUOTE = %{"}
