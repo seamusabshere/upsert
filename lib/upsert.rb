@@ -36,7 +36,24 @@ class Upsert
 
     # @deprecated Use .batch instead.
     alias :stream :batch
-  end
+    end
+    
+    # example Many at once method that accepts an array of attribute hashes and automatically finds the conncetion and table_name via activerecord
+    #   Upsert.ar_batch_many(Pet, [{:name => 'Jerry', :breed => 'beagle'}, {:name => 'Pierre', :breed => 'tabby'}], :name)
+    #   is equivalent to:
+    #   Upsert.batch(Pet.connection, Pet.table_name) do |upsert|
+    #     upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+    #     upsert.row({:name => 'Pierre'}, :breed => 'tabby')
+    #   end
+    def ar_batch_many(activerecord_model, array_of_hashes, *index_columns)
+      batch(activerecord_model.connection, activerecord_model.table_name) do |upsert|
+        array_of_hashes.each do |hash|
+          index_hash = {}            
+          index_columns.each {|index_column| index_hash[index_column] = hash.delete(index_column)}      
+          upsert.row(index_hash, hash)                       
+        end          
+      end
+    end
 
   SINGLE_QUOTE = %{'}
   DOUBLE_QUOTE = %{"}
