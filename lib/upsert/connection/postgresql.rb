@@ -6,7 +6,7 @@ class Upsert
         case v
         when Hash
           # you must require 'pg_hstore' from the 'pg-hstore' gem yourself
-          ::PgHstore.dump(v)[1...-1]
+          ::PgHstore.dump v, true
         else
           super
         end

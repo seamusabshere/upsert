@@ -30,10 +30,15 @@ describe Upsert do
       crazy = PgHstore.parse row['crazy']
       crazy.should == { a: '1', whatdat: 'whodat' }
 
+      upsert.row({name: 'Bill'}, crazy: {whatdat: "D'ONOFRIO"})
+      row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
+      crazy = PgHstore.parse row['crazy']
+      crazy.should == { a: '1', whatdat: "D'ONOFRIO" }
+
       upsert.row({name: 'Bill'}, crazy: {a: 2})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '2', whatdat: 'whodat' }
+      crazy.should == { a: '2', whatdat: "D'ONOFRIO" }
     end
   end
 end if ENV['DB'] == 'postgresql'
