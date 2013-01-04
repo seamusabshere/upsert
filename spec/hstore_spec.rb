@@ -1,10 +1,23 @@
+# -*- encoding: utf-8 -*-
 require 'spec_helper'
 describe Upsert do
   describe 'hstore on pg' do
+    require 'pg_hstore'
+    Pet.connection.execute 'CREATE EXTENSION HSTORE'
+    Pet.connection.execute "ALTER TABLE pets ADD COLUMN crazy HSTORE"
+
+    it "works for ugly text" do
+      upsert = Upsert.new $conn, :pets
+      uggy = <<-EOS
+{"results":[{"locations":[],"providedLocation":{"location":"3001 STRATTON WAY, MADISON, WI 53719 UNITED STATES"}}],"options":{"ignoreLatLngInput":true,"maxResults":1,"thumbMaps":false},"info":{"copyright":{"text":"© 2012 MapQuest, Inc.","imageUrl":"http://api.mqcdn.com/res/mqlogo.gif","imageAltText":"© 2012 MapQuest, Inc."},"statuscode":0,"messages":[]}}
+EOS
+      upsert.row({:name => 'Uggy'}, crazy: {uggy: uggy})
+      row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Uggy'})
+      crazy = PgHstore.parse row['crazy']
+      crazy.should == { uggy: uggy }
+    end
+
     it "just works" do
-      require 'pg_hstore'
-      Pet.connection.execute 'CREATE EXTENSION HSTORE'
-      Pet.connection.execute "ALTER TABLE pets ADD COLUMN crazy HSTORE"
       upsert = Upsert.new $conn, :pets
 
       upsert.row({name: 'Bill'}, crazy: nil)
