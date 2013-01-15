@@ -1,3 +1,10 @@
+1.1.7 / 2013-01-15
+
+* Enhancements
+
+  * :assume_function_exists option to avoid creating same merge function over and over
+  * Don't die on first occurrence of "tuple concurrently updated"
+
 1.1.6 / 2012-12-20
 
 * Bug fixes

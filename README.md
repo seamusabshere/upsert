@@ -64,7 +64,7 @@ Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
 Pull requests for any of these would be greatly appreciated:
 
 1. Cache JDBC PreparedStatement objects.
-1. Optional "assume-merge-function-exists" mode. Currently, the fact that a merge function has been created is memoized per-process.
+1. Allow "true" upserting like `upsert.row({name: 'Jerry'}, counter: Upsert.sql('counter+1'))`
 1. Sanity check my three benchmarks (four if you include activerecord-import on MySQL). Do they accurately represent optimized alternatives?
 1. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
 1. Test that `Upsert` instances accept arbitrary columns, even within a batch, which is what people probably expect.

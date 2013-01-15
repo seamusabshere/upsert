@@ -67,8 +67,8 @@ class Upsert
     #     upsert.row({:name => 'Jerry'}, :breed => 'beagle')
     #     upsert.row({:name => 'Pierre'}, :breed => 'tabby')
     #   end
-    def batch(connection, table_name)
-      upsert = new connection, table_name
+    def batch(connection, table_name, options = {})
+      upsert = new connection, table_name, options
       yield upsert
     end
 
@@ -172,9 +172,16 @@ class Upsert
   # @private
   attr_reader :adapter
 
+  # @private
+  def assume_function_exists?
+    @assume_function_exists
+  end
+
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
-  def initialize(connection, table_name)
+  # @param [Hash] options
+  # @option options [TrueClass,FalseClass] :assume_function_exists (false) Assume the function has already been defined correctly by another process.
+  def initialize(connection, table_name, options = {})
     @table_name = table_name.to_s
     metal = Upsert.metal connection
     @flavor = Upsert.flavor metal
@@ -185,6 +192,7 @@ class Upsert
     end
     @connection = Connection.const_get(adapter).new self, metal
     @merge_function_class = MergeFunction.const_get adapter
+    @assume_function_exists = options.fetch :assume_function_exists, false
   end
 
   # Upsert a row given a selector and a setter.
