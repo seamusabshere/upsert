@@ -53,6 +53,7 @@ class Upsert
         Upsert.logger.info "[upsert] Creating or replacing database function #{name.inspect} on table #{table_name.inspect} for selector #{selector_keys.map(&:inspect).join(', ')} and setter #{setter_keys.map(&:inspect).join(', ')}"
         selector_column_definitions = column_definitions.select { |cd| selector_keys.include?(cd.name) }
         setter_column_definitions = column_definitions.select { |cd| setter_keys.include?(cd.name) }
+        first_try = true
         connection.execute(%{
           CREATE OR REPLACE FUNCTION #{name}(#{(selector_column_definitions.map(&:to_selector_arg) + setter_column_definitions.map(&:to_setter_arg)).join(', ')}) RETURNS VOID AS
           $$
@@ -86,6 +87,13 @@ class Upsert
           $$
           LANGUAGE plpgsql;
         })
+      rescue
+        if first_try and $!.message =~ /tuple concurrently updated/
+          first_try = false
+          retry
+        else
+          raise $!
+        end
       end
     end
   end
