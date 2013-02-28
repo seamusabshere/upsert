@@ -107,6 +107,13 @@ class Pet < ActiveRecord::Base
 end
 Pet.auto_upgrade!
 
+class Task < ActiveRecord::Base
+  col :name
+  col :created_at, :type => :datetime
+  col :created_on, :type => :datetime
+end
+Task.auto_upgrade!
+
 require 'zlib'
 require 'benchmark'
 require 'faker'
