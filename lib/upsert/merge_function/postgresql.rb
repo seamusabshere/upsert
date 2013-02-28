@@ -53,6 +53,7 @@ class Upsert
         Upsert.logger.info "[upsert] Creating or replacing database function #{name.inspect} on table #{table_name.inspect} for selector #{selector_keys.map(&:inspect).join(', ')} and setter #{setter_keys.map(&:inspect).join(', ')}"
         selector_column_definitions = column_definitions.select { |cd| selector_keys.include?(cd.name) }
         setter_column_definitions = column_definitions.select { |cd| setter_keys.include?(cd.name) }
+        update_column_definitions = setter_column_definitions.select { |cd| cd.name !~ CREATED_COL_REGEX }
         first_try = true
         connection.execute(%{
           CREATE OR REPLACE FUNCTION #{name}(#{(selector_column_definitions.map(&:to_selector_arg) + setter_column_definitions.map(&:to_setter_arg)).join(', ')}) RETURNS VOID AS
@@ -62,7 +63,7 @@ class Upsert
           BEGIN
             LOOP
               -- first try to update the key
-              UPDATE #{quoted_table_name} SET #{setter_column_definitions.map(&:to_setter).join(', ')}
+              UPDATE #{quoted_table_name} SET #{update_column_definitions.map(&:to_setter).join(', ')}
                 WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ') };
               IF found THEN
                 RETURN;
