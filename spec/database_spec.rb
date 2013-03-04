@@ -66,6 +66,15 @@ describe Upsert do
           upsert.row({:id => jerry.id}, :lovability => 2.0)
         end
       end
+      it "does not set the created_at and created_on columns on update" do
+        task = Task.create :name => 'Clean bathroom'
+        created = task.created_at
+        upsert = Upsert.new $conn, :tasks
+        upsert.row({:id => task.id}, :name => 'Clean kitchen')
+        task.reload
+        task.created_at.should eql task.created_at
+        task.created_on.should eql task.created_on
+      end
     end
     describe :batch do
       it "works for multiple rows (base case)" do

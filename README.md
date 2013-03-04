@@ -25,8 +25,10 @@ connection = Mysql2::Client.new([...])
 table_name = :pets
 upsert = Upsert.new connection, table_name
 # N times...
-upsert.row({:name => 'Jerry'}, :breed => 'beagle')
+upsert.row({:name => 'Jerry'}, :breed => 'beagle', :created_at => Time.now)
 ```
+
+The `created_at` and `created_on` columns are used for inserts, but ignored on updates.
 
 So just to reiterate you've got a __selector__ and a __setter__:
 

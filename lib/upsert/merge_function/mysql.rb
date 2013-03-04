@@ -22,6 +22,7 @@ class Upsert
         Upsert.logger.info "[upsert] Creating or replacing database function #{name.inspect} on table #{table_name.inspect} for selector #{selector_keys.map(&:inspect).join(', ')} and setter #{setter_keys.map(&:inspect).join(', ')}"
         selector_column_definitions = column_definitions.select { |cd| selector_keys.include?(cd.name) }
         setter_column_definitions = column_definitions.select { |cd| setter_keys.include?(cd.name) }
+        update_column_definitions = setter_column_definitions.select { |cd| cd.name !~ CREATED_COL_REGEX }
         quoted_name = connection.quote_ident name
         connection.execute "DROP PROCEDURE IF EXISTS #{quoted_name}"
         connection.execute(%{
@@ -50,7 +51,7 @@ class Upsert
                 -- key error. But the handler above will take care of that.
                 IF @count > 0 THEN 
                   -- UPDATE table_name SET b = b_SET WHERE a = a_SEL;
-                  UPDATE #{quoted_table_name} SET #{setter_column_definitions.map(&:to_setter).join(', ')} WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ')};
+                  UPDATE #{quoted_table_name} SET #{update_column_definitions.map(&:to_setter).join(', ')} WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ')};
                 ELSE
                   -- INSERT INTO table_name (a, b) VALUES (k, data);
                   INSERT INTO #{quoted_table_name} (#{setter_column_definitions.map(&:quoted_name).join(', ')}) VALUES (#{setter_column_definitions.map(&:to_setter_value).join(', ')});
