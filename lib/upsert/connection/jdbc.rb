@@ -42,6 +42,7 @@ class Upsert
               # http://stackoverflow.com/questions/4243513/why-does-preparedstatement-setnull-requires-sqltype
               statement.setObject i+1, nil
             else
+              v = v.to_s if v.is_a? Symbol
               setter = setters[v.class.name]
               statement.send setter, i+1, v
             end
