@@ -66,6 +66,14 @@ describe Upsert do
           upsert.row({:id => jerry.id}, :lovability => 2.0)
         end
       end
+
+      it "converts symbol values to string" do
+        jerry = Pet.create :name => 'Jerry', :gender => 'female'
+        upsert = Upsert.new $conn, :pets
+        assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
+          upsert.row({:id => jerry.id}, :gender => :male)
+        end
+      end
     end
     describe :batch do
       it "works for multiple rows (base case)" do
