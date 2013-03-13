@@ -75,6 +75,14 @@ describe Upsert do
         task.created_at.should eql task.created_at
         task.created_on.should eql task.created_on
       end
+
+      it "converts symbol values to string" do
+        jerry = Pet.create :name => 'Jerry', :gender => 'female'
+        upsert = Upsert.new $conn, :pets
+        assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
+          upsert.row({:id => jerry.id}, :gender => :male)
+        end
+      end
     end
     describe :batch do
       it "works for multiple rows (base case)" do
