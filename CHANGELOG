@@ -1,8 +1,16 @@
-unreleased
+1.2.0 / 2013-04-04
 
 * Breaking changes
 
   * columns named "created_at" and "created_on" will only be set if it's a new row - thanks @derekharmel! https://github.com/seamusabshere/upsert/pull/15
+
+* Enhancements
+
+  * Detect invalid columns passed in either selector or setter - inspired by @atandrau, thanks! https://github.com/seamusabshere/upsert/issues/18
+
+* Bug fixes
+
+  * Always convert symbols to strings when used as bind vars - thanks @towerhe! - https://github.com/seamusabshere/upsert/pull/16
 
 1.1.7 / 2013-01-15
 
