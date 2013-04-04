@@ -46,6 +46,7 @@ class Upsert
       @controller = controller
       @selector_keys = selector_keys
       @setter_keys = setter_keys
+      validate!
       create! unless assume_function_exists
     end
 
@@ -67,6 +68,16 @@ class Upsert
 
     def column_definitions
       controller.column_definitions
+    end
+
+    private
+
+    def validate!
+      possible = column_definitions.map(&:name)
+      invalid = (setter_keys + selector_keys).uniq - possible
+      if invalid.any?
+        raise ArgumentError, "[Upsert] Invalid column(s): #{invalid.map(&:inspect).join(', ')}"
+      end
     end
   end
 end

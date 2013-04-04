@@ -46,6 +46,15 @@ describe Upsert do
       u.row(selector, setter)
       Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
     end
+
+    it "tells you if you request a column that doesn't exist" do
+      u = Upsert.new($conn, :pets)
+      lambda { u.row(gibberish: 'ba') }.should raise_error(/invalid col/i)
+      lambda { u.row(name: 'Jerry', gibberish: 'ba') }.should raise_error(/invalid col/i)
+      lambda { u.row({name: 'Jerry'}, gibberish: 'ba') }.should raise_error(/invalid col/i)
+      lambda { u.row({name: 'Jerry'}, gender: 'male', gibberish: 'ba') }.should raise_error(/invalid col/i)
+    end
+
   end
 
   describe "is just as correct as other ways" do
