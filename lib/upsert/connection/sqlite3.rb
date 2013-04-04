@@ -10,12 +10,8 @@ class Upsert
           't'
         when FalseClass
           'f'
-        when Time, DateTime
-          Upsert.utc_iso8601 v
-        when Date
-          v.strftime ISO8601_DATE
         else
-          v
+          super
         end
       end
     end

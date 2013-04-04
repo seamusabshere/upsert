@@ -26,6 +26,8 @@ class Upsert
         Upsert.utc_iso8601 v
       when Date
         v.strftime ISO8601_DATE
+      when Symbol
+        v.to_s
       else
         v
       end
