@@ -47,6 +47,23 @@ describe Upsert do
       Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
     end
 
+    # https://github.com/seamusabshere/upsert/issues/18
+    it "uses nil selectors" do
+      Pet.create(name: "Jerry", gender: nil, spiel: "samoyed")
+      u = Upsert.new($conn, :pets)
+      u.row({:name => 'Jerry', gender: nil}, :spiel => 'beagle', :birthday => Time.now)
+      Pet.count.should == 1
+    end
+
+    it "uses nil selectors (another way of checking)" do
+      u = Upsert.new($conn, :pets)
+      now = Time.now
+      assert_creates(Pet, [{:name => 'Jerry', :gender => nil, :spiel => 'beagle', :birthday => now}]) do
+        u.row(name: "Jerry", gender: nil, spiel: "samoyed")
+        u.row({:name => 'Jerry', gender: nil}, :spiel => 'beagle', :birthday => Time.now)
+      end
+    end
+
     it "tells you if you request a column that doesn't exist" do
       u = Upsert.new($conn, :pets)
       lambda { u.row(gibberish: 'ba') }.should raise_error(/invalid col/i)
