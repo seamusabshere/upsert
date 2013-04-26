@@ -66,10 +66,17 @@ Pet.upsert({:name => 'Jerry'}, :breed => 'beagle')
 Pull requests for any of these would be greatly appreciated:
 
 1. Cache JDBC PreparedStatement objects.
-1. Allow "true" upserting like `upsert.row({name: 'Jerry'}, counter: Upsert.sql('counter+1'))`
 1. Sanity check my three benchmarks (four if you include activerecord-import on MySQL). Do they accurately represent optimized alternatives?
 1. Provide `require 'upsert/debug'` that will make sure you are selecting on columns that have unique indexes
 1. Test that `Upsert` instances accept arbitrary columns, even within a batch, which is what people probably expect.
+1. [@antage](https://github.com/antage)'s idea for "true" upserting: (from https://github.com/seamusabshere/upsert/issues/17)
+
+```ruby
+selector = { id: 15 }
+update_setter = { count: Upsert.sql('count + 1') }
+insert_setter = { count: 1 }
+upsert.row_with_two_setter(update_setter, insert_setter, selector)
+```
 
 ## Real-world usage
 
