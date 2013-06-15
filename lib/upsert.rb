@@ -153,8 +153,9 @@ class Upsert
   UTC_TZ = '+00:00'
   NULL_WORD = 'NULL'
   METAL_CLASS_ALIAS = {
-    'PGConn'           => 'PG::Connection',
-    'org.sqlite.Conn'  => 'Java::OrgSqliteConn' # for some reason, org.sqlite.Conn doesn't have a ruby class name
+    'PGConn'                     => 'PG::Connection',
+    'org.sqlite.Conn'            => 'Java::OrgSqliteConn', # for some reason, org.sqlite.Conn doesn't have a ruby class name
+    'Sequel::Postgres::Adapter'  => 'PG::Connection'
   }
   CREATED_COL_REGEX = /\Acreated_(at|on)\Z/
 
