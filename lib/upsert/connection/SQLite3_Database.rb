@@ -5,7 +5,12 @@ class Upsert
     # @private
     class SQLite3_Database < Connection
       include Sqlite3
-
+      
+      def initialize *args
+        super
+        @metal.results_as_hash = true
+      end
+      
       def execute(sql, params = nil)
         if params
           Upsert.logger.debug { %{[upsert] #{sql} with #{params.inspect}} }

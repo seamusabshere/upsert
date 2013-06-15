@@ -155,7 +155,7 @@ class Upsert
   METAL_CLASS_ALIAS = {
     'PGConn'                     => 'PG::Connection',
     'org.sqlite.Conn'            => 'Java::OrgSqliteConn', # for some reason, org.sqlite.Conn doesn't have a ruby class name
-    'Sequel::Postgres::Adapter'  => 'PG::Connection'
+    'Sequel::Postgres::Adapter'  => 'PG::Connection'       # Only the Postgres adapter needs an alias
   }
   CREATED_COL_REGEX = /\Acreated_(at|on)\Z/
 
