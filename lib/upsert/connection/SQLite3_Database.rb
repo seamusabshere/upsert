@@ -5,7 +5,7 @@ class Upsert
     # @private
     class SQLite3_Database < Connection
       include Sqlite3
-
+      
       def execute(sql, params = nil)
         if params
           Upsert.logger.debug { %{[upsert] #{sql} with #{params.inspect}} }

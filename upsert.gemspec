@@ -29,6 +29,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'activerecord-import'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'pg-hstore', ">=1.1.3"
+  gem.add_development_dependency 'sequel'
 
   unless RUBY_VERSION >= '1.9'
     gem.add_development_dependency 'orderedhash'
