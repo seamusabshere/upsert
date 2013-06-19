@@ -68,7 +68,7 @@ class RawConnectionFactory
         ActiveRecord::Base.connection.raw_connection
       end
     end
-    ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => ':memory:'
+    ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => 'file::memory:?cache=shared'
 
   else
     raise "not supported"
