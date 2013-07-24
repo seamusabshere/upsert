@@ -70,6 +70,9 @@ class RawConnectionFactory
     end
     ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => 'file::memory:?cache=shared'
 
+  when 'postgres'
+    raise "please use DB=postgresql NOT postgres"
+
   else
     raise "not supported"
   end
