@@ -31,7 +31,7 @@ class Upsert
             $BODY$
               LANGUAGE plpgsql;
           })
-          connection.execute(%{SELECT proname FROM pg_proc WHERE proname LIKE 'upsert_%'}).each do |row|
+          connection.execute(%{SELECT proname FROM pg_proc WHERE proname LIKE '#{MergeFunction::NAME_PREFIX}%'}).each do |row|
             k = row['proname']
             next if k == 'upsert_delfunc'
             Upsert.logger.info %{[upsert] Dropping function #{k.inspect}}

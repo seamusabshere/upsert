@@ -34,9 +34,9 @@ describe Upsert do
           when /sqlite/i
             log.should =~ /insert or ignore/i
           when /mysql/i
-            log.should =~ /call upsert_pets_SEL_name/i
+            log.should =~ /call #{Upsert::MergeFunction::NAME_PREFIX}_pets_SEL_name/i
           when /p.*g/i
-            log.should =~ /select upsert_pets_SEL_name/i
+            log.should =~ /select #{Upsert::MergeFunction::NAME_PREFIX}_pets_SEL_name/i
           else
             raise "not sure"
           end

@@ -9,7 +9,7 @@ class Upsert
       module ClassMethods
         # http://stackoverflow.com/questions/733349/list-of-stored-procedures-functions-mysql-command-line
         def clear(connection)
-          connection.execute("SHOW PROCEDURE STATUS WHERE Db = DATABASE() AND Name LIKE 'upsert_%'").map do |row|
+          connection.execute("SHOW PROCEDURE STATUS WHERE Db = DATABASE() AND Name LIKE '#{MergeFunction::NAME_PREFIX}%'").map do |row|
             row['Name'] || row['ROUTINE_NAME']
           end.each do |name|
             connection.execute "DROP PROCEDURE IF EXISTS #{connection.quote_ident(name)}"
