@@ -42,21 +42,69 @@ class Upsert
 
       def sql
         @sql ||= begin
-          bind_params = Array.new(selector_keys.length + setter_keys.length, '?')
+          bind_params = Array.new(selector_keys.length + setter_keys.length, '?') + Array.new(hstore_delete_handlers.length, '?::text[]')
           %{SELECT #{name}(#{bind_params.join(', ')})}
         end
+      end
+
+      class HstoreDeleteHandler
+        attr_reader :merge_function
+        attr_reader :column_definition
+        def initialize(merge_function, column_definition)
+          @merge_function = merge_function
+          @column_definition = column_definition
+        end
+        def name
+          column_definition.name
+        end
+        def to_arg
+          "#{quoted_name} text[]"
+        end
+        # use coalesce(foo, '{}':text[])
+        def to_setter
+          "#{column_definition.quoted_name} = DELETE(#{column_definition.quoted_name}, #{quoted_name})"
+        end
+        def to_pgsql
+          %{
+            IF array_length(#{quoted_name}, 1) > 0 THEN
+              UPDATE #{merge_function.quoted_table_name} SET #{to_setter}
+                WHERE #{merge_function.selector_column_definitions.map(&:to_selector).join(' AND ') };
+            END IF;
+          }.gsub(/\s+/, ' ')
+        end
+        private
+        def quoted_name
+          @quoted_name ||= merge_function.connection.quote_ident "_delete_#{column_definition.name}"
+        end
+      end
+
+      def hstore_delete_handlers
+        @hstore_delete_handlers ||= setter_column_definitions.select do |column_definition|
+          column_definition.hstore?
+        end.map do |column_definition|
+          HstoreDeleteHandler.new self, column_definition
+        end
+      end
+
+      def selector_column_definitions
+        column_definitions.select { |cd| selector_keys.include?(cd.name) }
+      end
+
+      def setter_column_definitions
+        column_definitions.select { |cd| setter_keys.include?(cd.name) }
+      end
+
+      def update_column_definitions
+        setter_column_definitions.select { |cd| cd.name !~ CREATED_COL_REGEX }
       end
 
       # the "canonical example" from http://www.postgresql.org/docs/9.1/static/plpgsql-control-structures.html#PLPGSQL-UPSERT-EXAMPLE
       # differentiate between selector and setter
       def create!
         Upsert.logger.info "[upsert] Creating or replacing database function #{name.inspect} on table #{table_name.inspect} for selector #{selector_keys.map(&:inspect).join(', ')} and setter #{setter_keys.map(&:inspect).join(', ')}"
-        selector_column_definitions = column_definitions.select { |cd| selector_keys.include?(cd.name) }
-        setter_column_definitions = column_definitions.select { |cd| setter_keys.include?(cd.name) }
-        update_column_definitions = setter_column_definitions.select { |cd| cd.name !~ CREATED_COL_REGEX }
         first_try = true
         connection.execute(%{
-          CREATE OR REPLACE FUNCTION #{name}(#{(selector_column_definitions.map(&:to_selector_arg) + setter_column_definitions.map(&:to_setter_arg)).join(', ')}) RETURNS VOID AS
+          CREATE OR REPLACE FUNCTION #{name}(#{(selector_column_definitions.map(&:to_selector_arg) + setter_column_definitions.map(&:to_setter_arg) + hstore_delete_handlers.map(&:to_arg)).join(', ')}) RETURNS VOID AS
           $$
           DECLARE
             first_try INTEGER := 1;
@@ -66,6 +114,7 @@ class Upsert
               UPDATE #{quoted_table_name} SET #{update_column_definitions.map(&:to_setter).join(', ')}
                 WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ') };
               IF found THEN
+                #{hstore_delete_handlers.map(&:to_pgsql).join(' ')}
                 RETURN;
               END IF;
               -- not there, so try to insert the key

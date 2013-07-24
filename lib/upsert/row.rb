@@ -14,7 +14,7 @@ class Upsert
 
     attr_reader :selector
     attr_reader :setter
-
+    attr_reader :hstore_delete_keys
 
     def initialize(raw_selector, raw_setter)
       @selector = raw_selector.inject({}) do |memo, (k, v)|
@@ -22,8 +22,17 @@ class Upsert
         memo
       end
 
+      @hstore_delete_keys = {}
       @setter = raw_setter.inject({}) do |memo, (k, v)|
-        memo[k.to_s] = v
+        k = k.to_s
+        if v.is_a?(::Hash)
+          v.each do |kk, vv|
+            if vv.nil?
+              (@hstore_delete_keys[k] ||= []) << kk
+            end
+          end
+        end
+        memo[k] = v
         memo
       end
 
