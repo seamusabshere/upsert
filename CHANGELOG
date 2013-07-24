@@ -1,5 +1,6 @@
 * Breaking changes
 
+  * For Postgres Hstore, null keys are deliberately deleted - so there's no way to set "foo" => NULL - "foo" will just get deleted as a key
   * Name merge functions "upsert1_2_0" instead of "upsert_"
 
 1.2.0 / 2013-04-04

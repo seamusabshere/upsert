@@ -8,6 +8,7 @@ class Upsert
         java.sql.Types::OTHER       => 'getString', # ?! i guess unicode text?
         java.sql.Types::BINARY      => 'getBlob',
         java.sql.Types::LONGVARCHAR => 'getString',
+        java.sql.Types::INTEGER     => 'getInt',
       }
       java.sql.Types.constants.each do |type_name|
         i = java.sql.Types.const_get type_name
@@ -69,7 +70,11 @@ class Upsert
           row = {}
           column_name_and_getter.each do |i, cg|
             column_name, getter = cg
-            row[column_name] = raw_result.send(getter, i)
+            if getter == 'getNull'
+              row[column_name] = nil
+            else
+              row[column_name] = raw_result.send(getter, i)
+            end
           end
           result << row
         end

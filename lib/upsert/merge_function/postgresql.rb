@@ -122,6 +122,7 @@ class Upsert
               -- we could get a unique-key failure
               BEGIN
                 INSERT INTO #{quoted_table_name}(#{setter_column_definitions.map(&:quoted_name).join(', ')}) VALUES (#{setter_column_definitions.map(&:to_setter_value).join(', ')});
+                #{hstore_delete_handlers.map(&:to_pgsql).join(' ')}
                 RETURN;
               EXCEPTION WHEN unique_violation THEN
                 -- seamusabshere 9/20/12 only retry once

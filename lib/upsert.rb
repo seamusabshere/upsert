@@ -154,10 +154,10 @@ class Upsert
   NULL_WORD = 'NULL'
   METAL_CLASS_ALIAS = {
     'PGConn'                     => 'PG::Connection',
-    'org.sqlite.Conn'            => 'Java::OrgSqliteConn', # for some reason, org.sqlite.Conn doesn't have a ruby class name
-    'Sequel::Postgres::Adapter'  => 'PG::Connection'       # Only the Postgres adapter needs an alias
+    'org.sqlite.Conn'            => 'Java::OrgSqlite::Conn', # for some reason, org.sqlite.Conn doesn't have a ruby class name
+    'Sequel::Postgres::Adapter'  => 'PG::Connection',      # Only the Postgres adapter needs an alias
   }
-  CREATED_COL_REGEX = /\Acreated_(at|on)\Z/
+  CREATED_COL_REGEX = /\Acreated_(at|on)\z/
 
   # @return [Upsert::Connection]
   attr_reader :connection

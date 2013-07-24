@@ -4,7 +4,7 @@ require 'upsert/connection/sqlite3'
 class Upsert
   class Connection
     # @private
-    class Java_OrgSqliteConn < Connection
+    class Java_OrgSqlite_Conn < Connection
       include Jdbc
       include Sqlite3
 

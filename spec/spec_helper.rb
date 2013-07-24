@@ -25,7 +25,8 @@ class RawConnectionFactory
       CONFIG = "jdbc:postgresql://localhost/#{DATABASE}?user=#{CURRENT_USER}"
       require 'jdbc/postgres'
       # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
-      java.sql.DriverManager.register_driver org.postgresql.Driver.new
+      Jdbc::Postgres.load_driver
+      # java.sql.DriverManager.register_driver org.postgresql.Driver.new
       def new_connection
         java.sql.DriverManager.get_connection CONFIG
       end
@@ -44,7 +45,8 @@ class RawConnectionFactory
     if RUBY_PLATFORM == 'java'
       CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=root&password=password"
       require 'jdbc/mysql'
-      java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
+      Jdbc::MySQL.load_driver
+      # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
       def new_connection
         java.sql.DriverManager.get_connection CONFIG
       end
@@ -58,7 +60,11 @@ class RawConnectionFactory
     ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://root:password@127.0.0.1/#{DATABASE}"
 
   when 'sqlite3'
+    CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
     if RUBY_PLATFORM == 'java'
+      # CONFIG = 'jdbc:sqlite://test.sqlite3'
+      require 'jdbc/sqlite3'
+      Jdbc::SQLite3.load_driver
       def new_connection
         ActiveRecord::Base.connection.raw_connection.connection
       end
@@ -68,7 +74,7 @@ class RawConnectionFactory
         ActiveRecord::Base.connection.raw_connection
       end
     end
-    ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => 'file::memory:?cache=shared'
+    ActiveRecord::Base.establish_connection CONFIG
 
   when 'postgres'
     raise "please use DB=postgresql NOT postgres"

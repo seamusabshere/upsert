@@ -8,10 +8,14 @@ class Upsert
 
       def execute(row)
         first_try = true
-        bind_selector_values = row.selector.values.map { |v| connection.bind_value v }
-        bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
+        values = []
+        values += row.selector.values
+        values += row.setter.values
+        hstore_delete_handlers.each do |hstore_delete_handler|
+          values << row.hstore_delete_keys.fetch(hstore_delete_handler.name, [])
+        end
         begin
-          connection.execute sql, (bind_selector_values + bind_setter_values)
+          connection.execute sql, values.map { |v| connection.bind_value v }
         rescue org.postgresql.util.PSQLException => pg_error
           if pg_error.message =~ /function #{name}.* does not exist/i
             if first_try

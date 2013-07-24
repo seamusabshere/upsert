@@ -6,7 +6,9 @@ class Upsert
         def all(connection, table_name)
           # activerecord-3.2.13/lib/active_record/connection_adapters/sqlite_adapter.rb
           connection.execute("PRAGMA table_info(#{connection.quote_ident(table_name)})").map do |row|#, 'SCHEMA').to_hash
-            row = connection.metal.results_as_hash ? row : {'name' => row[1], 'type' => row[2], 'dflt_value' => row[4]}
+            if connection.metal.respond_to?(:results_as_hash) and not connection.metal.results_as_hash
+              row = {'name' => row[1], 'type' => row[2], 'dflt_value' => row[4]}
+            end
             default = case row["dflt_value"]
             when /^null$/i
               nil

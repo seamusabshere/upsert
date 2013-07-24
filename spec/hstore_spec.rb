@@ -215,5 +215,20 @@ EOS
       cool = PgHstore.parse row['cool'], false
       cool.should == {'13' => '17' }
     end
+
+    it "deletes keys whether new or existing record" do
+      upsert = Upsert.new $conn, :pets
+
+      upsert.row({name: 'Bill'}, crazy: {z: 1, x: nil})
+      row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
+      crazy = PgHstore.parse row['crazy'], false
+      crazy.should == { 'z' => '1' }
+
+      upsert.row({name: 'Bill'}, crazy: {a: 1})
+      row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
+      crazy = PgHstore.parse row['crazy'], false
+      crazy.should == { 'a' => '1', 'z' => '1' }
+    end
+
   end
 end if ENV['DB'] == 'postgresql'
