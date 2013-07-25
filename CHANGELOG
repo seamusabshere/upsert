@@ -1,3 +1,9 @@
+2.0.1 / 2013-07-24
+
+* Bug fixes
+
+  * Rookie mistake - gsub!'ed an input arg, sorry. Blew up on a frozen string, thank goodness.
+
 2.0.0 / 2013-07-24
 
 * Breaking changes
