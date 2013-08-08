@@ -6,7 +6,7 @@ class Upsert
       
       def execute(sql, params = nil)
         if params
-          Upsert.logger.debug { %{[upsert] #{sql} with #{params.inspect}} }
+          # Upsert.logger.debug { %{[upsert] #{sql} with #{params.inspect}} }
           metal.exec sql, convert_binary(params)
         else
           Upsert.logger.debug { %{[upsert] #{sql}} }
