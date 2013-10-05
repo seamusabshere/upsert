@@ -19,7 +19,7 @@ EOS
       upsert.row({:name => 'Uggy'}, crazy: {uggy: uggy})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Uggy'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { uggy: uggy }
+      crazy.should == { 'uggy' => uggy }
     end
 
     it "just works" do
@@ -32,7 +32,7 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {a: 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1' }
+      crazy.should == { 'a' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: nil)
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
@@ -41,22 +41,22 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {a: 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1' }
+      crazy.should == { 'a' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: {whatdat: 'whodat'})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1', whatdat: 'whodat' }
+      crazy.should == { 'a' => '1', 'whatdat' => 'whodat' }
 
       upsert.row({name: 'Bill'}, crazy: {whatdat: "D'ONOFRIO"})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1', whatdat: "D'ONOFRIO" }
+      crazy.should == { 'a' => '1', 'whatdat' => "D'ONOFRIO" }
 
       upsert.row({name: 'Bill'}, crazy: {a: 2})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '2', whatdat: "D'ONOFRIO" }
+      crazy.should == { 'a' => '2', 'whatdat' => "D'ONOFRIO" }
     end
 
     it "can nullify entire hstore" do
@@ -65,7 +65,7 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {a: 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1' }
+      crazy.should == { 'a' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: nil)
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
@@ -82,12 +82,12 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {a: 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1' }
+      crazy.should == { 'a' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: {})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1' }
+      crazy.should == { 'a' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: {a: nil})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
@@ -97,27 +97,27 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {a: 1, b: 5})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1', b: '5' }
+      crazy.should == { 'a' => '1', 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1', b: '5' }
+      crazy.should == { 'a' => '1', 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {a: nil})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { b: '5' }
+      crazy.should == { 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {a: 1, b: 5})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1', b: '5' }
+      crazy.should == { 'a' => '1', 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {a: nil, b: nil, c: 12})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { c: '12' }
+      crazy.should == { 'c' => '12' }
     end
 
     it "takes dangerous keys" do
@@ -130,12 +130,12 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {:'foo"bar' => 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { :'foo"bar' => '1' }
+      crazy.should == { 'foo"bar' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: {})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { :'foo"bar' => '1' }
+      crazy.should == { 'foo"bar' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: {:'foo"bar' => nil})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
@@ -145,27 +145,27 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {:'foo"bar' => 1, b: 5})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { :'foo"bar' => '1', b: '5' }
+      crazy.should == { 'foo"bar' => '1', 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { :'foo"bar' => '1', b: '5' }
+      crazy.should == { 'foo"bar' => '1', 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {:'foo"bar' => nil})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { b: '5' }
+      crazy.should == { 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {:'foo"bar' => 1, b: 5})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { :'foo"bar' => '1', b: '5' }
+      crazy.should == { 'foo"bar' => '1', 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {:'foo"bar' => nil, b: nil, c: 12})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { c: '12' }
+      crazy.should == { 'c' => '12' }
     end
 
     it "handles multiple hstores" do
@@ -173,9 +173,9 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {a: 1, b: 9}, cool: {c: 12, d: 19})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1', b: '9' }
+      crazy.should == { 'a' => '1', 'b' => '9' }
       cool = PgHstore.parse row['cool']
-      cool.should == { c: '12', d: '19' }
+      cool.should == { 'c' => '12', 'd' => '19' }
     end
 
     it "can deletes keys from multiple hstores at once" do
@@ -184,35 +184,35 @@ EOS
       upsert.row({name: 'Bill'}, crazy: {a: 1}, cool: {5 => 9})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1' }
-      cool = PgHstore.parse row['cool'], false
+      crazy.should == { 'a' => '1' }
+      cool = PgHstore.parse row['cool']
       cool.should == { '5' => '9' }
 
       # NOOP
       upsert.row({name: 'Bill'}, crazy: {}, cool: {})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1' }
-      cool = PgHstore.parse row['cool'], false
+      crazy.should == { 'a' => '1' }
+      cool = PgHstore.parse row['cool']
       cool.should == { '5' => '9' }
 
       upsert.row({name: 'Bill'}, crazy: {a: nil}, cool: {13 => 17})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
       crazy.should == {}
-      cool = PgHstore.parse row['cool'], false
+      cool = PgHstore.parse row['cool']
       cool.should == { '5' => '9', '13' => '17' }
 
       upsert.row({name: 'Bill'}, crazy: {a: 1, b: 5})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == { a: '1', b: '5' }
+      crazy.should == { 'a' => '1', 'b' => '5' }
 
       upsert.row({name: 'Bill'}, crazy: {b: nil}, cool: {5 => nil})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
-      crazy.should == {a: '1'}
-      cool = PgHstore.parse row['cool'], false
+      crazy.should == {'a' => '1'}
+      cool = PgHstore.parse row['cool']
       cool.should == {'13' => '17' }
     end
 
@@ -221,12 +221,12 @@ EOS
 
       upsert.row({name: 'Bill'}, crazy: {z: 1, x: nil})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
-      crazy = PgHstore.parse row['crazy'], false
+      crazy = PgHstore.parse row['crazy']
       crazy.should == { 'z' => '1' }
 
       upsert.row({name: 'Bill'}, crazy: {a: 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
-      crazy = PgHstore.parse row['crazy'], false
+      crazy = PgHstore.parse row['crazy']
       crazy.should == { 'a' => '1', 'z' => '1' }
     end
 
