@@ -80,14 +80,9 @@ upsert.row_with_two_setter(update_setter, insert_setter, selector)
 
 ## Real-world usage
 
-<p><a href="http://brighterplanet.com"><img src="https://s3.amazonaws.com/static.brighterplanet.com/assets/logos/flush-left/inline/green/rasterized/brighter_planet-160-transparent.png" alt="Brighter Planet logo"/></a></p>
+<p><a href="http://angel.co/faraday"><img src="https://s3.amazonaws.com/photos.angel.co/startups/i/175701-a63ebd1b56a401e905963c64958204d4-medium_jpg.jpg" alt="Faraday logo"/></a></p>
 
-We use `upsert` for [big data processing at Brighter Planet](http://brighterplanet.com/research) and in production at
-
-* [Brighter Planet's impact estimate web service](http://impact.brighterplanet.com)
-* [Brighter Planet's reference data web service](http://data.brighterplanet.com)
-
-Originally written to speed up the [`data_miner`](https://github.com/seamusabshere/data_miner) data mining library.
+We use `upsert` for [big data at Faraday](http://angel.co/faraday). Originally written to speed up the [`data_miner`](https://github.com/seamusabshere/data_miner) data mining library.
 
 ## Supported databases/drivers
 
@@ -362,5 +357,4 @@ In general, run some upserts and make sure datetimes get persisted like you expe
 
 ## Copyright
 
-Copyright 2012 Seamus Abshere
-
+Copyright 2013 Seamus Abshere
