@@ -8,6 +8,8 @@ As databases start to natively support SQL MERGE (which is basically upsert), th
 
 Does **not** depend on ActiveRecord.
 
+Does **not** use `INSERT ON DUPLICATE KEY UPDATE` on MySQL as this only works if you are very careful about creating unique indexes.
+
 70&ndash;90%+ faster than emulating upsert with ActiveRecord.
 
 Supports MRI and JRuby.
