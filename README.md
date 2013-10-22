@@ -357,6 +357,10 @@ If you're using MySQL, make sure server/connection timezone is UTC. If you're us
 
 In general, run some upserts and make sure datetimes get persisted like you expect.
 
+### Doesn't work with transactional fixtures
+
+Per https://github.com/seamusabshere/upsert/issues/23 you might have issues if you try to use transactional fixtures and this library.
+
 ## Copyright
 
 Copyright 2013 Seamus Abshere
