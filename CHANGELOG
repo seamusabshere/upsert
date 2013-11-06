@@ -2,11 +2,6 @@
 * Bug fixes
 
   * Properly check for NULL equality when creating the UPSERT functions - thanks @pnomolos - https://github.com/seamusabshere/upsert/issues/25
-
-unreleased
-
-* Bug fixes
-
   * When using Mysql2 client (MRI), don't pass timezone to DateTime columns - thanks @kjeremy! - https://github.com/seamusabshere/upsert/issues/24
 
 2.0.1 / 2013-07-24
