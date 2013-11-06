@@ -3,7 +3,13 @@ require "bundler/gem_tasks"
 
 task :rspec_all_databases do
   results = {}
-  %w{ postgresql mysql sqlite3 }.each do |db|
+  
+  dbs = %w{ postgresql mysql sqlite3 }
+  if ENV['DB']
+    dbs = ENV['DB'].split(',') 
+  end
+  
+  dbs.each do |db|
     puts
     puts '#'*50
     puts "# Running specs against #{db}"
