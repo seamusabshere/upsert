@@ -34,7 +34,8 @@ class Upsert
         when Symbol
           quote_string v.to_s
         when DateTime, Time
-          quote_string Upsert.utc_iso8601(v) #round?
+          # mysql doesn't like it when you send timezone to a datetime
+          quote_string Upsert.utc_iso8601(v, false)
         when Date
           quote_date v
         else
