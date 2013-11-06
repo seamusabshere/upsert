@@ -43,12 +43,16 @@ class Upsert
       if temporal?
         "#{quoted_name} = CAST(#{quoted_selector_name} AS #{sql_type})"
       else
-        "#{quoted_name} = #{quoted_selector_name}"
+        equality(quoted_name, quoted_selector_name)
       end
     end
 
     def temporal?
       @temporal_query
+    end
+
+    def equality(left, right)
+      "#{left} = #{right}"
     end
 
     def arg_type

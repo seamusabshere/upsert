@@ -49,9 +49,12 @@ describe Upsert do
 
     # https://github.com/seamusabshere/upsert/issues/18
     it "uses nil selectors" do
-      Pet.create(name: "Jerry", gender: nil, spiel: "samoyed")
+      Pet.count.should == 0
+      now = Time.now
       u = Upsert.new($conn, :pets)
-      u.row({:name => 'Jerry', gender: nil}, :spiel => 'beagle', :birthday => Time.now)
+      5.times do
+        u.row({gender: nil, birthday: now})
+      end
       Pet.count.should == 1
     end
 

@@ -304,6 +304,8 @@ From the tests (updated 9/21/12):
 
 Thanks to [@dan04's answer on StackOverflow](http://stackoverflow.com/questions/2717590/sqlite-upsert-on-duplicate-key-update):
 
+**Please note!  This will only work properly on Sqlite if one of the columns being used as the "selector" are a primary key or unique index**
+
 ```sql
 INSERT OR IGNORE INTO visits VALUES (127.0.0.1, 1);
 UPDATE visits SET visits = 1 WHERE ip LIKE 127.0.0.1;

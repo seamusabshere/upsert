@@ -25,6 +25,10 @@ class Upsert
           end
         end
       end
+      
+      def equality(left, right)
+        "#{left} IS #{right} OR (#{left} IS NULL AND #{right} IS NULL)"
+      end
     end
   end
 end
