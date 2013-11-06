@@ -19,6 +19,10 @@ EOS
           end
         end
       end
+      
+      def equality(left, right)
+        "#{left} IS NOT DISTINCT FROM #{right}"
+      end
 
       HSTORE_DETECTOR = /hstore/i
 

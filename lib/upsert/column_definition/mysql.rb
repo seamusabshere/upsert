@@ -15,6 +15,10 @@ class Upsert
           end
         end
       end
+      
+      def equality(left, right)
+        "#{left} <=> #{right}"
+      end
     end
   end
 end
