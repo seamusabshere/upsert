@@ -1,4 +1,11 @@
+unreleased
+
+* Enhancements
+
+  * pass :eager_nullify => false as the third argument to Upsert#row to disable clearing of null HStore keys
+
 2.0.2 / 2013-11-06
+
 * Bug fixes
 
   * Properly check for NULL equality when creating the UPSERT functions - thanks @pnomolos - https://github.com/seamusabshere/upsert/issues/25

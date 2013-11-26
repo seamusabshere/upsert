@@ -16,7 +16,9 @@ class Upsert
     attr_reader :setter
     attr_reader :hstore_delete_keys
 
-    def initialize(raw_selector, raw_setter)
+    def initialize(raw_selector, raw_setter, options)
+      eager_nullify = (options.nil? || options.fetch(:eager_nullify, true))
+
       @selector = raw_selector.inject({}) do |memo, (k, v)|
         memo[k.to_s] = v
         memo
@@ -25,7 +27,7 @@ class Upsert
       @hstore_delete_keys = {}
       @setter = raw_setter.inject({}) do |memo, (k, v)|
         k = k.to_s
-        if v.is_a?(::Hash)
+        if v.is_a?(::Hash) and eager_nullify
           v.each do |kk, vv|
             if vv.nil?
               (@hstore_delete_keys[k] ||= []) << kk

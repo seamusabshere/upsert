@@ -212,8 +212,8 @@ class Upsert
   #   upsert = Upsert.new Pet.connection, Pet.table_name
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
-  def row(selector, setter = {})
-    merge_function_class.execute self, Row.new(selector, setter)
+  def row(selector, setter = {}, options = nil)
+    merge_function_class.execute self, Row.new(selector, setter, options)
     nil
   end
 
