@@ -63,7 +63,7 @@ describe Upsert do
       now = Time.now
       assert_creates(Pet, [{:name => 'Jerry', :gender => nil, :spiel => 'beagle', :birthday => now}]) do
         u.row(name: "Jerry", gender: nil, spiel: "samoyed")
-        u.row({:name => 'Jerry', gender: nil}, :spiel => 'beagle', :birthday => Time.now)
+        u.row({:name => 'Jerry', gender: nil}, :spiel => 'beagle', :birthday => now)
       end
     end
 
