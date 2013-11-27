@@ -1,5 +1,9 @@
 unreleased
 
+* Bug fixes
+
+  * Add parentheses to equality expressions
+
 * Enhancements
 
   * On Postgres, use (A = B OR (A IS NULL AND B IS NULL)) instead of A IS NOT DISTINCT FROM B because the latter does not use indexes
