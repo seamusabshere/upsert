@@ -20,9 +20,10 @@ EOS
         end
       end
       
-      def equality(left, right)
-        "#{left} IS NOT DISTINCT FROM #{right}"
-      end
+      # NOTE not using this because it can't be indexed
+      # def equality(left, right)
+      #   "#{left} IS NOT DISTINCT FROM #{right}"
+      # end
 
       HSTORE_DETECTOR = /hstore/i
 

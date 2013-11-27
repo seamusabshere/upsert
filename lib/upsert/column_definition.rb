@@ -48,7 +48,7 @@ class Upsert
     end
 
     def equality(left, right)
-      "#{left} = #{right}"
+      "(#{left} = #{right} OR (#{left} IS NULL AND #{right} IS NULL))"
     end
 
     def arg_type

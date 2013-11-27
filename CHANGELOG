@@ -2,6 +2,7 @@ unreleased
 
 * Enhancements
 
+  * On Postgres, use (A = B OR (A IS NULL AND B IS NULL)) instead of A IS NOT DISTINCT FROM B because the latter does not use indexes
   * pass :eager_nullify => false as the third argument to Upsert#row to disable clearing of null HStore keys
 
 2.0.2 / 2013-11-06
