@@ -40,11 +40,7 @@ class Upsert
     end
 
     def to_selector
-      if temporal?
-        "#{quoted_name} = CAST(#{quoted_selector_name} AS #{sql_type})"
-      else
-        equality(quoted_name, quoted_selector_name)
-      end
+      equality(quoted_name, to_selector_value)
     end
 
     def temporal?
@@ -68,6 +64,14 @@ class Upsert
         "CAST(#{quoted_setter_name} AS #{sql_type})"
       else
         quoted_setter_name
+      end
+    end
+
+    def to_selector_value
+      if temporal?
+        "CAST(#{quoted_selector_name} AS #{sql_type})"
+      else
+        quoted_selector_name
       end
     end
 
