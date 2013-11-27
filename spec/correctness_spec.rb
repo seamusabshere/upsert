@@ -50,17 +50,28 @@ describe Upsert do
     # https://github.com/seamusabshere/upsert/issues/18
     it "uses nil selectors" do
       Pet.count.should == 0
-      now = Time.now
+      now = Date.today
       u = Upsert.new($conn, :pets)
       5.times do
-        u.row({gender: nil, birthday: now})
+        u.row(gender: nil, birthday: now)
       end
+
+      Pet.count.should == 1
+    end
+
+    it "uses nil selectors on columns with date type" do
+      Pet.count.should == 0
+      u = Upsert.new($conn, :pets)
+      5.times do
+        u.row(birthday: nil)
+      end
+
       Pet.count.should == 1
     end
 
     it "uses nil selectors (another way of checking)" do
       u = Upsert.new($conn, :pets)
-      now = Time.now
+      now = Date.today
       assert_creates(Pet, [{:name => 'Jerry', :gender => nil, :spiel => 'beagle', :birthday => now}]) do
         u.row(name: "Jerry", gender: nil, spiel: "samoyed")
         u.row({:name => 'Jerry', gender: nil}, :spiel => 'beagle', :birthday => now)
