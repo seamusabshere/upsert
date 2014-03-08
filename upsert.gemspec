@@ -26,12 +26,14 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'active_record_inline_schema'
   gem.add_development_dependency 'faker'
   gem.add_development_dependency 'yard'
-  gem.add_development_dependency 'activerecord-import'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'pg-hstore', ">=1.1.3"
   gem.add_development_dependency 'sequel'
+  gem.add_development_dependency 'rake'
 
-  unless RUBY_VERSION >= '1.9'
+  if RUBY_VERSION >= '1.9'
+    gem.add_development_dependency 'activerecord-import'
+  else
     gem.add_development_dependency 'orderedhash'
   end
 
@@ -47,7 +49,11 @@ Gem::Specification.new do |gem|
     gem.add_development_dependency 'sqlite3'
     gem.add_development_dependency 'mysql2'
     gem.add_development_dependency 'pg'
-    gem.add_development_dependency 'redcarpet' # github-flavored markdown
-    gem.add_development_dependency 'rake'
+    # github-flavored markdown
+    if RUBY_VERSION >= '1.9'
+      gem.add_development_dependency 'redcarpet'
+    else
+      gem.add_development_dependency 'redcarpet', '~> 2.3.0'
+    end
   end
 end

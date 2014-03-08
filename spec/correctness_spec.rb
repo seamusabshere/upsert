@@ -134,7 +134,7 @@ describe Upsert do
       # end
     end
 
-    if ENV['DB'] == 'mysql'
+    if ENV['DB'] == 'mysql' && RUBY_VERSION >= '1.9'
       describe 'compared to activerecord-import' do
         it "is as correct as faking upserts with activerecord-import" do
           assert_same_result lotsa_records do |records|

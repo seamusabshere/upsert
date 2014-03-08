@@ -7,7 +7,8 @@ require 'active_record'
 ActiveRecord::Base.default_timezone = :utc
 
 require 'active_record_inline_schema'
-require 'activerecord-import'
+
+require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
 ENV['DB'] ||= 'mysql'
 
