@@ -15,10 +15,15 @@ task :rspec_all_databases do
     puts "# Running specs against #{db}"
     puts '#'*50
     puts
-    # won't work on 1.8.7...
-    pid = Kernel.spawn({'DB' => db}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
-    Process.waitpid pid
-    results[db] = $?.success? 
+
+    if RUBY_VERSION >= '1.9'
+      pid = spawn({'DB' => db}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
+      Process.waitpid pid
+      results[db] = $?.success?
+    else
+      exec({'DB' => db}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
+    end
+
   end
   puts results.inspect
 end
