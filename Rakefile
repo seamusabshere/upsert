@@ -1,5 +1,12 @@
 #!/usr/bin/env rake
 require "bundler/gem_tasks"
+require "rspec/core/rake_task"
+
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.rspec_opts = "--format documentation"
+end
+
+task :default => :spec
 
 task :rspec_all_databases do
   results = {}
@@ -27,8 +34,6 @@ task :rspec_all_databases do
   end
   puts results.inspect
 end
-
-task :default => :rspec_all_databases
 
 task :n, :from, :to do |t, args|
   Dir[File.expand_path("../lib/upsert/**/#{args.from}.*", __FILE__)].each do |path|
