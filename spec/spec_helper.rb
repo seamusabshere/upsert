@@ -15,7 +15,7 @@ ENV['DB'] ||= 'mysql'
 class RawConnectionFactory
   DATABASE = 'upsert_test'
   CURRENT_USER = `whoami`.chomp
-  PASSWORD = 'password'
+  PASSWORD = ''
 
   case ENV['DB']
 
@@ -41,10 +41,11 @@ class RawConnectionFactory
     ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
 
   when 'mysql'
-    Kernel.system %{ mysql -u root -ppassword -e "DROP DATABASE IF EXISTS #{DATABASE}" }
-    Kernel.system %{ mysql -u root -ppassword -e "CREATE DATABASE #{DATABASE} CHARSET utf8" }
+    password_argument = (PASSWORD.empty?) ? "" : "-p#{PASSWORD}"
+    Kernel.system %{ mysql -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8" }
     if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=root&password=password"
+      CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
       require 'jdbc/mysql'
       Jdbc::MySQL.load_driver
       # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
@@ -52,13 +53,14 @@ class RawConnectionFactory
         java.sql.DriverManager.get_connection CONFIG
       end
     else
-      CONFIG = { :username => 'root', :password => PASSWORD, :database => DATABASE}
       require 'mysql2'
       def new_connection
-        Mysql2::Client.new CONFIG
+        config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1" }
+        config.merge!(:password => PASSWORD) unless PASSWORD.empty?
+        Mysql2::Client.new config
       end
     end
-    ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://root:password@127.0.0.1/#{DATABASE}"
+    ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://#{CURRENT_USER}:#{PASSWORD}@127.0.0.1/#{DATABASE}"
 
   when 'sqlite3'
     CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
