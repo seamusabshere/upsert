@@ -41,8 +41,8 @@ describe Upsert do
       p.save!
       Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
       u = Upsert.new($conn, :pets)
-      selector = {name: 'Jerry', gender: 'red'} # this shouldn't select anything
-      setter = {tag_number: 888}
+      selector = {:name => 'Jerry', :gender => 'red'} # this shouldn't select anything
+      setter = {:tag_number => 888}
       u.row(selector, setter)
       Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
     end
@@ -53,7 +53,7 @@ describe Upsert do
       now = Date.today
       u = Upsert.new($conn, :pets)
       5.times do
-        u.row(gender: nil, birthday: now)
+        u.row(:gender => nil, :birthday => now)
       end
 
       Pet.count.should == 1
@@ -63,7 +63,7 @@ describe Upsert do
       Pet.count.should == 0
       u = Upsert.new($conn, :pets)
       5.times do
-        u.row(birthday: nil)
+        u.row(:birthday => nil)
       end
 
       Pet.count.should == 1
@@ -73,17 +73,17 @@ describe Upsert do
       u = Upsert.new($conn, :pets)
       now = Date.today
       assert_creates(Pet, [{:name => 'Jerry', :gender => nil, :spiel => 'beagle', :birthday => now}]) do
-        u.row(name: "Jerry", gender: nil, spiel: "samoyed")
-        u.row({:name => 'Jerry', gender: nil}, :spiel => 'beagle', :birthday => now)
+        u.row(:name => "Jerry", :gender => nil, :spiel => "samoyed")
+        u.row({:name => 'Jerry', :gender => nil}, :spiel => 'beagle', :birthday => now)
       end
     end
 
     it "tells you if you request a column that doesn't exist" do
       u = Upsert.new($conn, :pets)
-      lambda { u.row(gibberish: 'ba') }.should raise_error(/invalid col/i)
-      lambda { u.row(name: 'Jerry', gibberish: 'ba') }.should raise_error(/invalid col/i)
-      lambda { u.row({name: 'Jerry'}, gibberish: 'ba') }.should raise_error(/invalid col/i)
-      lambda { u.row({name: 'Jerry'}, gender: 'male', gibberish: 'ba') }.should raise_error(/invalid col/i)
+      lambda { u.row(:gibberish => 'ba') }.should raise_error(/invalid col/i)
+      lambda { u.row(:name => 'Jerry', :gibberish => 'ba') }.should raise_error(/invalid col/i)
+      lambda { u.row(:name => 'Jerry', :gibberish => 'ba') }.should raise_error(/invalid col/i)
+      lambda { u.row(:name => 'Jerry', :gibberish => 'ba', :gender => 'male') }.should raise_error(/invalid col/i)
     end
 
   end
