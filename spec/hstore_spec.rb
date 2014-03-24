@@ -233,7 +233,7 @@ EOS
     it "can turn off eager nullify" do
       upsert = Upsert.new $conn, :pets
 
-      upsert.row({:name => 'Bill'}, {:crazy => {:z => 1, :x => nil}}, :eagger_nullify => false)
+      upsert.row({:name => 'Bill'}, {:crazy => {:z => 1, :x => nil}}, :eager_nullify => false)
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
       crazy.should == { 'z' => '1', 'x' => nil }
