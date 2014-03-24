@@ -36,7 +36,8 @@ describe Upsert do
           when /mysql/i
             log.should =~ /call #{Upsert::MergeFunction::NAME_PREFIX}_pets_SEL_name/i
           when /p.*g/i
-            log.should =~ /select #{Upsert::MergeFunction::NAME_PREFIX}_pets_SEL_name/i
+            # [54ae2eea857] Possibly much more useful debug output
+            log.should =~ /selector:/i
           else
             raise "not sure"
           end
