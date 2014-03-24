@@ -216,7 +216,7 @@ module SpecHelper
     end.inject({}) do |memo, (k, v)|
       memo[k] = case v
       when Time, DateTime
-        v.to_time.to_f
+        v.to_i
       else
         v
       end
