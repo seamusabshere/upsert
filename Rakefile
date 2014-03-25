@@ -1,5 +1,12 @@
 #!/usr/bin/env rake
 require "bundler/gem_tasks"
+require "rspec/core/rake_task"
+
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.rspec_opts = "--format documentation"
+end
+
+task :default => :spec
 
 task :rspec_all_databases do
   results = {}
@@ -15,15 +22,18 @@ task :rspec_all_databases do
     puts "# Running specs against #{db}"
     puts '#'*50
     puts
-    # won't work on 1.8.7...
-    pid = Kernel.spawn({'DB' => db}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
-    Process.waitpid pid
-    results[db] = $?.success? 
+
+    if RUBY_VERSION >= '1.9'
+      pid = spawn({'DB' => db}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
+      Process.waitpid pid
+      results[db] = $?.success?
+    else
+      exec({'DB' => db}, 'rspec', '--format', 'documentation', File.expand_path('../spec', __FILE__))
+    end
+
   end
   puts results.inspect
 end
-
-task :default => :rspec_all_databases
 
 task :n, :from, :to do |t, args|
   Dir[File.expand_path("../lib/upsert/**/#{args.from}.*", __FILE__)].each do |path|
