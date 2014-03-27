@@ -365,4 +365,4 @@ Per https://github.com/seamusabshere/upsert/issues/23 you might have issues if y
 
 ## Copyright
 
-Copyright 2013 Seamus Abshere
+Copyright 2014 Seamus Abshere
