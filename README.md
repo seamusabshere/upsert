@@ -1,5 +1,7 @@
 # Upsert
 
+[![Build Status](https://travis-ci.org/seamusabshere/upsert.svg?branch=master)](https://travis-ci.org/seamusabshere/upsert)
+
 Make it easy to upsert on traditional RDBMS like MySQL, PostgreSQL, and SQLite3&mdash;hey look NoSQL!. Transparently creates (and re-uses) stored procedures/functions when necessary.
 
 You pass it a bare-metal connection to the database like `Mysql2::Client` (from `mysql2` gem on MRI) or `Java::OrgPostgresqlJdbc4::Jdbc4Connection` (from `jdbc-postgres` on Jruby).
