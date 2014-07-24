@@ -14,11 +14,14 @@ class Upsert
 
     attr_reader :selector
     attr_reader :setter
+    attr_reader :condition
     attr_reader :hstore_delete_keys
 
     def initialize(raw_selector, raw_setter, options)
       eager_nullify = (options.nil? || options.fetch(:eager_nullify, true))
 
+      @condition = (options && options.fetch(:condition, nil))
+      
       @selector = raw_selector.inject({}) do |memo, (k, v)|
         memo[k.to_s] = v
         memo

@@ -13,14 +13,16 @@ class Upsert
         merge_function.execute row
       end
 
-      def unique_name(table_name, selector_keys, setter_keys)
+      def unique_name(table_name, selector_keys, setter_keys, condition)
         parts = [
           NAME_PREFIX,
           table_name,
           'SEL',
           selector_keys.join('_A_'),
           'SET',
-          setter_keys.join('_A_')
+          setter_keys.join('_A_'),
+          'COND',
+          ( condition ? condition.split(' ').join('_A_') : "NONE" )
         ].join('_')
         if parts.length > MAX_NAME_LENGTH
           # maybe i should md5 instead
@@ -33,27 +35,27 @@ class Upsert
 
       def lookup(controller, row)
         @lookup ||= {}
-        selector_keys = row.selector.keys
-        setter_keys = row.setter.keys
-        key = [controller.table_name, selector_keys, setter_keys]
-        @lookup[key] ||= new(controller, selector_keys, setter_keys, controller.assume_function_exists?)
+        key = [controller.table_name, row.selector.keys, row.setter.keys, row.condition]
+        @lookup[key] ||= new(controller, key, controller.assume_function_exists?)
       end
     end
 
     attr_reader :controller
     attr_reader :selector_keys
     attr_reader :setter_keys
+    attr_reader :condition
 
-    def initialize(controller, selector_keys, setter_keys, assume_function_exists)
+    def initialize(controller, key, assume_function_exists)
+      @condition = key[3]
       @controller = controller
-      @selector_keys = selector_keys
-      @setter_keys = setter_keys
+      @selector_keys = key[1]
+      @setter_keys = key[2]
       validate!
       create! unless assume_function_exists
     end
 
     def name
-      @name ||= MergeFunction.unique_name table_name, selector_keys, setter_keys
+      @name ||= MergeFunction.unique_name table_name, selector_keys, setter_keys, condition
     end
 
     def connection

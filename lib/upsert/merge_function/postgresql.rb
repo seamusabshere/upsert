@@ -98,6 +98,10 @@ class Upsert
         setter_column_definitions.select { |cd| cd.name !~ CREATED_COL_REGEX }
       end
 
+       def additional_condition
+        condition ? " AND #{condition}" : ""
+      end
+
       # the "canonical example" from http://www.postgresql.org/docs/9.1/static/plpgsql-control-structures.html#PLPGSQL-UPSERT-EXAMPLE
       # differentiate between selector and setter
       def create!
@@ -112,7 +116,7 @@ class Upsert
             LOOP
               -- first try to update the key
               UPDATE #{quoted_table_name} SET #{update_column_definitions.map(&:to_setter).join(', ')}
-                WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ') };
+                WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ') }#{additional_condition};
               IF found THEN
                 #{hstore_delete_handlers.map(&:to_pgsql).join(' ')}
                 RETURN;
