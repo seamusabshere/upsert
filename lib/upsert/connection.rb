@@ -6,15 +6,10 @@ class Upsert
     def initialize(controller, metal_provider)
       @controller = controller
       @metal_provider = metal_provider
-      @metal_thread_key = "Upsert::Connection/#{object_id}/metal"
-      @metal_mutex = Mutex.new
     end
 
-    # FIXME is this a memory leak?
     def metal
-      Thread.current[@metal_thread_key] || @metal_mutex.synchronize do
-        Thread.current[@metal_thread_key] ||= Upsert.metal @metal_provider
-      end
+      Upsert.metal @metal_provider
     end
 
     def convert_binary(bind_values)
