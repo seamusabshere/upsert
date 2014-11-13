@@ -4,15 +4,17 @@ class Upsert
     class Mysql2_Client < Connection
       def execute(sql)
         Upsert.logger.debug { %{[upsert] #{sql}} }
-        if results = metal.query(sql)
-          rows = []
-          results.each { |row| rows << row }
-          if rows[0].is_a? Array
-            # you don't know if mysql2 is going to give you an array or a hash... and you shouldn't specify, because it's sticky
-            fields = results.fields
-            rows.map { |row| Hash[fields.zip(row)] }
-          else
-            rows
+        Thread.exclusive do
+          if results = metal.query(sql)
+            rows = []
+            results.each { |row| rows << row }
+            if rows[0].is_a? Array
+              # you don't know if mysql2 is going to give you an array or a hash... and you shouldn't specify, because it's sticky
+              fields = results.fields
+              rows.map { |row| Hash[fields.zip(row)] }
+            else
+              rows
+            end
           end
         end
       end
