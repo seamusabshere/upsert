@@ -76,7 +76,8 @@ class Upsert
     alias :stream :batch
 
     # @private
-    def class_name(metal)
+    def class_name(connection)
+      metal = Upsert.metal connection
       if RUBY_PLATFORM == 'java'
         metal.class.name || metal.get_class.name
       else
@@ -85,8 +86,8 @@ class Upsert
     end
 
     # @private
-    def flavor(metal)
-      case class_name(metal)
+    def flavor(connection)
+      case class_name(connection)
       when /sqlite/i
         'Sqlite3'
       when /mysql/i
@@ -94,14 +95,14 @@ class Upsert
       when /pg/i, /postgres/i
         'Postgresql'
       else
-        raise "[upsert] #{metal} not supported"
+        raise "[upsert] #{connection} not supported"
       end
     end
 
     # @private
-    def adapter(metal)
-      metal_class_name = class_name metal
-      METAL_CLASS_ALIAS.fetch(metal_class_name, metal_class_name).gsub /\W+/, '_'
+    def adapter(connection)
+      n = class_name connection
+      METAL_CLASS_ALIAS.fetch(n, n).gsub /\W+/, '_'
     end
 
     # @private
@@ -185,14 +186,13 @@ class Upsert
   # @option options [TrueClass,FalseClass] :assume_function_exists (false) Assume the function has already been defined correctly by another process.
   def initialize(connection, table_name, options = {})
     @table_name = table_name.to_s
-    metal = Upsert.metal connection
-    @flavor = Upsert.flavor metal
-    @adapter = Upsert.adapter metal
+    @flavor = Upsert.flavor connection
+    @adapter = Upsert.adapter connection
     # todo memoize
     Dir[File.expand_path("../upsert/**/{#{flavor.downcase},#{adapter}}.rb", __FILE__)].each do |path|
       require path
     end
-    @connection = Connection.const_get(adapter).new self, metal
+    @connection = Connection.const_get(adapter).new self, connection
     @merge_function_class = MergeFunction.const_get adapter
     @assume_function_exists = options.fetch :assume_function_exists, false
   end
