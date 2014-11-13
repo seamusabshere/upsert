@@ -6,6 +6,8 @@ class Upsert
   class MergeFunction
     MAX_NAME_LENGTH = 62
     NAME_PREFIX = "upsert#{Upsert::VERSION.gsub('.', '_')}"
+    LOOKUP = {}
+    LOOKUP_MUTEX = Mutex.new
 
     class << self
       def execute(controller, row)
@@ -35,14 +37,11 @@ class Upsert
         selector_keys = row.selector.keys
         setter_keys = row.setter.keys
         key = [controller.table_name, selector_keys, setter_keys]
-        @lookup[key] || @lookup_mutex.synchronize do
-          @lookup[key] ||= new(controller, selector_keys, setter_keys, controller.assume_function_exists?)
+        LOOKUP[key] || LOOKUP_MUTEX.synchronize do
+          LOOKUP[key] ||= new(controller, selector_keys, setter_keys, controller.assume_function_exists?)
         end
       end
     end
-
-    @lookup = {}
-    @lookup_mutex = Mutex.new
 
     attr_reader :controller
     attr_reader :selector_keys
