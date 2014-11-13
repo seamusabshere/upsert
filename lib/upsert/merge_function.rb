@@ -32,13 +32,17 @@ class Upsert
       end
 
       def lookup(controller, row)
-        @lookup ||= {}
         selector_keys = row.selector.keys
         setter_keys = row.setter.keys
         key = [controller.table_name, selector_keys, setter_keys]
-        @lookup[key] ||= new(controller, selector_keys, setter_keys, controller.assume_function_exists?)
+        @lookup[key] || @lookup_mutex.synchronize do
+          @lookup[key] ||= new(controller, selector_keys, setter_keys, controller.assume_function_exists?)
+        end
       end
     end
+
+    @lookup = {}
+    @lookup_mutex = Mutex.new
 
     attr_reader :controller
     attr_reader :selector_keys
