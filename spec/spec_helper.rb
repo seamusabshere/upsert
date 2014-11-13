@@ -14,7 +14,7 @@ ENV['DB'] ||= 'mysql'
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
-  CURRENT_USER = `whoami`.chomp
+  CURRENT_USER = ENV['DB_USER'] || `whoami`.chomp
   PASSWORD = ''
 
   case ENV['DB']
