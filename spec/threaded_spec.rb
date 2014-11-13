@@ -24,10 +24,9 @@ describe Upsert do
       end
     end
     
-    it "for function creation" # to be implemented, but need to delete existing functions first!
+    #it "for function creation" # to be implemented, but need to delete existing functions first!
 
     it "is safe to use batch" do
-      pending "temporarily disable to underline the main problem"
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         Upsert.batch($conn, :pets) do |upsert|
           ts = []
