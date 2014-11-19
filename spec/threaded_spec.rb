@@ -9,7 +9,7 @@ describe Upsert do
   end
   
   describe "is thread-safe" do
-    it "for one-by-one use once function has been created", focus: true do
+    it "for one-by-one use once function has been created" do
       # then get a failure because of connection reuse
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         ts = []
