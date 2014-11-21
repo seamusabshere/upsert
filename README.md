@@ -1,5 +1,7 @@
 # Upsert
 
+**note** There is a known problem with mysql2 and sidekiq - we're working on it in https://github.com/seamusabshere/upsert/tree/real_thread_safe and various issues
+
 [![Build Status](https://travis-ci.org/seamusabshere/upsert.svg?branch=master)](https://travis-ci.org/seamusabshere/upsert)
 
 Make it easy to upsert on traditional RDBMS like MySQL, PostgreSQL, and SQLite3&mdash;hey look NoSQL!. Transparently creates (and re-uses) stored procedures/functions when necessary.
