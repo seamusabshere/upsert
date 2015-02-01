@@ -32,11 +32,9 @@ class Upsert
       end
 
       def lookup(controller, row)
-        @lookup ||= {}
         selector_keys = row.selector.keys
         setter_keys = row.setter.keys
-        key = [controller.table_name, selector_keys, setter_keys]
-        @lookup[key] ||= new(controller, selector_keys, setter_keys, controller.assume_function_exists?)
+        new(controller, selector_keys, setter_keys, controller.assume_function_exists?)
       end
     end
 

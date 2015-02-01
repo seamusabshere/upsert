@@ -4,6 +4,7 @@ describe Upsert do
   describe 'database functions' do
 
     it "re-uses merge functions across connections" do
+      pending "skipped until we determine if and how to cache functions without keeping a handle to the connection"
       begin
         io = StringIO.new
         old_logger = Upsert.logger
