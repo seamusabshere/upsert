@@ -2,24 +2,43 @@ require 'spec_helper'
 require 'stringio'
 describe Upsert do
   describe 'database functions' do
-
     it "does not re-use merge functions across connections" do
       begin
         io = StringIO.new
         old_logger = Upsert.logger
         Upsert.logger = Logger.new io, Logger::INFO
 
-        # clear
+        # clear, create (#1)
         Upsert.clear_database_functions($conn_factory.new_connection)
+        Upsert.new($conn_factory.new_connection, :pets).row :name => 'hello'
+
+        # clear, create (#2)
+        Upsert.clear_database_functions($conn_factory.new_connection)
+        Upsert.new($conn_factory.new_connection, :pets).row :name => 'hello'
         
-        # create
-        Upsert.new($conn_factory.new_connection, :pets).row :name => 'hello'
+        io.rewind
+        hits = io.read.split("\n").grep(/Creating or replacing/)
+        hits.length.should == 2
+      ensure
+        Upsert.logger = old_logger
+      end
+    end
+    
+    it "does not re-use merge functions even when on the same connection" do
+      begin
+        io = StringIO.new
+        old_logger = Upsert.logger
+        Upsert.logger = Logger.new io, Logger::INFO
+        
+        connection = $conn_factory.new_connection
 
-        # clear
-        Upsert.clear_database_functions($conn_factory.new_connection)
+        # clear, create (#1)
+        Upsert.clear_database_functions(connection)
+        Upsert.new(connection, :pets).row :name => 'hello'
 
-        # create (#2)
-        Upsert.new($conn_factory.new_connection, :pets).row :name => 'hello'
+        # clear, create (#2)
+        Upsert.clear_database_functions(connection)
+        Upsert.new(connection, :pets).row :name => 'hello'
         
         io.rewind
         hits = io.read.split("\n").grep(/Creating or replacing/)
