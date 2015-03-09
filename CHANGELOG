@@ -1,3 +1,14 @@
+2.0.4 / 2015-01-27
+
+* Bug fixes
+
+  * Support mysql returning column info as symbols - thanks @pnomolos
+
+* Enhancements
+
+  * Travis and misc test fixes - thanks @raviolicode
+  * Backwards compat with 1.8 - thanks @raviolicode
+
 2.0.3 / 2013-11-27
 
 * Bug fixes
