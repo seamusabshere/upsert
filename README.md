@@ -1,7 +1,5 @@
 # Upsert
 
-**note** There is a known problem with mysql2 and sidekiq - we're working on it in https://github.com/seamusabshere/upsert/tree/real_thread_safe and various issues
-
 [![Build Status](https://travis-ci.org/seamusabshere/upsert.svg?branch=master)](https://travis-ci.org/seamusabshere/upsert)
 
 Make it easy to upsert on traditional RDBMS like MySQL, PostgreSQL, and SQLite3&mdash;hey look NoSQL!. Transparently creates (and re-uses) stored procedures/functions when necessary.
@@ -157,7 +155,7 @@ From the tests (updated 11/7/12):
     Upsert was 82% faster than find + new/set/save
     Upsert was 85% faster than find_or_create + update_attributes
     Upsert was 90% faster than create + rescue/find/update
-    Upsert was 46% faster than faking upserts with activerecord-import
+    Upsert was 46% faster than faking upserts with activerecord-import (note: in question as of 3/13/15, need some expert advice)
 
 #### SQL MERGE trick
 
