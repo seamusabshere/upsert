@@ -213,7 +213,7 @@ class Upsert
   #   upsert = Upsert.new Pet.connection, Pet.table_name
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
-  def row (selector, setter = {}, options = nil)
+  def row(selector, setter = {}, options = nil)
     row_object = Row.new(selector, setter, options)
     merge_function(row_object).execute(row_object)
     nil
@@ -224,7 +224,7 @@ class Upsert
     merge_function_class.clear connection
   end
   
-  def merge_function (row)
+  def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
     @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
   end
