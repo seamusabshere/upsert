@@ -58,7 +58,7 @@ describe Upsert do
         Upsert.clear_database_functions($conn_factory.new_connection)
         
         # create
-        Upsert.batch(:pets, $conn_factory.new_connection) do |upsert|
+        Upsert.batch($conn_factory.new_connection, :pets) do |upsert|
           upsert.row :name => 'hello'
           upsert.row :name => 'world'
         end
