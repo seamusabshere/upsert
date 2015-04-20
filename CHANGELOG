@@ -1,3 +1,24 @@
+2.1.0 / 2015-03-13
+
+* Bug fixes
+
+  * Thread safety with Sidekiq! thanks @evadne and @thbar ! https://github.com/seamusabshere/upsert/pull/47
+
+* Known issues
+
+  * speed_spec fails against activerecord-import on mysql... need some advice on properly testing it
+
+2.0.4 / 2015-01-27
+
+* Bug fixes
+
+  * Support mysql returning column info as symbols - thanks @pnomolos
+
+* Enhancements
+
+  * Travis and misc test fixes - thanks @raviolicode
+  * Backwards compat with 1.8 - thanks @raviolicode
+
 2.0.3 / 2013-11-27
 
 * Bug fixes

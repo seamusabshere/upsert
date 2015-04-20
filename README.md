@@ -155,7 +155,7 @@ From the tests (updated 11/7/12):
     Upsert was 82% faster than find + new/set/save
     Upsert was 85% faster than find_or_create + update_attributes
     Upsert was 90% faster than create + rescue/find/update
-    Upsert was 46% faster than faking upserts with activerecord-import
+    Upsert was 46% faster than faking upserts with activerecord-import (note: in question as of 3/13/15, need some expert advice)
 
 #### SQL MERGE trick
 

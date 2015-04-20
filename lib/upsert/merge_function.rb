@@ -8,10 +8,6 @@ class Upsert
     NAME_PREFIX = "upsert#{Upsert::VERSION.gsub('.', '_')}"
 
     class << self
-      def execute(controller, row)
-        merge_function = lookup controller, row
-        merge_function.execute row
-      end
 
       def unique_name(table_name, selector_keys, setter_keys, condition)
         parts = [
@@ -32,12 +28,6 @@ class Upsert
           parts
         end
       end
-
-      def lookup(controller, row)
-        @lookup ||= {}
-        key = [controller.table_name, row.selector.keys, row.setter.keys, row.condition]
-        @lookup[key] ||= new(controller, key, controller.assume_function_exists?)
-      end
     end
 
     attr_reader :controller
@@ -55,7 +45,7 @@ class Upsert
     end
 
     def name
-      @name ||= MergeFunction.unique_name table_name, selector_keys, setter_keys, condition
+      @name ||= self.class.unique_name table_name, selector_keys, setter_keys, condition
     end
 
     def connection
