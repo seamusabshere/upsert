@@ -36,10 +36,10 @@ class Upsert
     attr_reader :condition
 
     def initialize(controller, key, assume_function_exists)
-      @condition = key[3]
+      @condition = key[2]
       @controller = controller
-      @selector_keys = key[1]
-      @setter_keys = key[2]
+      @selector_keys = key[0]
+      @setter_keys = key[1]
       validate!
       create! unless assume_function_exists
     end

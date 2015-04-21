@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Upsert do
   describe 'hstore on pg' do
     require 'pg_hstore'
-    Pet.connection.execute 'CREATE EXTENSION HSTORE'
+    Pet.connection.execute 'CREATE EXTENSION IF NOT EXISTS HSTORE'
     Pet.connection.execute "ALTER TABLE pets ADD COLUMN crazy HSTORE"
     Pet.connection.execute "ALTER TABLE pets ADD COLUMN cool HSTORE"
 

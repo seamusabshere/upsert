@@ -226,7 +226,7 @@ class Upsert
   
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
-    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
+    @merge_function_cache[cache_key] ||= merge_function_class.new(self, [ row.selector.keys, row.setter.keys, row.condition ], assume_function_exists?)
   end
 
   # @private
