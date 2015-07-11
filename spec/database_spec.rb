@@ -83,6 +83,13 @@ describe Upsert do
           upsert.row({:id => jerry.id}, :gender => :male)
         end
       end
+
+      it "works for column names with spaces in them" do
+        upsert = Upsert.new $conn, :people
+        assert_creates(Person, [{:"First Name" => 'Major', :"Last Name" => 'Major'}]) do
+          upsert.row({:"First Name" => 'Major'}, :"Last Name" => 'Major')
+        end
+      end
     end
     describe :batch do
       it "works for multiple rows (base case)" do

@@ -13,9 +13,9 @@ class Upsert
           NAME_PREFIX,
           table_name,
           'SEL',
-          selector_keys.join('_A_'),
+          selector_keys.join('_A_').gsub(" ","_"),
           'SET',
-          setter_keys.join('_A_')
+          setter_keys.join('_A_').gsub(" ","_")
         ].join('_')
         if parts.length > MAX_NAME_LENGTH
           # maybe i should md5 instead
