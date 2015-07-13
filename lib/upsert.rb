@@ -231,7 +231,7 @@ class Upsert
 
   # @private
   def quoted_table_name
-    @quoted_table_name ||= connection.quote_ident table_name.gsub('"', '').split('.')
+    @quoted_table_name ||= connection.quote_ident(table_name.gsub('"', '').split('.'))
   end
 
   # @private
