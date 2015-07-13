@@ -48,7 +48,7 @@ class Upsert
     end
 
     def table_name
-      controller.table_name
+      controller.table_name.gsub('"', '').gsub('.', '')
     end
 
     def quoted_table_name
