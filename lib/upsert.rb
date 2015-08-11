@@ -14,7 +14,7 @@ class Upsert
     # What logger to use.
     # @return [#info,#warn,#debug]
     attr_writer :logger
-    
+
     # The current logger
     # @return [#info,#warn,#debug]
     def logger
@@ -223,7 +223,7 @@ class Upsert
   def clear_database_functions
     merge_function_class.clear connection
   end
-  
+
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
     @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
@@ -231,7 +231,7 @@ class Upsert
 
   # @private
   def quoted_table_name
-    @quoted_table_name ||= connection.quote_ident table_name
+    @quoted_table_name ||= table_name
   end
 
   # @private
