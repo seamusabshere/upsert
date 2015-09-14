@@ -4,7 +4,7 @@ class Upsert
     class Postgresql < ColumnDefinition
       class << self
         # activerecord-3.2.5/lib/active_record/connection_adapters/postgresql_adapter.rb#column_definitions
-        def all(connection, table_name)
+        def all(connection, table_name, increment_keys)
           res = connection.execute <<-EOS
 SELECT a.attname AS name, format_type(a.atttypid, a.atttypmod) AS sql_type, d.adsrc AS default
 FROM pg_attribute a LEFT JOIN pg_attrdef d
@@ -13,13 +13,13 @@ WHERE a.attrelid = '#{connection.quote_ident(table_name)}'::regclass
 AND a.attnum > 0 AND NOT a.attisdropped
 EOS
           res.map do |row|
-            new connection, row['name'], row['sql_type'], row['default']
+            new connection, row['name'], row['sql_type'], row['default'], increment_keys.include?(row['name'].to_s)
           end.sort_by do |cd|
             cd.name
           end
         end
       end
-      
+
       # NOTE not using this because it can't be indexed
       # def equality(left, right)
       #   "#{left} IS NOT DISTINCT FROM #{right}"
