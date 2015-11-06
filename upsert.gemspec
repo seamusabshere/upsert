@@ -22,7 +22,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rspec-expectations'
   gem.add_development_dependency 'rspec-mocks'
 
-  gem.add_development_dependency 'activerecord', '~>3'
+  gem.add_development_dependency 'activerecord', '~> 3'
   gem.add_development_dependency 'active_record_inline_schema'
   gem.add_development_dependency 'faker'
   gem.add_development_dependency 'yard'
@@ -47,7 +47,7 @@ Gem::Specification.new do |gem|
     gem.add_development_dependency 'activerecord-jdbcpostgresql-adapter'
   else
     gem.add_development_dependency 'sqlite3'
-    gem.add_development_dependency 'mysql2'
+    gem.add_development_dependency 'mysql2', '~> 0.3.20'
     gem.add_development_dependency 'pg'
     # github-flavored markdown
     if RUBY_VERSION >= '1.9'
