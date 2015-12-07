@@ -111,7 +111,7 @@ class Upsert
           BEGIN
             LOOP
               -- first try to update the key
-              UPDATE #{quoted_table_name} SET #{update_column_definitions.map(&:to_setter).join(', ')}
+              UPDATE #{quoted_table_name} SET #{update_column_definitions.map(&:to_setter).join(', ')}, updated_at = now()
                 WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ') };
               IF found THEN
                 #{hstore_delete_handlers.map(&:to_pgsql).join(' ')}
@@ -121,7 +121,7 @@ class Upsert
               -- if someone else inserts the same key concurrently,
               -- we could get a unique-key failure
               BEGIN
-                INSERT INTO #{quoted_table_name}(#{setter_column_definitions.map(&:quoted_name).join(', ')}) VALUES (#{setter_column_definitions.map(&:to_setter_value).join(', ')});
+                INSERT INTO #{quoted_table_name}(#{setter_column_definitions.map(&:quoted_name).join(', ')}, created_at, updated_at) VALUES (#{setter_column_definitions.map(&:to_setter_value).join(', ')}, now(), now());
                 #{hstore_delete_handlers.map(&:to_pgsql).join(' ')}
                 RETURN;
               EXCEPTION WHEN unique_violation THEN
