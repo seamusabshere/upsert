@@ -10,3 +10,8 @@ rvm:
 env:
   - DB=postgresql
   - DB=mysql
+before_install:
+  - gem update bundler
+  - bundle --version
+  - gem update --system 2.1.11
+  - gem --version
