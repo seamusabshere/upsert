@@ -3,7 +3,7 @@ class Upsert
   class ColumnDefinition
     class << self
       # activerecord-3.2.X/lib/active_record/connection_adapters/XXXXXXXXX_adapter.rb#column_definitions
-      def all(connection, table_name)
+      def all(connection, table_name, increment_keys)
         raise "not impl"
       end
     end
@@ -17,11 +17,12 @@ class Upsert
     attr_reader :quoted_selector_name
     attr_reader :quoted_setter_name
 
-    def initialize(connection, name, sql_type, default)
+    def initialize(connection, name, sql_type, default, increment=false)
       @name = name
       @sql_type = sql_type
       @temporal_query = !!(sql_type =~ TIME_DETECTOR)
       @default = default
+      @increment = increment
       @quoted_name = connection.quote_ident name
       @quoted_selector_name = connection.quote_ident "#{name}_sel"
       @quoted_setter_name = connection.quote_ident "#{name}_set"
@@ -36,7 +37,11 @@ class Upsert
     end
 
     def to_setter
-      "#{quoted_name} = #{to_setter_value}"
+      if @increment
+        "#{quoted_name} = #{quoted_name} + 1"
+      else
+        "#{quoted_name} = #{to_setter_value}"
+      end
     end
 
     def to_selector

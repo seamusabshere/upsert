@@ -14,7 +14,7 @@ class Upsert
     # What logger to use.
     # @return [#info,#warn,#debug]
     attr_writer :logger
-    
+
     # The current logger
     # @return [#info,#warn,#debug]
     def logger
@@ -174,6 +174,8 @@ class Upsert
   # @private
   attr_reader :adapter
 
+  attr_accessor :increment_keys
+
   # @private
   def assume_function_exists?
     @assume_function_exists
@@ -213,7 +215,9 @@ class Upsert
   #   upsert = Upsert.new Pet.connection, Pet.table_name
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
-  def row(selector, setter = {}, options = nil)
+  def row(selector, setter = {}, options = {})
+    @increment_keys = options.fetch(:increment, []).map(&:to_s)
+
     row_object = Row.new(selector, setter, options)
     merge_function(row_object).execute(row_object)
     nil
@@ -223,7 +227,7 @@ class Upsert
   def clear_database_functions
     merge_function_class.clear connection
   end
-  
+
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
     @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
@@ -236,6 +240,6 @@ class Upsert
 
   # @private
   def column_definitions
-    @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, table_name
+    @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, table_name, @increment_keys
   end
 end
