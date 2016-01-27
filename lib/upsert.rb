@@ -14,11 +14,12 @@ class Upsert
     # What logger to use.
     # @return [#info,#warn,#debug]
     attr_writer :logger
+    MUTEX_FOR_PERFORM = Mutex.new
     
     # The current logger
     # @return [#info,#warn,#debug]
     def logger
-      @logger || Thread.exclusive do
+      @logger || MUTEX_FOR_PERFORM.synchronize do
         @logger ||= if defined?(::Rails) and (rails_logger = ::Rails.logger)
           rails_logger
         elsif defined?(::ActiveRecord) and ::ActiveRecord.const_defined?(:Base) and (ar_logger = ::ActiveRecord::Base.logger)
