@@ -1,11 +1,12 @@
 require 'spec_helper'
 describe Upsert do
+  MUTEX_FOR_PERFORM = Mutex.new
   describe "logger" do
     it "logs where you tell it" do
       begin
         old_logger = Upsert.logger
         io = StringIO.new
-        Thread.exclusive do
+        MUTEX_FOR_PERFORM.synchronize do
           Upsert.logger = Logger.new(io)
 
           Upsert.logger.warn "hello"
@@ -22,7 +23,7 @@ describe Upsert do
       begin
         old_logger = Upsert.logger
         io = StringIO.new
-        Thread.exclusive do
+        MUTEX_FOR_PERFORM.synchronize do
           Upsert.logger = Logger.new(io)
           
           u = Upsert.new($conn, :pets)
