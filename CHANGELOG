@@ -1,3 +1,13 @@
+2.1.2 / 2016-02-25
+
+* Enhancements
+
+  * Test on Ruby 2.3 - thanks @Ch4s3 https://github.com/seamusabshere/upsert/pull/70
+
+* Bug fixes
+
+  * Stop using Thread.exclusive - thanks @hpetru https://github.com/seamusabshere/upsert/pull/67
+
 2.1.1 / 2016-02-12
 
 * Enhancements
