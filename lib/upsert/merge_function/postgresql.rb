@@ -91,10 +91,12 @@ class Upsert
       end
 
       def setter_column_definitions
+        @time_stamp_cols = column_definitions.select{|cd| cd.name == 'created_at' || cd.name == 'updated_at'}
         column_definitions.select { |cd| setter_keys.include?(cd.name) }
       end
 
       def update_column_definitions
+        @update_time_stamp_cols =  column_definitions.select{|cd| cd.name == 'updated_at'}
         setter_column_definitions.select { |cd| cd.name !~ CREATED_COL_REGEX }
       end
 
@@ -107,6 +109,15 @@ class Upsert
         names = setter_column_definitions.map(&:quoted_name).join(', ')
         values = setter_column_definitions.map(&:to_setter_value).join(', ')
         update_pair = update_column_definitions.map(&:to_setter).join(', ')
+        if @time_stamp_cols.count > 0
+          names += ', created_at, updated_at'
+          values += ", now(), now()"
+        end
+        @time_stamp_cols=[]
+        if @update_time_stamp_cols.count > 0
+          update_pair += ", updated_at = now()"
+        end
+        @update_time_stamp_cols=[]
         connection.execute(%{
           CREATE OR REPLACE FUNCTION #{name}(#{(selector_column_definitions.map(&:to_selector_arg) + setter_column_definitions.map(&:to_setter_arg) + hstore_delete_handlers.map(&:to_arg)).join(', ')}) RETURNS VOID AS
           $$
