@@ -109,6 +109,7 @@ class Upsert
         names = setter_column_definitions.map(&:quoted_name).join(', ')
         values = setter_column_definitions.map(&:to_setter_value).join(', ')
         update_pair = update_column_definitions.map(&:to_setter).join(', ')
+        #Solution based on based on https://github.com/seamusabshere/upsert/pull/65
         if @time_stamp_cols.count > 0
           names += ', created_at, updated_at'
           values += ", now(), now()"
