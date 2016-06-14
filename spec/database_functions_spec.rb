@@ -18,7 +18,7 @@ describe Upsert do
         
         io.rewind
         hits = io.read.split("\n").grep(/Creating or replacing/)
-        hits.length.should == 2
+        expect(hits.length).to eq(2)
       ensure
         Upsert.logger = old_logger
       end
@@ -42,7 +42,7 @@ describe Upsert do
         
         io.rewind
         hits = io.read.split("\n").grep(/Creating or replacing/)
-        hits.length.should == 2
+        expect(hits.length).to eq(2)
       ensure
         Upsert.logger = old_logger
       end
@@ -65,7 +65,7 @@ describe Upsert do
         
         io.rewind
         hits = io.read.split("\n").grep(/Creating or replacing/)
-        hits.length.should == 1
+        expect(hits.length).to eq(1)
       ensure
         Upsert.logger = old_logger
       end
@@ -88,8 +88,8 @@ describe Upsert do
 
         io.rewind
         lines = io.read.split("\n")
-        lines.grep(/went missing/).length.should == 1
-        lines.grep(/Creating or replacing/).length.should == 1
+        expect(lines.grep(/went missing/).length).to eq(1)
+        expect(lines.grep(/Creating or replacing/).length).to eq(1)
       ensure
         Upsert.logger = old_logger
       end

@@ -12,7 +12,7 @@ describe Upsert do
           Upsert.logger.warn "hello"
 
           io.rewind
-          io.read.chomp.should == 'hello'
+          expect(io.read.chomp).to eq('hello')
         end
       ensure
         Upsert.logger = old_logger
@@ -33,12 +33,12 @@ describe Upsert do
           log = io.read.chomp
           case u.connection.class.name
           when /sqlite/i
-            log.should =~ /insert or ignore/i
+            expect(log).to match(/insert or ignore/i)
           when /mysql/i
-            log.should =~ /call #{Upsert::MergeFunction::NAME_PREFIX}_pets_SEL_name/i
+            expect(log).to match(/call #{Upsert::MergeFunction::NAME_PREFIX}_pets_SEL_name/i)
           when /p.*g/i
             # [54ae2eea857] Possibly much more useful debug output
-            log.should =~ /selector:/i
+            expect(log).to match(/selector:/i)
           else
             raise "not sure"
           end
