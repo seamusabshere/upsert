@@ -11,26 +11,26 @@ describe Upsert do
       u = Upsert.new($conn, :pets)
       selector = {:name => 'Jerry', :tag_number => 6}
       u.row(selector)
-      Pet.find_by_name('Jerry').tag_number.should == 5
+      expect(Pet.find_by_name('Jerry').tag_number).to eq(5)
 
       # won't change anything because selector is wrong
       u = Upsert.new($conn, :pets)
       selector = {:name => 'Jerry', :tag_number => 10}
       setter = { :tag_number => 5 }
       u.row(selector, setter)
-      Pet.find_by_name('Jerry').tag_number.should == 5
+      expect(Pet.find_by_name('Jerry').tag_number).to eq(5)
 
       u = Upsert.new($conn, :pets)
       selector = { :name => 'Jerry' }
       setter = { :tag_number => 10 }
       u.row(selector, setter)
-      Pet.find_by_name('Jerry').tag_number.should == 10
+      expect(Pet.find_by_name('Jerry').tag_number).to eq(10)
 
       u = Upsert.new($conn, :pets)
       selector = { :name => 'Jerry', :tag_number => 10 }
       setter = { :tag_number => 20 }
       u.row(selector, setter)
-      Pet.find_by_name('Jerry').tag_number.should == 20
+      expect(Pet.find_by_name('Jerry').tag_number).to eq(20)
     end
 
     it "really limits its effects to the selector" do
@@ -39,34 +39,34 @@ describe Upsert do
       p.gender = 'blue'
       p.tag_number = 777
       p.save!
-      Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
+      expect(Pet.find_by_name_and_gender('Jerry', 'blue').tag_number).to eq(777)
       u = Upsert.new($conn, :pets)
       selector = {:name => 'Jerry', :gender => 'red'} # this shouldn't select anything
       setter = {:tag_number => 888}
       u.row(selector, setter)
-      Pet.find_by_name_and_gender('Jerry', 'blue').tag_number.should == 777
+      expect(Pet.find_by_name_and_gender('Jerry', 'blue').tag_number).to eq(777)
     end
 
     # https://github.com/seamusabshere/upsert/issues/18
     it "uses nil selectors" do
-      Pet.count.should == 0
+      expect(Pet.count).to eq(0)
       now = Date.today
       u = Upsert.new($conn, :pets)
       5.times do
         u.row(:gender => nil, :birthday => now)
       end
 
-      Pet.count.should == 1
+      expect(Pet.count).to eq(1)
     end
 
     it "uses nil selectors on columns with date type" do
-      Pet.count.should == 0
+      expect(Pet.count).to eq(0)
       u = Upsert.new($conn, :pets)
       5.times do
         u.row(:birthday => nil)
       end
 
-      Pet.count.should == 1
+      expect(Pet.count).to eq(1)
     end
 
     it "uses nil selectors (another way of checking)" do
@@ -80,10 +80,10 @@ describe Upsert do
 
     it "tells you if you request a column that doesn't exist" do
       u = Upsert.new($conn, :pets)
-      lambda { u.row(:gibberish => 'ba') }.should raise_error(/invalid col/i)
-      lambda { u.row(:name => 'Jerry', :gibberish => 'ba') }.should raise_error(/invalid col/i)
-      lambda { u.row(:name => 'Jerry', :gibberish => 'ba') }.should raise_error(/invalid col/i)
-      lambda { u.row(:name => 'Jerry', :gibberish => 'ba', :gender => 'male') }.should raise_error(/invalid col/i)
+      expect { u.row(:gibberish => 'ba') }.to raise_error(/invalid col/i)
+      expect { u.row(:name => 'Jerry', :gibberish => 'ba') }.to raise_error(/invalid col/i)
+      expect { u.row(:name => 'Jerry', :gibberish => 'ba') }.to raise_error(/invalid col/i)
+      expect { u.row(:name => 'Jerry', :gibberish => 'ba', :gender => 'male') }.to raise_error(/invalid col/i)
     end
 
   end

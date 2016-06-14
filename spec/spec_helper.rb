@@ -10,7 +10,7 @@ require 'active_record_inline_schema'
 
 require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
-ENV['DB'] ||= 'mysql'
+ENV['DB'] ||= 'postgresql'
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
@@ -183,7 +183,7 @@ module SpecHelper
   def assert_same_result(records, &blk)
     blk.call(records)
     ref1 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
-    
+
     Pet.delete_all
 
     Upsert.batch($conn, :pets) do |upsert|
@@ -198,7 +198,7 @@ module SpecHelper
   def assert_creates(model, expected_records)
     expected_records.each do |selector, setter|
       # should i use setter in where?
-      model.where(selector).count.should == 0
+      expect(model.where(selector).count).to eq(0)
     end
     yield
     expected_records.each do |selector, setter|
@@ -213,7 +213,7 @@ module SpecHelper
     e = expected.map { |attrs| simplify_attributes attrs }
     f = found.map { |attrs| simplify_attributes attrs }
     f.each_with_index do |fa, i|
-      fa.should == e[i]
+      expect(fa).to eq(e[i])
     end
   end
 
@@ -237,7 +237,7 @@ module SpecHelper
     Pet.delete_all
     sleep 1
     # --
-    
+
     ar_time = Benchmark.realtime { blk.call(records) }
 
     Pet.delete_all
@@ -250,7 +250,7 @@ module SpecHelper
         end
       end
     end
-    upsert_time.should be < ar_time
+    expect(upsert_time).to be < ar_time
     $stderr.puts "   Upsert was #{((ar_time - upsert_time) / ar_time * 100).round}% faster than #{competition}"
   end
 end

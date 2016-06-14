@@ -36,7 +36,7 @@ describe Upsert do
           upsert.row({:name => 'Jerry'}, {:gender => 'male'})
           upsert.row({:name => 'Jerry'}, {:gender => 'neutered'})
         end
-        Pet.where(:gender => 'male').count.should == 0
+        expect(Pet.where(:gender => 'male').count).to eq(0)
       end
       it "works for a single row with implicit nulls" do
         upsert = Upsert.new $conn, :pets
@@ -72,8 +72,8 @@ describe Upsert do
         upsert = Upsert.new $conn, :tasks
         upsert.row({:id => task.id}, :name => 'Clean kitchen')
         task.reload
-        task.created_at.should eql task.created_at
-        task.created_on.should eql task.created_on
+        expect(task.created_at).to eql task.created_at
+        expect(task.created_on).to eql task.created_on
       end
 
       it "converts symbol values to string" do
@@ -114,7 +114,7 @@ describe Upsert do
             upsert.row({:name => 'Jerry'}, :gender => 'neutered')
           end
         end
-        Pet.where(:gender => 'male').count.should == 0
+        expect(Pet.where(:gender => 'male').count).to eq(0)
       end
     end
   end
