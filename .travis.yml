@@ -1,3 +1,5 @@
+sudo: required
+dist: trusty
 language: ruby
 global:
   - USERNAME=travis
@@ -10,8 +12,10 @@ rvm:
   - rbx-2
 env:
   - DB=postgresql
+  - DB=postgresql95
   - DB=mysql
 before_install:
+  - sh -c "if [ '$DB' = 'postgresql95' ]; sudo apt-get uninstall postgresql; sudo apt-get install postgresql-9.5; fi
   - gem update bundler
   - bundle --version
   - gem update --system 2.1.11

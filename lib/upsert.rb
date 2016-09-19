@@ -15,7 +15,7 @@ class Upsert
     # @return [#info,#warn,#debug]
     attr_writer :logger
     MUTEX_FOR_PERFORM = Mutex.new
-    
+
     # The current logger
     # @return [#info,#warn,#debug]
     def logger
@@ -180,6 +180,11 @@ class Upsert
     @assume_function_exists
   end
 
+  # @private
+  def use_native_upsert?
+    @use_native_upsert
+  end
+
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
   # @param [Hash] options
@@ -197,6 +202,7 @@ class Upsert
     @merge_function_class = MergeFunction.const_get adapter
     @merge_function_cache = {}
     @assume_function_exists = options.fetch :assume_function_exists, true
+    @use_native_upsert = options.fetch :use_native_upsert, nil
   end
 
   # Upsert a row given a selector and a setter.
@@ -224,10 +230,10 @@ class Upsert
   def clear_database_functions
     merge_function_class.clear connection
   end
-  
+
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
-    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
+    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?, use_native_upsert?)
   end
 
   # @private

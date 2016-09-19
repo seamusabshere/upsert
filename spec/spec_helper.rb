@@ -10,7 +10,7 @@ require 'active_record_inline_schema'
 
 require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
-ENV['DB'] ||= 'mysql'
+ENV['DB'] ||= 'postgresql'
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
@@ -114,11 +114,23 @@ class Pet < ActiveRecord::Base
   col :home_address, :type => :text
   if ENV['DB'] == 'postgresql'
     col :tsntz, :type => 'timestamp without time zone'
+  else
+    add_index :name, :unique => true
   end
-  add_index :name, :unique => true
 end
+if ENV['DB'] == 'postgresql'
+  begin
+    Pet.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
+  rescue => e
+    puts e.inspect
+  end
+end
+
 Pet.auto_upgrade!
 
+if ENV['DB'] == 'postgresql'
+  Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
+end
 
 class Task < ActiveRecord::Base
   col :name
@@ -183,7 +195,7 @@ module SpecHelper
   def assert_same_result(records, &blk)
     blk.call(records)
     ref1 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
-    
+
     Pet.delete_all
 
     Upsert.batch($conn, :pets) do |upsert|
@@ -237,7 +249,7 @@ module SpecHelper
     Pet.delete_all
     sleep 1
     # --
-    
+
     ar_time = Benchmark.realtime { blk.call(records) }
 
     Pet.delete_all

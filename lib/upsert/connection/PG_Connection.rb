@@ -3,7 +3,7 @@ class Upsert
     # @private
     class PG_Connection < Connection
       include Postgresql
-      
+
       def execute(sql, params = nil)
         if params
           # Upsert.logger.debug { %{[upsert] #{sql} with #{params.inspect}} }

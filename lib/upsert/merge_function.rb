@@ -31,12 +31,13 @@ class Upsert
     attr_reader :selector_keys
     attr_reader :setter_keys
 
-    def initialize(controller, selector_keys, setter_keys, assume_function_exists)
+    def initialize(controller, selector_keys, setter_keys, assume_function_exists, use_native_upsert = nil)
       @controller = controller
       @selector_keys = selector_keys
       @setter_keys = setter_keys
       validate!
-      create! unless assume_function_exists
+      @use_native_upsert = use_native_upsert
+      create! unless assume_function_exists || @use_native_upsert
     end
 
     def name
