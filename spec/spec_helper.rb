@@ -10,8 +10,8 @@ require 'active_record_inline_schema'
 
 require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
-ENV['DB'] = 'postgresql' if ENV['DB'] =~ /postgresql/
 ENV['DB'] ||= 'mysql'
+ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
