@@ -15,7 +15,7 @@ ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
-  CURRENT_USER = `whoami`.chomp
+  CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
   PASSWORD = ''
 
   case ENV['DB']
@@ -43,8 +43,8 @@ class RawConnectionFactory
 
   when 'mysql'
     password_argument = (PASSWORD.empty?) ? "" : "-p#{PASSWORD}"
-    Kernel.system %{ mysql -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
-    Kernel.system %{ mysql -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8" }
+    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8" }
     if RUBY_PLATFORM == 'java'
       CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
       require 'jdbc/mysql'
