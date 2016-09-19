@@ -15,8 +15,8 @@ env:
   - DB=postgresql95
   - DB=mysql
 before_install:
-  - sh -c "if [ '$DB' = 'postgresql94' ]; then sudo apt-get uninstall postgresql; sudo apt-get install postgresql-9.4; fi"
-  - sh -c "if [ '$DB' = 'postgresql95' ]; then sudo apt-get uninstall postgresql; sudo apt-get install postgresql-9.5; fi"
+  - sh -c "if [ '$DB' = 'postgresql94' ]; then sudo apt-get uninstall postgresql; sudo apt-get install postgresql-9.4; DB=postgresql; fi"
+  - sh -c "if [ '$DB' = 'postgresql95' ]; then sudo apt-get uninstall postgresql; sudo apt-get install postgresql-9.5; DB=postgresql; fi"
   - gem update bundler
   - bundle --version
   - gem update --system 2.1.11
