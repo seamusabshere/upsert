@@ -10,11 +10,11 @@ describe Upsert do
 
         # clear, create (#1)
         Upsert.clear_database_functions($conn_factory.new_connection)
-        Upsert.new($conn_factory.new_connection, :pets, use_native_upsert: false).row :name => 'hello'
+        Upsert.new($conn_factory.new_connection, :pets, disable_native: true).row :name => 'hello'
 
         # clear, create (#2)
         Upsert.clear_database_functions($conn_factory.new_connection)
-        Upsert.new($conn_factory.new_connection, :pets, use_native_upsert: false).row :name => 'hello'
+        Upsert.new($conn_factory.new_connection, :pets, disable_native: true).row :name => 'hello'
 
         io.rewind
         hits = io.read.split("\n").grep(/Creating or replacing/)
@@ -34,11 +34,11 @@ describe Upsert do
 
         # clear, create (#1)
         Upsert.clear_database_functions(connection)
-        Upsert.new(connection, :pets, use_native_upsert: false).row :name => 'hello'
+        Upsert.new(connection, :pets, disable_native: true).row :name => 'hello'
 
         # clear, create (#2)
         Upsert.clear_database_functions(connection)
-        Upsert.new(connection, :pets, use_native_upsert: false).row :name => 'hello'
+        Upsert.new(connection, :pets, disable_native: true).row :name => 'hello'
 
         io.rewind
         hits = io.read.split("\n").grep(/Creating or replacing/)
@@ -58,7 +58,7 @@ describe Upsert do
         Upsert.clear_database_functions($conn_factory.new_connection)
 
         # create
-        Upsert.batch($conn_factory.new_connection, :pets, use_native_upsert: false) do |upsert|
+        Upsert.batch($conn_factory.new_connection, :pets, disable_native: true) do |upsert|
           upsert.row :name => 'hello'
           upsert.row :name => 'world'
         end
@@ -81,10 +81,10 @@ describe Upsert do
         Upsert.clear_database_functions($conn_factory.new_connection)
 
         # tries, "went missing", creates
-        Upsert.new($conn_factory.new_connection, :pets, :assume_function_exists => true, use_native_upsert: false).row :name => 'hello'
+        Upsert.new($conn_factory.new_connection, :pets, :assume_function_exists => true, disable_native: true).row :name => 'hello'
 
         # just works
-        Upsert.new($conn_factory.new_connection, :pets, :assume_function_exists => true, use_native_upsert: false).row :name => 'hello'
+        Upsert.new($conn_factory.new_connection, :pets, :assume_function_exists => true, disable_native: true).row :name => 'hello'
 
         io.rewind
         lines = io.read.split("\n")

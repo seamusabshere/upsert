@@ -11,7 +11,7 @@ describe Upsert do
       Pet.delete_all
     end
 
-    let(:upsert) { Upsert.new $conn, :pets, use_native_upsert: false }
+    let(:upsert) { Upsert.new $conn, :pets, disable_native: true }
 
     it "works for ugly text" do
       uggy = <<-EOS
