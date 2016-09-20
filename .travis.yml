@@ -15,7 +15,8 @@ rvm:
   - 2.2
   - 2.1
   - 1.9.3
-  - rbx-2.2.2
+  - rubinus-2
+  - rubinus-3
 env:
   - DB=postgresql94
   - DB=postgresql95
