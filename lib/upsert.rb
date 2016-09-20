@@ -181,8 +181,8 @@ class Upsert
   end
 
   # @private
-  def use_native_upsert?
-    @use_native_upsert
+  def disable_native?
+    @disable_native
   end
 
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
@@ -202,7 +202,7 @@ class Upsert
     @merge_function_class = MergeFunction.const_get adapter
     @merge_function_cache = {}
     @assume_function_exists = options.fetch :assume_function_exists, true
-    @use_native_upsert = options.fetch :use_native_upsert, nil
+    @disable_native = options.fetch :disable_native, nil
   end
 
   # Upsert a row given a selector and a setter.
@@ -233,7 +233,7 @@ class Upsert
 
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
-    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?, use_native_upsert?)
+    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?, disable_native?)
   end
 
   # @private

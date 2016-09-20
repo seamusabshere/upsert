@@ -30,14 +30,15 @@ class Upsert
     attr_reader :controller
     attr_reader :selector_keys
     attr_reader :setter_keys
+    attr_reader :disable_native
 
-    def initialize(controller, selector_keys, setter_keys, assume_function_exists, use_native_upsert = nil)
+    def initialize(controller, selector_keys, setter_keys, assume_function_exists, disable_native = nil)
       @controller = controller
       @selector_keys = selector_keys
       @setter_keys = setter_keys
       validate!
-      @use_native_upsert = use_native_upsert
-      create! unless assume_function_exists || @use_native_upsert
+      @disable_native = disable_native
+      create! unless assume_function_exists || @disable_native == false
     end
 
     def name
@@ -58,6 +59,10 @@ class Upsert
 
     def column_definitions
       controller.column_definitions
+    end
+
+    def disable_native?
+      @disable_native
     end
 
     private

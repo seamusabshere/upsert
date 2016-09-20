@@ -8,10 +8,7 @@ class Upsert
 
       attr_reader :quoted_setter_names
       attr_reader :quoted_selector_names
-
-      def self.use_pg_upsert_cache
-        @use_pg_upsert_cache ||= {}
-      end
+      attr_reader :disable_native
 
       def initialize(controller, *args)
         super
@@ -24,24 +21,25 @@ class Upsert
       end
 
       def use_pg_upsert?
-        return if @use_native_upsert == false
-        # We need to memoize this way because we're storing a boolean
-        return self.class.use_pg_upsert_cache[__id__] if self.class.use_pg_upsert_cache.key?(__id__)
-
-        self.class.use_pg_upsert_cache[__id__] = begin
+        return false if disable_native?
+        return @use_upsert if defined?(@use_upsert)
+        @use_upsert = begin
           version = controller.connection.execute("SHOW server_version").getvalue(0, 0)
           version_number = version[0..2].split('.').join('').to_i
 
-          matching_constraint = false
-          schema_query = controller.connection.execute("SELECT array_agg(column_name::text) FROM information_schema.constraint_column_usage WHERE table_name = $1 GROUP BY table_catalog, table_name, constraint_name", [table_name])
+          return @use_upsert = false if version_number < 95
+
+          schema_query = controller.connection.execute(%{
+              SELECT array_agg(column_name::text) FROM information_schema.constraint_column_usage
+              LEFT JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
+              WHERE table_name = $1 AND conrelid = $1::regclass::oid
+              GROUP BY table_catalog, table_name, constraint_name
+          }, [table_name])
           type_map = PG::TypeMapByColumn.new([PG::TextDecoder::Array.new])
           schema_query.type_map = type_map
 
-          schema_query.values.each do |row|
-            if row.first.sort == selector_keys.sort
-              matching_constraint = true
-              break
-            end
+          matching_constraint = schema_query.values.any? do |row|
+            row.first.sort == selector_keys.sort
           end
 
           version_number >= 95 && matching_constraint
