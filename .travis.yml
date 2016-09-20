@@ -15,8 +15,10 @@ rvm:
   - 2.2
   - 2.1
   - 1.9.3
-  - rubinus-2
-  - rubinus-3
+  - rbx-2
+matrix:
+  allow_failures:
+    - rvm: rbx-2
 env:
   - DB=postgresql94
   - DB=postgresql95
