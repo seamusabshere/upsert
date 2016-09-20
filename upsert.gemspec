@@ -48,7 +48,7 @@ Gem::Specification.new do |gem|
   else
     gem.add_development_dependency 'activerecord-postgresql-adapter'
     gem.add_development_dependency 'sqlite3'
-    gem.add_development_dependency 'mysql2'
+    gem.add_development_dependency 'mysql2', '~> 0.3.10'
     gem.add_development_dependency 'pg'
     # github-flavored markdown
     if RUBY_VERSION >= '1.9'
