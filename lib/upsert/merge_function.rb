@@ -32,7 +32,7 @@ class Upsert
     attr_reader :setter_keys
     attr_reader :disable_native
 
-    def initialize(controller, selector_keys, setter_keys, assume_function_exists, disable_native = nil)
+    def initialize(controller, selector_keys, setter_keys, assume_function_exists, disable_native)
       @controller = controller
       @selector_keys = selector_keys
       @setter_keys = setter_keys

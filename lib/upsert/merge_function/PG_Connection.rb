@@ -8,7 +8,6 @@ class Upsert
 
       attr_reader :quoted_setter_names
       attr_reader :quoted_selector_names
-      attr_reader :disable_native
 
       def initialize(controller, *args)
         super
@@ -32,7 +31,7 @@ class Upsert
           schema_query = controller.connection.execute(%{
               SELECT array_agg(column_name::text) FROM information_schema.constraint_column_usage
               LEFT JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
-              WHERE table_name = $1 AND conrelid = $1::regclass::oid
+              WHERE table_name = $1 AND conrelid = $1::regclass::oid AND contype = 'u'
               GROUP BY table_catalog, table_name, constraint_name
           }, [table_name])
           type_map = PG::TypeMapByColumn.new([PG::TextDecoder::Array.new])
