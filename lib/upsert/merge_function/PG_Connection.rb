@@ -24,13 +24,11 @@ class Upsert
       end
 
       def server_version
-        @server_version ||= begin
-          controller.connection.execute("SHOW server_version").getvalue(0, 0)
-          version[0..2].split('.').join('').to_i
-        end
+        @server_version ||=
+          controller.connection.execute("SHOW server_version").getvalue(0, 0).split('.').join('').to_i
       end
 
-      def unique_index_on_selectors?
+      def unique_index_on_selector?
         return @unique_index_on_selector if defined?(@unique_index_on_selector)
         @unique_index_on_selector = begin
           schema_query = controller.connection.execute(%{
