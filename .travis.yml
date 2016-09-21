@@ -8,7 +8,8 @@ rvm:
   - 2.1.0
   - 1.9.3
   - rbx-2
-  - jruby-9.1.2.0
+  - jruby-1.7
+  - jruby-9.1
 env:
   - DB=postgresql
   - DB=mysql
