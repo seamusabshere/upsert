@@ -32,7 +32,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rake', '~>10.1.1'
 
   if RUBY_VERSION >= '1.9'
-    gem.add_development_dependency 'activerecord-import'
+    gem.add_development_dependency 'activerecord-import', '0.3.1'
   else
     gem.add_development_dependency 'orderedhash'
   end
