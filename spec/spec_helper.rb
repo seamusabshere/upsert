@@ -12,6 +12,8 @@ require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
 ENV['DB'] ||= 'mysql'
 ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/
+UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
+
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
@@ -119,7 +121,7 @@ class Pet < ActiveRecord::Base
     add_index :name, :unique => true
   end
 end
-if ENV['DB'] == 'postgresql'
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
   begin
     Pet.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
   rescue => e
@@ -129,7 +131,7 @@ end
 
 Pet.auto_upgrade!
 
-if ENV['DB'] == 'postgresql'
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
   Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
 end
 

@@ -19,50 +19,6 @@ class Upsert
         use_pg_native? ? pg_native(row) : pg_function(row)
       end
 
-      def use_pg_native?
-        server_version >= 95 && unique_index_on_selector?
-      end
-
-      def server_version
-        @server_version ||=
-          controller.connection.execute("SHOW server_version").getvalue(0, 0).split('.').join('').to_i
-      end
-
-      def unique_index_on_selector?
-        return @unique_index_on_selector if defined?(@unique_index_on_selector)
-        @unique_index_on_selector = begin
-          schema_query = controller.connection.execute(%{
-              SELECT array_agg(column_name::text) FROM information_schema.constraint_column_usage
-              JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
-              WHERE table_name = $1 AND conrelid = $1::regclass::oid AND contype = 'u'
-              GROUP BY table_catalog, table_name, constraint_name
-          }, [table_name])
-          type_map = PG::TypeMapByColumn.new([PG::TextDecoder::Array.new])
-          schema_query.type_map = type_map
-
-          schema_query.values.any? do |row|
-            row.first.sort == selector_keys.sort
-          end
-        end
-      end
-
-      def pg_native(row)
-        bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
-        bind_selector_values = row.selector.values.map { |v| connection.bind_value v }
-
-        upsert_sql = %{
-          INSERT INTO #{quoted_table_name} (#{quoted_setter_names.join(',')})
-          VALUES (#{bind_placeholders.join(',')})
-          ON CONFLICT(#{quoted_selector_names.join(', ')})
-          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = (#{bind_placeholders.join(',')})
-        }
-        connection.execute upsert_sql, bind_setter_values
-      end
-
-      def bind_placeholders
-        @bind_placeholders ||= setter_keys.each_with_index().map { |v, i| "$#{i + 1}" }
-      end
-
       def pg_function(row)
         first_try = true
         values = []
