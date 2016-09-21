@@ -180,11 +180,6 @@ class Upsert
     @assume_function_exists
   end
 
-  # @private
-  def disable_native?
-    @disable_native
-  end
-
   # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
   # @param [String,Symbol] table_name The name of the table into which you will be upserting.
   # @param [Hash] options
@@ -202,7 +197,6 @@ class Upsert
     @merge_function_class = MergeFunction.const_get adapter
     @merge_function_cache = {}
     @assume_function_exists = options.fetch :assume_function_exists, true
-    @disable_native = options.fetch :disable_native, nil
   end
 
   # Upsert a row given a selector and a setter.
@@ -233,7 +227,7 @@ class Upsert
 
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
-    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?, disable_native?)
+    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
   end
 
   # @private

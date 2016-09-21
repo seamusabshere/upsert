@@ -16,36 +16,39 @@ class Upsert
       end
 
       def execute(row)
-        use_pg_upsert? ? pg_upsert(row) : pg_function(row)
+        use_pg_native? ? pg_native(row) : pg_function(row)
       end
 
-      def use_pg_upsert?
-        return false if disable_native?
-        return @use_upsert if defined?(@use_upsert)
-        @use_upsert = begin
-          version = controller.connection.execute("SHOW server_version").getvalue(0, 0)
-          version_number = version[0..2].split('.').join('').to_i
+      def use_pg_native?
+        server_version >= 95 && unique_index_on_selector?
+      end
 
-          return @use_upsert = false if version_number < 95
+      def server_version
+        @server_version ||= begin
+          controller.connection.execute("SHOW server_version").getvalue(0, 0)
+          version[0..2].split('.').join('').to_i
+        end
+      end
 
+      def unique_index_on_selectors?
+        return @unique_index_on_selector if defined?(@unique_index_on_selector)
+        @unique_index_on_selector = begin
           schema_query = controller.connection.execute(%{
               SELECT array_agg(column_name::text) FROM information_schema.constraint_column_usage
-              LEFT JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
+              JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
               WHERE table_name = $1 AND conrelid = $1::regclass::oid AND contype = 'u'
               GROUP BY table_catalog, table_name, constraint_name
           }, [table_name])
           type_map = PG::TypeMapByColumn.new([PG::TextDecoder::Array.new])
           schema_query.type_map = type_map
 
-          matching_constraint = schema_query.values.any? do |row|
+          schema_query.values.any? do |row|
             row.first.sort == selector_keys.sort
           end
-
-          version_number >= 95 && matching_constraint
         end
       end
 
-      def pg_upsert(row)
+      def pg_native(row)
         bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
         bind_selector_values = row.selector.values.map { |v| connection.bind_value v }
 
@@ -59,11 +62,7 @@ class Upsert
       end
 
       def bind_placeholders
-        @bind_placeholders ||= begin
-          setter_keys.each_with_index().each_with_object([]) do |(v, i), memo|
-            memo << "$#{i + 1}"
-          end
-        end
+        @bind_placeholders ||= setter_keys.each_with_index().map { |v, i| "$#{i + 1}" }
       end
 
       def pg_function(row)
