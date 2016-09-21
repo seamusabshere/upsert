@@ -15,7 +15,7 @@ class Upsert
     # @return [#info,#warn,#debug]
     attr_writer :logger
     MUTEX_FOR_PERFORM = Mutex.new
-    
+
     # The current logger
     # @return [#info,#warn,#debug]
     def logger
@@ -215,19 +215,26 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, setter = {}, options = nil)
-    row_object = Row.new(selector, setter, options)
-    merge_function(row_object).execute(row_object)
-    nil
+    @row_mutex ||= Mutex.new
+    @row_mutex.synchronize do
+      row_object = Row.new(selector, setter, options)
+      merge_function(row_object).execute(row_object)
+      nil
+    end
   end
 
   # @private
   def clear_database_functions
     merge_function_class.clear connection
   end
-  
+
   def merge_function(row)
+    @merge_function_mutex ||= Mutex.new
     cache_key = [row.selector.keys, row.setter.keys]
-    @merge_function_cache[cache_key] ||= merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
+    @merge_function_mutex.synchronize do
+      @merge_function_cache[cache_key] ||=
+        merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
+    end
   end
 
   # @private
