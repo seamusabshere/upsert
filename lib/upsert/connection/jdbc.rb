@@ -8,7 +8,7 @@ class Upsert
         java.sql.Types::OTHER       => 'getString', # ?! i guess unicode text?
         java.sql.Types::BINARY      => 'getBlob',
         java.sql.Types::LONGVARCHAR => 'getString',
-        java.sql.Types::INTEGER     => 'getInt',
+        java.sql.Types::INTEGER     => 'getLong',
       }
       java.sql.Types.constants.each do |type_name|
         i = java.sql.Types.const_get type_name
@@ -21,7 +21,7 @@ class Upsert
       end.merge(
         'TrueClass'  => 'setBoolean',
         'FalseClass' => 'setBoolean',
-        'Fixnum'     => 'setInt',
+        'Fixnum'     => 'setLong',
       )
 
       def binary(v)

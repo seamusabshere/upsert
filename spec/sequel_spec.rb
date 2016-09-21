@@ -4,17 +4,27 @@ require 'sequel'
 describe Upsert do
   describe "Plays nice with Sequel" do
     config = ActiveRecord::Base.connection.instance_variable_get(:@config)
-    case
-      when 'postgresql' == config[:adapter]; config[:adapter] = 'postgres'
-      when 'sqlite3' == config[:adapter]; config[:adapter] = 'sqlite'
+    config[:adapter] = case config[:adapter]
+                       when 'postgresql' then 'postgres'
+                       when 'sqlie3' then 'sqlite'
+                       else config[:adapter]
+                       end
+
+    let(:db) do
+      params = if RUBY_PLATFORM == 'java'
+                 RawConnectionFactory::CONFIG
+               else
+                 config.slice(:adapter, :host, :database, :user, :password)
+               end
+      Sequel.connect(params)
     end
 
     it "Doesn't explode on connection" do
-      expect { DB = Sequel.connect config }.to_not raise_error
+      expect { db }.to_not raise_error
     end
 
     it "Doesn't explode when using DB.pool.hold" do
-      DB.pool.hold do |conn|
+      db.pool.hold do |conn|
         expect {
           upsert = Upsert.new(conn, :pets)
           assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do
@@ -25,7 +35,7 @@ describe Upsert do
     end
 
     it "Doesn't explode when using DB.synchronize" do
-      DB.synchronize do |conn|
+      db.synchronize do |conn|
         expect {
           upsert = Upsert.new(conn, :pets)
           assert_creates(Pet, [{:name => 'Jerry', :gender => 'male'}]) do

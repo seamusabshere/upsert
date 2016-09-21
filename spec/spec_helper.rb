@@ -110,6 +110,7 @@ class Pet < ActiveRecord::Base
   col :morning_walk_time, :type => :datetime
   col :zipped_biography, :type => :binary
   col :tag_number, :type => :integer
+  col :big_tag_number, :type => :bigint
   col :birthday, :type => :date
   col :home_address, :type => :text
   if ENV['DB'] == 'postgresql'
@@ -183,7 +184,7 @@ module SpecHelper
   def assert_same_result(records, &blk)
     blk.call(records)
     ref1 = Pet.order(:name).all.map { |pet| pet.attributes.except('id') }
-    
+
     Pet.delete_all
 
     Upsert.batch($conn, :pets) do |upsert|
@@ -237,7 +238,7 @@ module SpecHelper
     Pet.delete_all
     sleep 1
     # --
-    
+
     ar_time = Benchmark.realtime { blk.call(records) }
 
     Pet.delete_all
