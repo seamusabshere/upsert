@@ -8,7 +8,8 @@ class Upsert
         java.sql.Types::OTHER       => 'getString', # ?! i guess unicode text?
         java.sql.Types::BINARY      => 'getBlob',
         java.sql.Types::LONGVARCHAR => 'getString',
-        java.sql.Types::INTEGER     => 'getLong',
+        java.sql.Types::BIGINT      => 'getLong',
+        java.sql.Types::INTEGER     => 'getInt',
       }
       java.sql.Types.constants.each do |type_name|
         i = java.sql.Types.const_get type_name
@@ -21,7 +22,7 @@ class Upsert
       end.merge(
         'TrueClass'  => 'setBoolean',
         'FalseClass' => 'setBoolean',
-        'Fixnum'     => 'setLong',
+        'Fixnum'     => 'setInt',
       )
 
       def binary(v)
@@ -34,6 +35,10 @@ class Upsert
           setters = self.class.const_get(:SETTER)
           statement = metal.prepareStatement sql
           params.each_with_index do |v, i|
+            if v.is_a?(Fixnum) && v > 2_147_483_647
+              next statement.setLong i+1, v
+            end
+
             case v
             when Upsert::Binary
               statement.setBytes i+1, binary(v)
