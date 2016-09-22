@@ -22,6 +22,8 @@ matrix:
 env:
   - DB=postgresql94
   - DB=postgresql95
+  - DB=postgresql94 UNIQUE_CONSTRAINT=true
+  - DB=postgresql95 UNIQUE_CONSTRAINT=true
   - DB=mysql DB_USER=root
 before_install:
   - sh -c "if [ '$DB' = 'postgresql94' ]; then sudo apt-get uninstall postgresql; sudo apt-get install postgresql-9.4; fi"
