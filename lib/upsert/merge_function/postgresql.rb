@@ -76,19 +76,74 @@ class Upsert
 
       def pg_native(row)
         bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
-        bind_selector_values = row.selector.values.map { |v| connection.bind_value v }
 
         upsert_sql = %{
           INSERT INTO #{quoted_table_name} (#{quoted_setter_names.join(',')})
-          VALUES (#{bind_placeholders.join(',')})
+          VALUES (#{insert_bind_placeholders(row).join(', ')})
           ON CONFLICT(#{quoted_selector_names.join(', ')})
-          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = (#{bind_placeholders.join(',')})
+          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = (#{conflict_bind_placeholders(row).join(', ')})
         }
+
         connection.execute upsert_sql, bind_setter_values
       end
 
-      def bind_placeholders
-        @bind_placeholders ||= setter_keys.each_with_index().map { |v, i| "$#{i + 1}" }
+      def hstore_delete_function(sql, row, column_definition)
+        parts = []
+        if row.hstore_delete_keys.key?(column_definition.name)
+          parts << "DELETE("
+        end
+        parts << sql
+        if row.hstore_delete_keys.key?(column_definition.name)
+          keys = row.hstore_delete_keys[column_definition.name].map { |k| "'#{k.to_s.gsub("'", "\\'")}'" }
+          parts << ", ARRAY[#{keys.join(', ')}])"
+        end
+
+        parts.join(" ")
+      end
+
+      def insert_bind_placeholders(row)
+        if row.hstore_delete_keys.empty?
+          @insert_bind_placeholders ||= setter_column_definitions.each_with_index.map do |column_definition, i|
+            "$#{i + 1}"
+          end
+        else
+          setter_column_definitions.each_with_index.map do |column_definition, i|
+            idx = i + 1
+            if column_definition.hstore?
+              hstore_delete_function("$#{idx}", row, column_definition)
+            else
+              "$#{idx}"
+            end
+          end
+        end
+      end
+
+      def conflict_bind_placeholders(row)
+        if row.hstore_delete_keys.empty?
+          @conflict_bind_placeholders ||= setter_column_definitions.each_with_index.map do |column_definition, i|
+            idx = i + 1
+            if column_definition.hstore?
+              "CASE WHEN #{quoted_table_name}.#{column_definition.quoted_name} IS NULL THEN $#{idx} ELSE" \
+                + " (#{quoted_table_name}.#{column_definition.quoted_name} || $#{idx})" \
+                + " END"
+            else
+              "$#{idx}"
+            end
+          end
+        else
+          setter_column_definitions.each_with_index.map do |column_definition, i|
+            idx = i + 1
+            if column_definition.hstore?
+              "CASE WHEN #{quoted_table_name}.#{column_definition.quoted_name} IS NULL THEN " \
+                + hstore_delete_function("$#{idx}", row, column_definition) \
+                + " ELSE " \
+                + hstore_delete_function("(#{quoted_table_name}.#{column_definition.quoted_name} || $#{idx})", row, column_definition) \
+                + " END"
+            else
+              "$#{idx}"
+            end
+          end
+        end
       end
 
       class HstoreDeleteHandler
