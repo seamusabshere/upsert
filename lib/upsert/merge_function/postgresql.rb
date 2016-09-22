@@ -53,7 +53,7 @@ class Upsert
 
       def server_version
         @server_version ||=
-          controller.connection.execute("SHOW server_version").getvalue(0, 0).split('.').join('').to_i
+          controller.connection.execute("SHOW server_version").getvalue(0, 0).split('.')[0..1].join('').to_i
       end
 
       def unique_index_on_selector?
