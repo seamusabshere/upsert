@@ -9,6 +9,7 @@ class Upsert
         java.sql.Types::BINARY      => 'getBlob',
         java.sql.Types::LONGVARCHAR => 'getString',
         java.sql.Types::INTEGER     => 'getInt',
+        java.sql.Types::ARRAY       => -> (r, i){ r.getArray(i).array.to_ary }
       }
       java.sql.Types.constants.each do |type_name|
         i = java.sql.Types.const_get type_name
@@ -21,7 +22,7 @@ class Upsert
       end.merge(
         'TrueClass'  => 'setBoolean',
         'FalseClass' => 'setBoolean',
-        'Fixnum'     => 'setInt',
+        'Fixnum'     => 'setInt'
       )
 
       def binary(v)
@@ -72,6 +73,8 @@ class Upsert
             column_name, getter = cg
             if getter == 'getNull'
               row[column_name] = nil
+            elsif getter.respond_to?(:call)
+              row[column_name] = getter.call(raw_result, i)
             else
               row[column_name] = raw_result.send(getter, i)
             end
