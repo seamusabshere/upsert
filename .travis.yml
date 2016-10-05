@@ -20,14 +20,13 @@ matrix:
   allow_failures:
     - rvm: rbx-2
 env:
-  - DB=postgresql94
-  - DB=postgresql95
-  - DB=postgresql94 UNIQUE_CONSTRAINT=true
-  - DB=postgresql95 UNIQUE_CONSTRAINT=true
+  - DB=postgresql PGVERSION=9.4
+  - DB=postgresql PGVERSION=9.5
+  - DB=postgresql PGVERSION=9.4 UNIQUE_CONSTRAINT=true
+  - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
   - DB=mysql DB_USER=root
 before_install:
-  - sh -c "if [ '$DB' = 'postgresql94' ]; then sudo apt-get remove postgresql; sudo service stop postgresql; sudo apt-get install postgresql-9.4; fi"
-  - sh -c "if [ '$DB' = 'postgresql95' ]; then sudo apt-get remove postgresql; sudo service stop postgresql; sudo apt-get install postgresql-9.5; fi"
+  - if [ '$DB' = 'postgresql' ]; then ./travis/install_postgres.sh; fi
   - gem update bundler
   - bundle --version
   - gem update --system 2.1.11
