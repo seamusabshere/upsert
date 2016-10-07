@@ -46,7 +46,7 @@ describe Upsert do
       end
     end
 
-    # FIXME apparently no longer faster?  
+    # FIXME apparently no longer faster?
     # if ENV['DB'] == 'mysql' && RUBY_VERSION >= '1.9'
     #   describe 'compared to activerecord-import' do
     #     it "is faster than faking upserts with activerecord-import" do
