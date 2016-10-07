@@ -10,6 +10,7 @@ class Upsert
         java.sql.Types::LONGVARCHAR => 'getString',
         java.sql.Types::BIGINT      => 'getLong',
         java.sql.Types::INTEGER     => 'getInt',
+        java.sql.Types::ARRAY       => -> (r, i){ r.getArray(i).array.to_ary }
       }
       java.sql.Types.constants.each do |type_name|
         i = java.sql.Types.const_get type_name
@@ -78,6 +79,8 @@ class Upsert
             column_name, getter = cg
             if getter == 'getNull'
               row[column_name] = nil
+            elsif getter.respond_to?(:call)
+              row[column_name] = getter.call(raw_result, i)
             else
               row[column_name] = raw_result.send(getter, i)
             end

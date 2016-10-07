@@ -4,39 +4,24 @@ class Upsert
   class MergeFunction
     # @private
     class Java_OrgPostgresqlJdbc4_Jdbc4Connection < MergeFunction
+      ERROR_CLASS = org.postgresql.util.PSQLException
       include Postgresql
 
-      def execute(row)
-        first_try = true
-        values = []
-        values += row.selector.values
-        values += row.setter.values
-        hstore_delete_handlers.each do |hstore_delete_handler|
-          values << row.hstore_delete_keys.fetch(hstore_delete_handler.name, [])
+      def execute_parameterized(query, args = [])
+        query_args = []
+        query = query.gsub(/\$(\d+)/) do |str|
+          query_args << args[Regexp.last_match[1].to_i - 1]
+          "?"
         end
-        Upsert.logger.debug do
-          %{[upsert]\n\tSelector: #{row.selector.inspect}\n\tSetter: #{row.setter.inspect}}
-        end
-        begin
-          connection.execute sql, values.map { |v| connection.bind_value v }
-        rescue org.postgresql.util.PSQLException => pg_error
-          if pg_error.message =~ /function #{name}.* does not exist/i
-            if first_try
-              Upsert.logger.info %{[upsert] Function #{name.inspect} went missing, trying to recreate}
-              first_try = false
-              create!
-              retry
-            else
-              Upsert.logger.info %{[upsert] Failed to create function #{name.inspect} for some reason}
-              raise pg_error
-            end
-          else
-            raise pg_error
-          end
-        end
+        controller.connection.execute(query, query_args)
       end
 
-
+      def unique_index_on_selector?
+        return @unique_index_on_selector if defined?(@unique_index_on_selector)
+        @unique_index_on_selector = schema_query.any? do |row|
+          row["index_columns"].sort == selector_keys.sort
+        end
+      end
     end
   end
 end
