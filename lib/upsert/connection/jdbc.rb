@@ -36,7 +36,8 @@ class Upsert
           statement = metal.prepareStatement sql
           params.each_with_index do |v, i|
             if v.is_a?(Fixnum) && v > 2_147_483_647
-              next statement.setLong i+1, v
+              statement.setLong i+1, v
+              next
             end
 
             case v
