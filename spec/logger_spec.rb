@@ -20,12 +20,12 @@ describe Upsert do
     end
 
     it "logs queries" do
+      old_logger = Upsert.logger
       begin
-        old_logger = Upsert.logger
         io = StringIO.new
         MUTEX_FOR_PERFORM.synchronize do
           Upsert.logger = Logger.new(io)
-          
+
           u = Upsert.new($conn, :pets)
           u.row(:name => 'Jerry')
 
@@ -38,7 +38,8 @@ describe Upsert do
             log.should =~ /call #{Upsert::MergeFunction::NAME_PREFIX}_pets_SEL_name/i
           when /p.*g/i
             # [54ae2eea857] Possibly much more useful debug output
-            log.should =~ /selector:/i
+            # TODO: Should check for both upsert and non-upsert log output
+            log.should =~ /selector:|SHOW server_version/i
           else
             raise "not sure"
           end

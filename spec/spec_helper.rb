@@ -11,10 +11,13 @@ require 'active_record_inline_schema'
 require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
 ENV['DB'] ||= 'mysql'
+ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/
+UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
+
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
-  CURRENT_USER = `whoami`.chomp
+  CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
   PASSWORD = ''
 
   connection =
@@ -117,11 +120,23 @@ class Pet < ActiveRecord::Base
   col :home_address, :type => :text
   if ENV['DB'] == 'postgresql'
     col :tsntz, :type => 'timestamp without time zone'
+  else
+    add_index :name, :unique => true
   end
-  add_index :name, :unique => true
 end
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+  begin
+    Pet.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
+  rescue => e
+    puts e.inspect
+  end
+end
+
 Pet.auto_upgrade!
 
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+  Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
+end
 
 class Task < ActiveRecord::Base
   col :name

@@ -40,10 +40,156 @@ class Upsert
         end
       end
 
+      attr_reader :quoted_setter_names
+      attr_reader :quoted_selector_names
+
+      def initialize(controller, *args)
+        super
+        @quoted_setter_names = setter_keys.map { |k| connection.quote_ident k }
+        @quoted_selector_names = selector_keys.map { |k| connection.quote_ident k }
+      end
+
+      def execute(row)
+        use_pg_native? ? pg_native(row) : pg_function(row)
+      end
+
+      def pg_function(row)
+        first_try = true
+        values = []
+        values += row.selector.values
+        values += row.setter.values
+        hstore_delete_handlers.each do |hstore_delete_handler|
+          values << row.hstore_delete_keys.fetch(hstore_delete_handler.name, [])
+        end
+        Upsert.logger.debug do
+          %{[upsert]\n\tSelector: #{row.selector.inspect}\n\tSetter: #{row.setter.inspect}}
+        end
+        begin
+          execute_parameterized(sql, values.map { |v| connection.bind_value v })
+        rescue self.class::ERROR_CLASS => pg_error
+          if pg_error.message =~ /function #{name}.* does not exist/i
+            if first_try
+              Upsert.logger.info %{[upsert] Function #{name.inspect} went missing, trying to recreate}
+              first_try = false
+              create!
+              retry
+            else
+              Upsert.logger.info %{[upsert] Failed to create function #{name.inspect} for some reason}
+              raise pg_error
+            end
+          else
+            raise pg_error
+          end
+        end
+      end
+
+      # strangely ? can't be used as a placeholder
       def sql
         @sql ||= begin
-          bind_params = Array.new(selector_keys.length + setter_keys.length, '?') + Array.new(hstore_delete_handlers.length, '?::text[]')
+          bind_params = []
+          i = 1
+          (selector_keys.length + setter_keys.length).times do
+            bind_params << "$#{i}"
+            i += 1
+          end
+          hstore_delete_handlers.length.times do
+            bind_params << "$#{i}::text[]"
+            i += 1
+          end
           %{SELECT #{name}(#{bind_params.join(', ')})}
+        end
+      end
+
+      def use_pg_native?
+        server_version >= 95 && unique_index_on_selector?
+      end
+
+      def server_version
+        @server_version ||=
+          controller.connection.execute("SHOW server_version").first["server_version"].split('.')[0..1].join('').to_i
+      end
+
+      def schema_query
+        execute_parameterized(
+          %{
+            SELECT array_agg(column_name::text) AS index_columns FROM information_schema.constraint_column_usage
+              JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
+              WHERE table_name = $1 AND conrelid = $1::regclass::oid AND contype = 'u'
+              GROUP BY table_catalog, table_name, constraint_name
+          },
+          [table_name]
+        )
+      end
+
+      def pg_native(row)
+        bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
+
+        upsert_sql = %{
+          INSERT INTO #{quoted_table_name} (#{quoted_setter_names.join(',')})
+          VALUES (#{insert_bind_placeholders(row).join(', ')})
+          ON CONFLICT(#{quoted_selector_names.join(', ')})
+          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = (#{conflict_bind_placeholders(row).join(', ')})
+        }
+
+        execute_parameterized(upsert_sql, bind_setter_values)
+      end
+
+      def hstore_delete_function(sql, row, column_definition)
+        parts = []
+        if row.hstore_delete_keys.key?(column_definition.name)
+          parts << "DELETE("
+        end
+        parts << sql
+        if row.hstore_delete_keys.key?(column_definition.name)
+          keys = row.hstore_delete_keys[column_definition.name].map { |k| "'#{k.to_s.gsub("'", "\\'")}'" }
+          parts << ", ARRAY[#{keys.join(', ')}])"
+        end
+
+        parts.join(" ")
+      end
+
+      def insert_bind_placeholders(row)
+        if row.hstore_delete_keys.empty?
+          @insert_bind_placeholders ||= setter_column_definitions.each_with_index.map do |column_definition, i|
+            "$#{i + 1}"
+          end
+        else
+          setter_column_definitions.each_with_index.map do |column_definition, i|
+            idx = i + 1
+            if column_definition.hstore?
+              hstore_delete_function("$#{idx}", row, column_definition)
+            else
+              "$#{idx}"
+            end
+          end
+        end
+      end
+
+      def conflict_bind_placeholders(row)
+        if row.hstore_delete_keys.empty?
+          @conflict_bind_placeholders ||= setter_column_definitions.each_with_index.map do |column_definition, i|
+            idx = i + 1
+            if column_definition.hstore?
+              "CASE WHEN #{quoted_table_name}.#{column_definition.quoted_name} IS NULL THEN $#{idx} ELSE" \
+                + " (#{quoted_table_name}.#{column_definition.quoted_name} || $#{idx})" \
+                + " END"
+            else
+              "$#{idx}"
+            end
+          end
+        else
+          setter_column_definitions.each_with_index.map do |column_definition, i|
+            idx = i + 1
+            if column_definition.hstore?
+              "CASE WHEN #{quoted_table_name}.#{column_definition.quoted_name} IS NULL THEN " \
+                + hstore_delete_function("$#{idx}", row, column_definition) \
+                + " ELSE " \
+                + hstore_delete_function("(#{quoted_table_name}.#{column_definition.quoted_name} || $#{idx})", row, column_definition) \
+                + " END"
+            else
+              "$#{idx}"
+            end
+          end
         end
       end
 

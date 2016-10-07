@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Upsert do
   describe 'hstore on pg' do
     require 'pg_hstore'
-    Pet.connection.execute 'CREATE EXTENSION HSTORE'
+    Pet.connection.execute 'CREATE EXTENSION IF NOT EXISTS HSTORE'
     Pet.connection.execute "ALTER TABLE pets ADD COLUMN crazy HSTORE"
     Pet.connection.execute "ALTER TABLE pets ADD COLUMN cool HSTORE"
 
@@ -11,8 +11,9 @@ describe Upsert do
       Pet.delete_all
     end
 
+    let(:upsert) { Upsert.new $conn, :pets }
+
     it "works for ugly text" do
-      upsert = Upsert.new $conn, :pets
       uggy = <<-EOS
 {"results":[{"locations":[],"providedLocation":{"location":"3001 STRATTON WAY, MADISON, WI 53719 UNITED STATES"}}],"options":{"ignoreLatLngInput":true,"maxResults":1,"thumbMaps":false},"info":{"copyright":{"text":"© 2012 MapQuest, Inc.","imageUrl":"http://api.mqcdn.com/res/mqlogo.gif","imageAltText":"© 2012 MapQuest, Inc."},"statuscode":0,"messages":[]}}
 EOS
@@ -23,8 +24,6 @@ EOS
     end
 
     it "just works" do
-      upsert = Upsert.new $conn, :pets
-
       upsert.row({:name => 'Bill'}, :crazy => nil)
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       row['crazy'].should == nil
@@ -60,8 +59,6 @@ EOS
     end
 
     it "can nullify entire hstore" do
-      upsert = Upsert.new $conn, :pets
-
       upsert.row({:name => 'Bill'}, :crazy => {:a => 1})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
@@ -73,8 +70,6 @@ EOS
     end
 
     it "deletes keys that are nil" do
-      upsert = Upsert.new $conn, :pets
-
       upsert.row({:name => 'Bill'}, :crazy => nil)
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       row['crazy'].should == nil
@@ -121,8 +116,6 @@ EOS
     end
 
     it "takes dangerous keys" do
-      upsert = Upsert.new $conn, :pets
-
       upsert.row({:name => 'Bill'}, :crazy => nil)
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       row['crazy'].should == nil
@@ -169,7 +162,6 @@ EOS
     end
 
     it "handles multiple hstores" do
-      upsert = Upsert.new $conn, :pets
       upsert.row({:name => 'Bill'}, :crazy => {:a => 1, :b => 9}, :cool => {:c => 12, :d => 19})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
@@ -179,8 +171,6 @@ EOS
     end
 
     it "can deletes keys from multiple hstores at once" do
-      upsert = Upsert.new $conn, :pets
-
       upsert.row({:name => 'Bill'}, :crazy => {:a => 1}, :cool => {5 => 9})
       row = Pet.connection.select_one(%{SELECT crazy, cool FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
@@ -217,8 +207,6 @@ EOS
     end
 
     it "deletes keys whether new or existing record" do
-      upsert = Upsert.new $conn, :pets
-
       upsert.row({:name => 'Bill'}, :crazy => {:z => 1, :x => nil})
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
@@ -231,8 +219,6 @@ EOS
     end
 
     it "can turn off eager nullify" do
-      upsert = Upsert.new $conn, :pets
-
       upsert.row({:name => 'Bill'}, {:crazy => {:z => 1, :x => nil}}, :eager_nullify => false)
       row = Pet.connection.select_one(%{SELECT crazy FROM pets WHERE name = 'Bill'})
       crazy = PgHstore.parse row['crazy']
