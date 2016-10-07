@@ -13,13 +13,12 @@ class Upsert
 
       def unique_index_on_selector?
         return @unique_index_on_selector if defined?(@unique_index_on_selector)
-        @unique_index_on_selector = begin
-          type_map = PG::TypeMapByColumn.new([PG::TextDecoder::Array.new])
-          schema_query.type_map = type_map
 
-          schema_query.values.any? do |row|
-            row.first.sort == selector_keys.sort
-          end
+        type_map = PG::TypeMapByColumn.new([PG::TextDecoder::Array.new])
+        schema_query.type_map = type_map
+
+        @unique_index_on_selector = schema_query.values.any? do |row|
+          row.first.sort == selector_keys.sort
         end
       end
     end

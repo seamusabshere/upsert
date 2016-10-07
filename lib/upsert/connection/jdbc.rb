@@ -22,7 +22,7 @@ class Upsert
       end.merge(
         'TrueClass'  => 'setBoolean',
         'FalseClass' => 'setBoolean',
-        'Fixnum'     => 'setInt'
+        'Fixnum'     => 'setInt',
       )
 
       def binary(v)
