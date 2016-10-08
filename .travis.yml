@@ -3,13 +3,15 @@ dist: trusty
 language: ruby
 global:
   - USERNAME=travis
-    PASSWORD=
+  - PASSWORD=
 addons:
   apt:
     packages:
-    - mysql-server-5.6
-    - mysql-client-core-5.6
-    - mysql-client-5.6
+      # https://github.com/travis-ci/docs-travis-ci-com/pull/743
+      - haveged
+      - mysql-server-5.6
+      - mysql-client-core-5.6
+      - mysql-client-5.6
 rvm:
   - 2.3
   - 2.2
