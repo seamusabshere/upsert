@@ -10,7 +10,7 @@ class Upsert
         java.sql.Types::LONGVARCHAR => 'getString',
         java.sql.Types::BIGINT      => 'getLong',
         java.sql.Types::INTEGER     => 'getInt',
-        java.sql.Types::ARRAY       => -> (r, i){ r.getArray(i).array.to_ary }
+        java.sql.Types::ARRAY       => ->(r, i){ r.getArray(i).array.to_ary }
       }
       java.sql.Types.constants.each do |type_name|
         i = java.sql.Types.const_get type_name
