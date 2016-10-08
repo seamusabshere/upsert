@@ -18,7 +18,7 @@ UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
 class RawConnectionFactory
   DATABASE = 'upsert_test'
   CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
-  PASSWORD = ''
+  PASSWORD = ENV['DB_PASSWORD']
 
   case ENV['DB']
 
@@ -44,7 +44,7 @@ class RawConnectionFactory
     ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
 
   when 'mysql'
-    password_argument = (PASSWORD.empty?) ? "" : "-p#{PASSWORD}"
+    password_argument = (PASSWORD.nil?) ? "" : "--password='#{PASSWORD.gsub(/'/, "'\''")}'"
     Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
     Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8" }
     if RUBY_PLATFORM == 'java'
@@ -59,7 +59,7 @@ class RawConnectionFactory
       require 'mysql2'
       def new_connection
         config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1" }
-        config.merge!(:password => PASSWORD) unless PASSWORD.empty?
+        config.merge!(:password => PASSWORD) unless PASSWORD.nil?
         Mysql2::Client.new config
       end
     end
