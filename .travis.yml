@@ -17,7 +17,7 @@ rvm:
   - 2.2
   - 2.1
   - 1.9.3
-  - rbx-2
+  - rbx
   - jruby-1.7
   - jruby-9
 matrix:
@@ -28,7 +28,7 @@ env:
   - DB=postgresql PGVERSION=9.5
   - DB=postgresql PGVERSION=9.4 UNIQUE_CONSTRAINT=true
   - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
-  - DB=mysql DB_USER=root DB_PASSWORD=''
+  - DB=mysql DB_USER=root
 before_install:
   - if [ '$DB' = 'postgresql' ]; then ./travis/install_postgres.sh; fi
   - gem update --system
