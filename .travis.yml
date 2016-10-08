@@ -31,8 +31,8 @@ env:
   - DB=mysql DB_USER=root DB_PASSWORD=''
 before_install:
   - if [ '$DB' = 'postgresql' ]; then ./travis/install_postgres.sh; fi
+  - gem update --system
   - gem update bundler
   - bundle --version
-  - gem update --system 2.1.11
   - gem --version
 script: bundle exec rake spec
