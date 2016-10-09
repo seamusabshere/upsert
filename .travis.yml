@@ -22,7 +22,7 @@ rvm:
   - jruby-9
 matrix:
   allow_failures:
-    - rvm: rbx-2
+    - rvm: rbx
 env:
   - DB=postgresql PGVERSION=9.4
   - DB=postgresql PGVERSION=9.5
