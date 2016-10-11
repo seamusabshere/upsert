@@ -78,6 +78,18 @@ describe Upsert do
       end
     end
 
+    it "works with utf-8 data" do
+      u = Upsert.new($conn, :pets)
+      records = [
+        {:name => '你好', :home_address => '人'},
+        {:name => 'Здравствуйте', :home_address => 'человек'},
+        {:name => '😀', :home_address => '😂'},
+      ]
+      assert_creates(Pet, records) do
+        records.each { |rec| u.row(rec) }
+      end
+    end
+
     it "tells you if you request a column that doesn't exist" do
       u = Upsert.new($conn, :pets)
       lambda { u.row(:gibberish => 'ba') }.should raise_error(/invalid col/i)
