@@ -54,7 +54,6 @@ class Upsert
       end
 
       def pg_function(row)
-        first_try = true
         values = []
         values += row.selector.values
         values += row.setter.values
@@ -64,28 +63,30 @@ class Upsert
         Upsert.logger.debug do
           %{[upsert]\n\tSelector: #{row.selector.inspect}\n\tSetter: #{row.setter.inspect}}
         end
-        execute_parameterized("BEGIN")
+
+        first_try = true
         begin
-          execute_parameterized("SAVEPOINT upsert_sp");
+          # TODO: We don't check `assume_function_exists?` here because it defaults to true
+          create! unless function_exists?
           execute_parameterized(sql, values.map { |v| connection.bind_value v })
         rescue self.class::ERROR_CLASS => pg_error
           if pg_error.message =~ /function #{name}.* does not exist/i
             if first_try
               Upsert.logger.info %{[upsert] Function #{name.inspect} went missing, trying to recreate}
               first_try = false
-              execute_parameterized("ROLLBACK TO SAVEPOINT upsert_sp")
               create!
               retry
-            else
-              Upsert.logger.info %{[upsert] Failed to create function #{name.inspect} for some reason}
-              raise pg_error
             end
+            Upsert.logger.info %{[upsert] Failed to create function #{name.inspect} for some reason}
+            raise pg_error
           else
             raise pg_error
           end
-        ensure
-          execute_parameterized("COMMIT")
         end
+      end
+
+      def function_exists?
+        @function_exists ||= controller.connection.execute("SELECT count(*) AS cnt FROM pg_proc WHERE lower(proname) = lower('#{name}')").first["cnt"].to_i > 0
       end
 
       # strangely ? can't be used as a placeholder
