@@ -64,13 +64,16 @@ class Upsert
         Upsert.logger.debug do
           %{[upsert]\n\tSelector: #{row.selector.inspect}\n\tSetter: #{row.setter.inspect}}
         end
+        execute_parameterized("BEGIN")
         begin
+          execute_parameterized("SAVEPOINT upsert_sp");
           execute_parameterized(sql, values.map { |v| connection.bind_value v })
         rescue self.class::ERROR_CLASS => pg_error
           if pg_error.message =~ /function #{name}.* does not exist/i
             if first_try
               Upsert.logger.info %{[upsert] Function #{name.inspect} went missing, trying to recreate}
               first_try = false
+              execute_parameterized("ROLLBACK TO SAVEPOINT upsert_sp")
               create!
               retry
             else
@@ -80,6 +83,8 @@ class Upsert
           else
             raise pg_error
           end
+        ensure
+          execute_parameterized("COMMIT")
         end
       end
 
