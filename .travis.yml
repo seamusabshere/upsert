@@ -30,6 +30,7 @@ env:
   - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
   - DB=mysql DB_USER=root
 before_install:
+  - if [ '$DB' = 'mysql' ]l then ./travis/tune_mysql.sh; fi
   - if [ '$DB' = 'postgresql' ]; then ./travis/install_postgres.sh; fi
   - gem update --system
   - gem update bundler
