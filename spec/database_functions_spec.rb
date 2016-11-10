@@ -98,6 +98,5 @@ describe Upsert do
         Upsert.logger = old_logger
       end
     end
-
   end
 end if %w{ postgresql mysql }.include?(ENV['DB'])

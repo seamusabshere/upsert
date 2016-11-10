@@ -7,7 +7,7 @@ describe Upsert do
     end.map do |path|
       IO.readlines(path)
     end.flatten.map(&:chomp).select(&:present?).uniq
-  
+
     # make lots of AR models, each of which has 10 columns named after these words
     nasties = []
     reserved_words.each_slice(10) do |words|
@@ -18,9 +18,9 @@ describe Upsert do
       nasty = Object.const_get("Nasty#{nasties.length}")
       nasty.class_eval do
         self.primary_key = 'fake_primary_key'
-        col :fake_primary_key
+        col :fake_primary_key, limit: 191
         words.each do |word|
-          col word
+          col word, limit: 191
         end
       end
       nasties << [ nasty, words ]
@@ -28,7 +28,7 @@ describe Upsert do
     nasties.each do |nasty, _|
       nasty.auto_upgrade!
     end
-  
+
     describe "reserved words" do
       nasties.each do |nasty, words|
         it "doesn't die on reserved words #{words.join(',')}" do
