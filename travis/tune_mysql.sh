@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Ref https://github.com/travis-ci/travis-ci/issues/2250
 # Ref https://github.com/jruby/activerecord-jdbc-adapter/issues/481
 # JDBC adapters determine the encoding automatically via the server's charset and collation
