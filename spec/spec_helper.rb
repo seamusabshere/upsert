@@ -45,8 +45,8 @@ class RawConnectionFactory
 
     when 'mysql'
       password_argument = (PASSWORD.empty?) ? "" : "-p#{PASSWORD}"
-      Kernel.system %{ mysql -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
-      Kernel.system %{ mysql -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8" }
+      Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+      Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
       if RUBY_PLATFORM == 'java'
         CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
         require 'jdbc/mysql'
@@ -58,12 +58,20 @@ class RawConnectionFactory
       else
         require 'mysql2'
         def new_connection
-          config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1" }
+          config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1", :encoding => 'utf8mb4' }
           config.merge!(:password => PASSWORD) unless PASSWORD.empty?
           Mysql2::Client.new config
         end
       end
-      ActiveRecord::Base.establish_connection "#{RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2'}://#{CURRENT_USER}:#{PASSWORD}@127.0.0.1/#{DATABASE}"
+      ActiveRecord::Base.establish_connection(
+        :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
+        :user => CURRENT_USER,
+        :password => PASSWORD,
+        :host => '127.0.0.1',
+        :database => DATABASE,
+        :encoding => 'utf8mb4'
+      )
+      ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
 
     when 'sqlite3'
       CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
@@ -74,13 +82,8 @@ class RawConnectionFactory
         def new_connection
           ActiveRecord::Base.connection.raw_connection.connection
         end
-      else
-        require 'sqlite3'
-        def new_connection
-          ActiveRecord::Base.connection.raw_connection
-        end
+        ActiveRecord::Base.establish_connection CONFIG
       end
-      ActiveRecord::Base.establish_connection CONFIG
 
     when 'postgres'
       raise "please use DB=postgresql NOT postgres"
@@ -108,7 +111,7 @@ else
 end
 
 class Pet < ActiveRecord::Base
-  col :name
+  col :name, limit: 191 # utf8mb4 in mysql requirement
   col :gender
   col :spiel
   col :good, :type => :boolean
@@ -120,9 +123,8 @@ class Pet < ActiveRecord::Base
   col :home_address, :type => :text
   if ENV['DB'] == 'postgresql'
     col :tsntz, :type => 'timestamp without time zone'
-  else
-    add_index :name, :unique => true
   end
+  add_index :name, :unique => true
 end
 if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
   begin
@@ -222,6 +224,7 @@ module SpecHelper
     expected_records.each do |selector, setter|
       setter ||= {}
       found = model.where(selector).map { |record| record.attributes.except('id') }
+      expect(found).to_not be_empty, { :selector => selector, :setter => setter }.inspect
       expected = [ selector.stringify_keys.merge(setter.stringify_keys) ]
       compare_attribute_sets expected, found
     end

@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require 'spec_helper'
 describe Upsert do
   describe 'clever correctness' do
@@ -75,6 +77,18 @@ describe Upsert do
       assert_creates(Pet, [{:name => 'Jerry', :gender => nil, :spiel => 'beagle', :birthday => now}]) do
         u.row(:name => "Jerry", :gender => nil, :spiel => "samoyed")
         u.row({:name => 'Jerry', :gender => nil}, :spiel => 'beagle', :birthday => now)
+      end
+    end
+
+    it "works with utf-8 data" do
+      u = Upsert.new($conn, :pets)
+      records = [
+        {:name => '你好', :home_address => '人'},
+        {:name => 'Здравствуйте', :home_address => 'человек'},
+        {:name => '😀', :home_address => '😂'},
+      ]
+      assert_creates(Pet, records) do
+        records.each { |rec| u.row(rec) }
       end
     end
 
