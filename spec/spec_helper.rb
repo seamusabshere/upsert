@@ -1,7 +1,8 @@
 # -*- encoding: utf-8 -*-
 require 'bundler/setup'
 
-require 'pry'
+# require 'pry'
+require 'shellwords'
 
 require 'active_record'
 ActiveRecord::Base.default_timezone = :utc
@@ -44,7 +45,7 @@ class RawConnectionFactory
     ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
 
   when 'mysql'
-    password_argument = (PASSWORD.nil?) ? "" : "--password='#{PASSWORD.gsub(/'/, "'\''")}'"
+    password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
     Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
     Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'

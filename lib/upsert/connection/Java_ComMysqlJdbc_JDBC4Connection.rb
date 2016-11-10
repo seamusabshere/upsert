@@ -10,7 +10,8 @@ class Upsert
         if metal.useAnsiQuotedIdentifiers
           DOUBLE_QUOTE + k.to_s.gsub(DOUBLE_QUOTE, '""') + DOUBLE_QUOTE
         else
-          BACKTICK + k + BACKTICK
+          # Escape backticks by doubling them.  Ref http://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+          BACKTICK + k.to_s.gsub(BACKTICK, BACKTICK + BACKTICK) + BACKTICK
         end
       end
 
