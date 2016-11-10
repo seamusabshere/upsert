@@ -21,6 +21,10 @@ class Upsert
       def binary(v)
         { :value => v.value, :format => 1 }
       end
+
+      def in_transaction?
+        ![PG::PQTRANS_IDLE, PG::PQTRANS_UNKNOWN].include?(metal.transaction_status)
+      end
     end
   end
 end

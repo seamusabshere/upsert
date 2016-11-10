@@ -84,6 +84,10 @@ class Upsert
         statement.close
         result
       end
+
+      def in_transaction?
+        raise "Not implemented"
+      end
     end
   end
 end
