@@ -218,11 +218,11 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, setter = {}, options = nil)
-    # @row_mutex.synchronize do
+    @row_mutex.synchronize do
       row_object = Row.new(selector, setter, options)
       merge_function(row_object).execute(row_object)
       nil
-    # end
+    end
   end
 
   # @private
@@ -232,10 +232,10 @@ class Upsert
 
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
-    # @merge_function_mutex.synchronize do
+    @merge_function_mutex.synchronize do
       @merge_function_cache[cache_key] ||=
         merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
-    # end
+    end
   end
 
   # @private
