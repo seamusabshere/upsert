@@ -1,3 +1,19 @@
+2.2.0 / 2016-11-xx
+
+* Enhancements
+
+  * Support for PostgreSQL 9.5 UPSERT syntax - thanks @pnomolos https://github.com/seamusabshere/upsert/pull/79
+
+* Bug Fixes
+
+  * JRuby support (both jruby-1.7 and jruby-9) working again - thanks @pnomolos https://github.com/seamusabshere/upsert/pull/80
+  * Fix for PostgreSQL function creation causing transactions to fail - thanks @pnomolos https://github.com/seamusabshere/upsert/pull/87
+
+* Additional
+
+  * Proper UTF8 (full, not MySQL's partial UTF8) support checks - thanks @pnomolos https://github.com/seamusabshere/upsert/pull/86
+
+
 2.1.2 / 2016-02-25
 
 * Enhancements
