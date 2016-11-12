@@ -13,7 +13,6 @@ class Upsert
           query_args << args[Regexp.last_match[1].to_i - 1]
           "?"
         end
-
         controller.connection.execute(query, query_args)
       end
 

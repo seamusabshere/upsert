@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Ref https://github.com/clkao/plv8x/blob/master/.travis.yml
 echo "Install postgres version $PGVERSION"
 psql --version

@@ -1,7 +1,8 @@
 # -*- encoding: utf-8 -*-
 require 'bundler/setup'
 
-require 'pry'
+# require 'pry'
+require 'shellwords'
 
 require 'active_record'
 ActiveRecord::Base.default_timezone = :utc
@@ -18,82 +19,83 @@ UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
 class RawConnectionFactory
   DATABASE = 'upsert_test'
   CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
-  PASSWORD = ''
+  PASSWORD = ENV['DB_PASSWORD']
 
-  connection =
-    case ENV['DB']
-    when 'postgresql'
-      Kernel.system %{ dropdb upsert_test }
-      Kernel.system %{ createdb upsert_test }
-      if RUBY_PLATFORM == 'java'
-        CONFIG = "jdbc:postgresql://localhost/#{DATABASE}?user=#{CURRENT_USER}"
-        require 'jdbc/postgres'
-        # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
-        Jdbc::Postgres.load_driver
-        # java.sql.DriverManager.register_driver org.postgresql.Driver.new
-        def new_connection
-          java.sql.DriverManager.get_connection CONFIG
-        end
-      else
-        CONFIG = { :dbname => DATABASE }
-        require 'pg'
-        def new_connection
-          PG::Connection.new CONFIG
-        end
+  case ENV['DB']
+  when 'postgresql'
+    Kernel.system %{ dropdb upsert_test }
+    Kernel.system %{ createdb upsert_test }
+    if RUBY_PLATFORM == 'java'
+      CONFIG = "jdbc:postgresql://localhost/#{DATABASE}?user=#{CURRENT_USER}"
+      require 'jdbc/postgres'
+      # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
+      Jdbc::Postgres.load_driver
+      # java.sql.DriverManager.register_driver org.postgresql.Driver.new
+      def new_connection
+        java.sql.DriverManager.get_connection CONFIG
       end
-      ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
-
-    when 'mysql'
-      password_argument = (PASSWORD.empty?) ? "" : "-p#{PASSWORD}"
-      Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
-      Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
-      if RUBY_PLATFORM == 'java'
-        CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
-        require 'jdbc/mysql'
-        Jdbc::MySQL.load_driver
-        # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
-        def new_connection
-          java.sql.DriverManager.get_connection CONFIG
-        end
-      else
-        require 'mysql2'
-        def new_connection
-          config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1", :encoding => 'utf8mb4' }
-          config.merge!(:password => PASSWORD) unless PASSWORD.empty?
-          Mysql2::Client.new config
-        end
-      end
-      ActiveRecord::Base.establish_connection(
-        :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
-        :user => CURRENT_USER,
-        :password => PASSWORD,
-        :host => '127.0.0.1',
-        :database => DATABASE,
-        :encoding => 'utf8mb4'
-      )
-      ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
-
-    when 'sqlite3'
-      CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
-      if RUBY_PLATFORM == 'java'
-        # CONFIG = 'jdbc:sqlite://test.sqlite3'
-        require 'jdbc/sqlite3'
-        Jdbc::SQLite3.load_driver
-        def new_connection
-          ActiveRecord::Base.connection.raw_connection.connection
-        end
-        ActiveRecord::Base.establish_connection CONFIG
-      end
-
-    when 'postgres'
-      raise "please use DB=postgresql NOT postgres"
-
     else
-      raise "not supported"
+      CONFIG = { :dbname => DATABASE }
+      require 'pg'
+      def new_connection
+        PG::Connection.new CONFIG
+      end
     end
+    ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
 
-  ActiveRecord::Base.connection_pool.instance_variable_set(:@size, 20)
-  connection
+  when 'mysql'
+    password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
+    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
+    if RUBY_PLATFORM == 'java'
+      CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
+      require 'jdbc/mysql'
+      Jdbc::MySQL.load_driver
+      # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
+      def new_connection
+        java.sql.DriverManager.get_connection CONFIG
+      end
+    else
+      require 'mysql2'
+      def new_connection
+        config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1", :encoding => 'utf8mb4' }
+        config.merge!(:password => PASSWORD) unless PASSWORD.nil?
+        Mysql2::Client.new config
+      end
+    end
+    ActiveRecord::Base.establish_connection(
+      :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
+      :user => CURRENT_USER,
+      :password => PASSWORD,
+      :host => '127.0.0.1',
+      :database => DATABASE,
+      :encoding => 'utf8mb4'
+    )
+    ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
+
+  when 'sqlite3'
+    CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
+    if RUBY_PLATFORM == 'java'
+      # CONFIG = 'jdbc:sqlite://test.sqlite3'
+      require 'jdbc/sqlite3'
+      Jdbc::SQLite3.load_driver
+      def new_connection
+        ActiveRecord::Base.connection.raw_connection.connection
+      end
+    else
+      require 'sqlite3'
+      def new_connection
+        ActiveRecord::Base.connection.raw_connection
+      end
+    end
+    ActiveRecord::Base.establish_connection CONFIG
+
+  when 'postgres'
+    raise "please use DB=postgresql NOT postgres"
+
+  else
+    raise "not supported"
+  end
 end
 
 $conn_factory = RawConnectionFactory.new
@@ -119,6 +121,7 @@ class Pet < ActiveRecord::Base
   col :morning_walk_time, :type => :datetime
   col :zipped_biography, :type => :binary
   col :tag_number, :type => :integer
+  col :big_tag_number, :type => :bigint
   col :birthday, :type => :date
   col :home_address, :type => :text
   if ENV['DB'] == 'postgresql'

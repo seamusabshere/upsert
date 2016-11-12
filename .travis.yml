@@ -3,22 +3,26 @@ dist: trusty
 language: ruby
 global:
   - USERNAME=travis
-    PASSWORD=
+  - PASSWORD=
 addons:
   apt:
     packages:
-    - mysql-server-5.6
-    - mysql-client-core-5.6
-    - mysql-client-5.6
+      # https://github.com/travis-ci/docs-travis-ci-com/pull/743
+      - haveged
+      - mysql-server-5.6
+      - mysql-client-core-5.6
+      - mysql-client-5.6
 rvm:
   - 2.3
   - 2.2
   - 2.1
   - 1.9.3
-  - rbx-2
+  - rbx
+  - jruby-1.7
+  - jruby-9
 matrix:
   allow_failures:
-    - rvm: rbx-2
+    - rvm: rbx
 env:
   - DB=postgresql PGVERSION=9.4
   - DB=postgresql PGVERSION=9.5
@@ -26,9 +30,11 @@ env:
   - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
   - DB=mysql DB_USER=root
 before_install:
-  - if [ '$DB' = 'postgresql' ]; then ./travis/install_postgres.sh; fi
+  - if [ "$DB" = 'mysql' ]; then sudo ./travis/tune_mysql.sh; fi
+# Right now the build-script is properly installing Postgres version.  We will need this to test PG 9.6 and up, though
+#  - if [ "$DB" = 'postgresql' ]; then sudo ./travis/install_postgres.sh; fi
+  - gem update --system
   - gem update bundler
   - bundle --version
-  - gem update --system 2.1.11
   - gem --version
 script: bundle exec rake spec
