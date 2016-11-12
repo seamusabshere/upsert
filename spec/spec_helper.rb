@@ -1,7 +1,8 @@
 # -*- encoding: utf-8 -*-
 require 'bundler/setup'
 
-require 'pry'
+# require 'pry'
+require 'shellwords'
 
 require 'active_record'
 ActiveRecord::Base.default_timezone = :utc
@@ -18,7 +19,7 @@ UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
 class RawConnectionFactory
   DATABASE = 'upsert_test'
   CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
-  PASSWORD = ''
+  PASSWORD = ENV['DB_PASSWORD']
 
   case ENV['DB']
 
@@ -44,7 +45,7 @@ class RawConnectionFactory
     ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
 
   when 'mysql'
-    password_argument = (PASSWORD.empty?) ? "" : "-p#{PASSWORD}"
+    password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
     Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
     Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'
@@ -59,7 +60,7 @@ class RawConnectionFactory
       require 'mysql2'
       def new_connection
         config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1", :encoding => 'utf8mb4' }
-        config.merge!(:password => PASSWORD) unless PASSWORD.empty?
+        config.merge!(:password => PASSWORD) unless PASSWORD.nil?
         Mysql2::Client.new config
       end
     end
@@ -121,6 +122,7 @@ class Pet < ActiveRecord::Base
   col :morning_walk_time, :type => :datetime
   col :zipped_biography, :type => :binary
   col :tag_number, :type => :integer
+  col :big_tag_number, :type => :bigint
   col :birthday, :type => :date
   col :home_address, :type => :text
   if ENV['DB'] == 'postgresql'
