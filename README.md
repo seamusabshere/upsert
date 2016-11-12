@@ -23,7 +23,7 @@ You pass a __selector__ that uniquely identifies a row, whether it exists or not
 Syntax inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
 
 ### Basic
-    
+
 ```ruby
 connection = Mysql2::Client.new([...])
 table_name = :pets
@@ -167,7 +167,7 @@ BEGIN
   DECLARE done BOOLEAN;
   REPEAT
     BEGIN
-      -- If there is a unique key constraint error then 
+      -- If there is a unique key constraint error then
       -- someone made a concurrent insert. Reset the sentinel
       -- and try again.
       DECLARE ER_DUP_UNIQUE CONDITION FOR 23000;
@@ -175,7 +175,7 @@ BEGIN
       DECLARE CONTINUE HANDLER FOR ER_DUP_UNIQUE BEGIN
         SET done = FALSE;
       END;
-      
+
       DECLARE CONTINUE HANDLER FOR ER_INTEG BEGIN
         SET done = TRUE;
       END;
@@ -185,7 +185,7 @@ BEGIN
       -- Race condition here. If a concurrent INSERT is made after
       -- the SELECT but before the INSERT below we'll get a duplicate
       -- key error. But the handler above will take care of that.
-      IF @count > 0 THEN 
+      IF @count > 0 THEN
         -- UPDATE table_name SET b = b_SET WHERE a = a_SEL;
         UPDATE `pets` SET `name` = `name_set`, `tag_number` = `tag_number_set` WHERE `name` = `name_sel` AND `tag_number` = `tag_number_sel`;
       ELSE
@@ -333,6 +333,10 @@ Upsert.new ActiveRecord::Base.connection, :pets
 Upsert.new Pet.connection, Pet.table_name
 # without activerecord
 Upsert.new Mysql2::Connection.new([...]), :pets
+# with sequel
+DB.synchronize do |conn|
+  Upsert.new conn, :table_name
+end
 ```
 
 ### For a specific use case, faster and more portable than `activerecord-import`
@@ -365,6 +369,10 @@ In general, run some upserts and make sure datetimes get persisted like you expe
 
 Per https://github.com/seamusabshere/upsert/issues/23 you might have issues if you try to use transactional fixtures and this library.
 
+### MySQL and UTF-8 support.
+
+See https://github.com/seamusabshere/upsert/pull/86 for more information (has references to information about how to fix this).  Basically, you need to ensure you are using MySQL 5.5+ and a charset/collation of `utf8mb4`.  MySQL's initial UTF-8 support only covered a subset of the initial specification
+
 ## Copyright
 
-Copyright 2014 Seamus Abshere
+Copyright 2014-2016 Seamus Abshere
