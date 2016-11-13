@@ -23,7 +23,7 @@ You pass a __selector__ that uniquely identifies a row, whether it exists or not
 Syntax inspired by [mongo-ruby-driver's update method](http://api.mongodb.org/ruby/1.6.4/Mongo/Collection.html#update-instance_method).
 
 ### Basic
-    
+
 ```ruby
 connection = Mysql2::Client.new([...])
 table_name = :pets
@@ -167,7 +167,7 @@ BEGIN
   DECLARE done BOOLEAN;
   REPEAT
     BEGIN
-      -- If there is a unique key constraint error then 
+      -- If there is a unique key constraint error then
       -- someone made a concurrent insert. Reset the sentinel
       -- and try again.
       DECLARE ER_DUP_UNIQUE CONDITION FOR 23000;
@@ -175,7 +175,7 @@ BEGIN
       DECLARE CONTINUE HANDLER FOR ER_DUP_UNIQUE BEGIN
         SET done = FALSE;
       END;
-      
+
       DECLARE CONTINUE HANDLER FOR ER_INTEG BEGIN
         SET done = TRUE;
       END;
@@ -185,7 +185,7 @@ BEGIN
       -- Race condition here. If a concurrent INSERT is made after
       -- the SELECT but before the INSERT below we'll get a duplicate
       -- key error. But the handler above will take care of that.
-      IF @count > 0 THEN 
+      IF @count > 0 THEN
         -- UPDATE table_name SET b = b_SET WHERE a = a_SEL;
         UPDATE `pets` SET `name` = `name_set`, `tag_number` = `tag_number_set` WHERE `name` = `name_sel` AND `tag_number` = `tag_number_sel`;
       ELSE
@@ -223,6 +223,15 @@ gem 'pg-hstore'
 require 'pg_hstore'
 upsert.row({:name => 'Bill'}, :mydata => {:a => 1, :b => 2})
 ```
+
+#### PostgreSQL notes
+
+- Upsert doesn't do any type casting, so if you attempt to do something like the following:
+    `upsert.row({ :name => 'A Name' }, :tag_number => 'bob')`
+    you'll get an error which reads something like:
+    `invalid input syntax for integer: "bob"`
+
+
 
 #### Speed
 
