@@ -13,4 +13,8 @@ describe Upsert do
       UNIQUE_CONSTRAINT && version >= 95 ? be_truthy : be_falsey
     )
   end
+
+  it "fails with a useful error message if you mis-match types" do
+    upsert.row({ :name => 2 }, :tag_number => 'bob')
+  end
 end if ENV['DB'] == 'postgresql'
