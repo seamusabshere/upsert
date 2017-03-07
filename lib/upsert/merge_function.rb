@@ -8,8 +8,14 @@ class Upsert
     NAME_PREFIX = "upsert#{Upsert::VERSION.gsub('.', '_')}"
 
     class << self
-      def unique_name(table_name, selector_keys, setter_keys)
+      def unique_name(table_name, selector_keys, setter_keys, schema_name = nil)
+        schema_name, table_name = if table_name.include?('.')
+                                    table_name.split('.')
+                                  else
+                                    [schema_name, table_name]
+                                  end
         parts = [
+          schema_name,
           NAME_PREFIX,
           table_name,
           'SEL',
