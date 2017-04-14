@@ -1,3 +1,10 @@
+2.2.0 / 2017-04-14
+
+* Enhancements
+
+  * Use native "upsert" on Postgres 9.5+! (thanks to @pnomolos https://github.com/seamusabshere/upsert/pull/79)
+  * More modern CI tests
+
 2.1.2 / 2016-02-25
 
 * Enhancements

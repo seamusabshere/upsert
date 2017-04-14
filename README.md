@@ -57,6 +57,12 @@ end
 
 Batch mode is tested to be about 80% faster on PostgreSQL, MySQL, and SQLite3 than other ways to emulate upsert (see the tests, which fail if they are not faster).
 
+### Native Postgres upsert
+
+`INSERT ... ON CONFLICT DO UPDATE` is used when Postgres 9.5+ is detected and *unique indexes are in place.*
+
+If you don't have unique indexes, it will fall back to the classic Upsert gem user-defined function, which does not require indexes.
+
 ### ActiveRecord helper method
 
 ```ruby
