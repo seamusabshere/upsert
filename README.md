@@ -241,6 +241,20 @@ From the tests (updated 9/21/12):
     Upsert was 83% faster than create + rescue/find/update
     # (can't compare to activerecord-import because you can't fake it on pg)
 
+
+#### Helpful Queries
+
+To find all of the generated queries you can do the following using SQL
+
+```sql
+SELECT format('%s(%s);'
+             ,oid::regproc
+             ,pg_get_function_identity_arguments(oid))
+FROM   pg_proc
+WHERE  proname like 'upsert2_1_2%'
+AND    pg_function_is_visible(oid);
+```
+
 #### SQL MERGE trick
 
 Adapted from the [canonical PostgreSQL upsert example](http://www.postgresql.org/docs/current/interactive/plpgsql-control-structures.html#PLPGSQL-ERROR-TRAPPING):
