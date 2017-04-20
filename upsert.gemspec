@@ -24,7 +24,6 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency 'activerecord', '~>3'
   gem.add_development_dependency 'active_record_inline_schema'
-  gem.add_development_dependency 'faker'
   gem.add_development_dependency 'yard'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'pg-hstore', ">=1.1.3"
@@ -52,8 +51,10 @@ Gem::Specification.new do |gem|
     gem.add_development_dependency 'pg', '~> 0.18.0'
     # github-flavored markdown
     if RUBY_VERSION >= '1.9'
+      gem.add_development_dependency 'faker'
       gem.add_development_dependency 'redcarpet'
     else
+      gem.add_development_dependency 'faker', '1.6.3'
       gem.add_development_dependency 'redcarpet', '~> 2.3.0'
     end
   end
