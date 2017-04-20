@@ -51,11 +51,15 @@ Gem::Specification.new do |gem|
     gem.add_development_dependency 'pg', '~> 0.18.0'
     # github-flavored markdown
     if RUBY_VERSION >= '1.9'
-      gem.add_development_dependency 'faker'
       gem.add_development_dependency 'redcarpet'
     else
-      gem.add_development_dependency 'faker', '1.6.3'
       gem.add_development_dependency 'redcarpet', '~> 2.3.0'
     end
+  end
+
+  if RUBY_VERSION <= '1.9.3'
+    gem.add_development_dependency 'faker', '1.6.3'
+  else
+    gem.add_development_dependency 'faker'
   end
 end
