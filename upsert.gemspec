@@ -8,6 +8,7 @@ Gem::Specification.new do |gem|
   gem.description   = t
   gem.summary       = t
   gem.homepage      = "https://github.com/seamusabshere/upsert"
+  gem.license       = "MIT"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
