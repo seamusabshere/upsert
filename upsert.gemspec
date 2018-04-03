@@ -41,9 +41,9 @@ Gem::Specification.new do |gem|
     gem.add_development_dependency 'jdbc-postgres'
     gem.add_development_dependency 'jdbc-mysql'
     gem.add_development_dependency 'jdbc-sqlite3'
-    gem.add_development_dependency 'activerecord-jdbcsqlite3-adapter'
-    gem.add_development_dependency 'activerecord-jdbcmysql-adapter'
-    gem.add_development_dependency 'activerecord-jdbcpostgresql-adapter'
+    gem.add_development_dependency 'activerecord-jdbcsqlite3-adapter', ' ~> 1.3'
+    gem.add_development_dependency 'activerecord-jdbcmysql-adapter', ' ~> 1.3'
+    gem.add_development_dependency 'activerecord-jdbcpostgresql-adapter', ' ~> 1.3'
   else
     gem.add_development_dependency 'activerecord-postgresql-adapter'
     gem.add_development_dependency 'sqlite3'
