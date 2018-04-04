@@ -20,12 +20,14 @@ class RawConnectionFactory
   DATABASE = 'upsert_test'
   CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
   PASSWORD = ENV['DB_PASSWORD']
+  HOST = ENV['DB_HOST'] || '127.0.0.1'
 
   case ENV['DB']
 
   when 'postgresql'
     Kernel.system %{ dropdb upsert_test }
     Kernel.system %{ createdb upsert_test }
+    Kernel.system %{ psql -d upsert_test -c 'CREATE SCHEMA #{DATABASE}2' }
     if RUBY_PLATFORM == 'java'
       CONFIG = "jdbc:postgresql://localhost/#{DATABASE}?user=#{CURRENT_USER}"
       require 'jdbc/postgres'
@@ -46,10 +48,11 @@ class RawConnectionFactory
 
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
-    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
-    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
+    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
+    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE}2 CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
+      CONFIG = "jdbc:mysql://#{HOST}/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
       require 'jdbc/mysql'
       Jdbc::MySQL.load_driver
       # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
@@ -59,7 +62,7 @@ class RawConnectionFactory
     else
       require 'mysql2'
       def new_connection
-        config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1", :encoding => 'utf8mb4' }
+        config = { :username => CURRENT_USER, :database => DATABASE, :host => HOST, :encoding => 'utf8mb4' }
         config.merge!(:password => PASSWORD) unless PASSWORD.nil?
         Mysql2::Client.new config
       end
@@ -68,7 +71,7 @@ class RawConnectionFactory
       :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
       :user => CURRENT_USER,
       :password => PASSWORD,
-      :host => '127.0.0.1',
+      :host => HOST,
       :database => DATABASE,
       :encoding => 'utf8mb4'
     )
@@ -90,6 +93,7 @@ class RawConnectionFactory
       end
     end
     ActiveRecord::Base.establish_connection CONFIG
+    ActiveRecord::Base.connection.execute "ATTACH DATABASE ':memory:' AS #{DATABASE}2"
 
   when 'postgres'
     raise "please use DB=postgresql NOT postgres"
@@ -113,35 +117,40 @@ else
   ActiveRecord::Base.logger.level = Logger::WARN
 end
 
-class Pet < ActiveRecord::Base
-  col :name, limit: 191 # utf8mb4 in mysql requirement
-  col :gender
-  col :spiel
-  col :good, :type => :boolean
-  col :lovability, :type => :float
-  col :morning_walk_time, :type => :datetime
-  col :zipped_biography, :type => :binary
-  col :tag_number, :type => :integer
-  col :big_tag_number, :type => :bigint
-  col :birthday, :type => :date
-  col :home_address, :type => :text
-  if ENV['DB'] == 'postgresql'
-    col :tsntz, :type => 'timestamp without time zone'
+{ "" => nil, "2" => "#{RawConnectionFactory::DATABASE}2" }.each do |model_suffix, schema|
+  const = Object.const_set "Pet#{model_suffix}", Class.new(ActiveRecord::Base)
+  const.class_eval do
+    self.table_name = [schema, 'pets'].compact.join(".")
+    col :name, limit: 191 # utf8mb4 in mysql requirement
+    col :gender
+    col :spiel
+    col :good, :type => :boolean
+    col :lovability, :type => :float
+    col :morning_walk_time, :type => :datetime
+    col :zipped_biography, :type => :binary
+    col :tag_number, :type => :integer
+    col :big_tag_number, :type => :bigint
+    col :birthday, :type => :date
+    col :home_address, :type => :text
+    if ENV['DB'] == 'postgresql'
+      col :tsntz, :type => 'timestamp without time zone'
+    end
+    add_index :name, :unique => true
   end
-  add_index :name, :unique => true
-end
-if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-  begin
-    Pet.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
-  rescue => e
-    puts e.inspect
+
+  if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+    begin
+      const.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
+    rescue => e
+      puts e.inspect
+    end
   end
-end
 
-Pet.auto_upgrade!
+  const.auto_upgrade!
 
-if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-  Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
+  if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+    const.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
+  end
 end
 
 class Task < ActiveRecord::Base

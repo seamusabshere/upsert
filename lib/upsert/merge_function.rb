@@ -11,7 +11,7 @@ class Upsert
       def unique_name(table_name, selector_keys, setter_keys)
         parts = [
           NAME_PREFIX,
-          table_name,
+          [*table_name].join("_").tr(".", "_"),
           'SEL',
           selector_keys.join('_A_').gsub(" ","_"),
           'SET',

@@ -185,12 +185,12 @@ class Upsert
   # @param [Hash] options
   # @option options [TrueClass,FalseClass] :assume_function_exists (true) Assume the function has already been defined correctly by another process.
   def initialize(connection, table_name, options = {})
-    @table_name = table_name.to_s
+    @table_name = table_name.is_a?(::Sequel::SQL::QualifiedIdentifier) ? [table_name.table, table_name.column] : [*table_name].map(&:to_s)
     metal = Upsert.metal connection
     @flavor = Upsert.flavor metal
     @adapter = Upsert.adapter metal
     # todo memoize
-    Dir[File.expand_path("../upsert/**/{#{flavor.downcase},#{adapter}}.rb", __FILE__)].each do |path|
+    Dir[File.expand_path("upsert/**/{#{flavor.downcase},#{adapter}}.rb", `bundle show upsert`.chomp + '/lib')].each do |path|
       require path
     end
     @connection = Connection.const_get(adapter).new self, metal
@@ -232,11 +232,11 @@ class Upsert
 
   # @private
   def quoted_table_name
-    @quoted_table_name ||= connection.quote_ident table_name
+    @quoted_table_name ||= ([*table_name].map { |t| connection.quote_ident(t) }.join("."))
   end
 
   # @private
   def column_definitions
-    @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, table_name
+    @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, quoted_table_name
   end
 end

@@ -116,14 +116,18 @@ class Upsert
       end
 
       def schema_query
+        table_name_arguments = table_name.is_a?(Array) ? table_name : ["public", table_name]
+        table_name_arguments.unshift("public") if table_name_arguments.length == 1
+        table_name_arguments << table_name_arguments.join('.') if table_name_arguments.length == 2
+
         execute_parameterized(
           %{
             SELECT array_agg(column_name::text) AS index_columns FROM information_schema.constraint_column_usage
               JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
-              WHERE table_name = $1 AND conrelid = $1::regclass::oid AND contype = 'u'
+              WHERE table_schema = $1 AND table_name = $2 AND conrelid = $3::regclass::oid AND contype = 'u'
               GROUP BY table_catalog, table_name, constraint_name
           },
-          [table_name]
+          table_name_arguments
         )
       end
 
