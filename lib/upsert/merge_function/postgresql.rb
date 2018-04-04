@@ -118,7 +118,7 @@ class Upsert
       def schema_query
         table_name_arguments = table_name.is_a?(Array) ? table_name : ["public", table_name]
         table_name_arguments.unshift("public") if table_name_arguments.length == 1
-        table_name_arguments << table_name_arguments.join('.') if table_name_arguments.length == 2
+        table_name_arguments << quoted_table_name if table_name_arguments.length == 2
 
         execute_parameterized(
           %{

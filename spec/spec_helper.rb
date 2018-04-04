@@ -8,6 +8,12 @@ require 'shellwords'
 require 'active_record'
 ActiveRecord::Base.default_timezone = :utc
 
+module ActiveRecordInlineSchema::ActiveRecordClassMethods
+  def reset_model!
+    inline_schema_config.instance_variable_set(:@model, self)
+  end
+end
+
 require 'active_record_inline_schema'
 
 require 'activerecord-import' if RUBY_VERSION >= '1.9'

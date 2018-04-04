@@ -29,7 +29,11 @@ describe Upsert do
     context "with a reserved character" do
       it "works without a fully qualified name" do
         cls = Class.new(Pet)
-        cls.table_name = "#{RawConnectionFactory::DATABASE}2.#{$conn.quote_ident('asdf.grr')}"
+        cls.class_eval do
+          self.table_name = "#{RawConnectionFactory::DATABASE}2.#{$conn.quote_ident('asdf.grr')}"
+          reset_model!
+        end
+
         cls.auto_upgrade!
 
         upsert = Upsert.new $conn, [:upsert_test2, 'asdf.grr']
