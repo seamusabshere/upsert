@@ -22,7 +22,6 @@ class RawConnectionFactory
   PASSWORD = ENV['DB_PASSWORD']
 
   case ENV['DB']
-
   when 'postgresql'
     Kernel.system %{ dropdb upsert_test }
     Kernel.system %{ createdb upsert_test }
@@ -66,7 +65,7 @@ class RawConnectionFactory
     end
     ActiveRecord::Base.establish_connection(
       :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
-      :user => CURRENT_USER,
+      :username => CURRENT_USER,
       :password => PASSWORD,
       :host => '127.0.0.1',
       :database => DATABASE,
