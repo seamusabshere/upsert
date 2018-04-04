@@ -190,7 +190,7 @@ class Upsert
     @flavor = Upsert.flavor metal
     @adapter = Upsert.adapter metal
     # todo memoize
-    Dir[File.expand_path("upsert/**/{#{flavor.downcase},#{adapter}}.rb", `bundle show upsert`.chomp + '/lib')].each do |path|
+    Dir[File.expand_path("../upsert/**/{#{flavor.downcase},#{adapter}}.rb", __FILE__)].each do |path|
       require path
     end
     @connection = Connection.const_get(adapter).new self, metal
