@@ -7,6 +7,9 @@ class Upsert
       def execute(sql, params = nil)
         if params
           # Upsert.logger.debug { %{[upsert] #{sql} with #{params.inspect}} }
+          # The following will blow up if you pass a value that cannot be automatically type-casted,
+          #   such as passing a string to an integer field.  You'll get an error something along the
+          #   lines of: "invalid input syntax for <type>: <value>"
           metal.exec sql, convert_binary(params)
         else
           Upsert.logger.debug { %{[upsert] #{sql}} }
