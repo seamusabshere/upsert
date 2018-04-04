@@ -26,8 +26,10 @@ matrix:
 env:
   - DB=postgresql PGVERSION=9.4
   - DB=postgresql PGVERSION=9.5
+  - DB=postgresql PGVERSION=10.0
   - DB=postgresql PGVERSION=9.4 UNIQUE_CONSTRAINT=true
   - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
+  - DB=postgresql PGVERSION=10.0 UNIQUE_CONSTRAINT=true
   - DB=mysql DB_USER=root
 before_install:
   - if [ "$DB" = 'mysql' ]; then sudo ./travis/tune_mysql.sh; fi
