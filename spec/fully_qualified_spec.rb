@@ -26,19 +26,26 @@ describe Upsert do
       end
     end
 
-    context "with a reserved character" do
-      it "works without a fully qualified name" do
-        cls = Class.new(Pet)
-        cls.class_eval do
-          self.table_name = "#{RawConnectionFactory::DATABASE}2.#{$conn.quote_ident('asdf.grr')}"
-          reset_model!
-        end
+    if ENV['DB'] == 'postgresql'
+      context "with a reserved character" do
+        it "works without a fully qualified name" do
+          u = Upsert.new $conn, [:upsert_test2, 'asdf.grr']
+          cls = Class.new(Pet)
+          cls.class_eval do
+            self.table_name = "#{RawConnectionFactory::DATABASE}2.#{u.connection.quote_ident('asdf.grr')}"
+            reset_model!
 
-        cls.auto_upgrade!
+            def self.quoted_table_name
+              table_name
+            end
+          end
 
-        upsert = Upsert.new $conn, [:upsert_test2, 'asdf.grr']
-        assert_creates(cls, [{:name => 'Jerry', :gender => 'male'}]) do
-          upsert.row({:name => 'Jerry'}, {:gender => 'male'})
+          cls.auto_upgrade!
+
+          upsert = Upsert.new $conn, [:upsert_test2, 'asdf.grr']
+          assert_creates(cls, [{:name => 'Jerry', :gender => 'male'}]) do
+            upsert.row({:name => 'Jerry'}, {:gender => 'male'})
+          end
         end
       end
     end

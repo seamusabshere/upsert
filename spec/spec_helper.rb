@@ -56,6 +56,7 @@ class RawConnectionFactory
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
     Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}2" }
     Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE}2 CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'
