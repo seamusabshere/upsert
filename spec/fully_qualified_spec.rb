@@ -33,11 +33,12 @@ describe Upsert do
           cls = Class.new(Pet)
           cls.class_eval do
             self.table_name = "#{RawConnectionFactory::DATABASE}2.#{u.connection.quote_ident('asdf.grr')}"
-            reset_model!
 
             def self.quoted_table_name
               table_name
             end
+
+            reset_model!
           end
 
           cls.auto_upgrade!

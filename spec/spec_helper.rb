@@ -11,6 +11,18 @@ ActiveRecord::Base.default_timezone = :utc
 module ActiveRecordInlineSchema::ActiveRecordClassMethods
   def reset_model!
     inline_schema_config.instance_variable_set(:@model, self)
+    inline_schema_config.send(:safe_reset_column_information)
+  end
+
+  def inline_schema_config
+    return @inline_schema_config if defined?(@inline_schema_config)
+    if superclass != ::ActiveRecord::Base
+      @inline_schema_config = superclass.inline_schema_config.dup
+    else
+      MUTEX.synchronize do
+        @inline_schema_config = ::ActiveRecordInlineSchema::Config.new self
+      end
+    end
   end
 end
 
