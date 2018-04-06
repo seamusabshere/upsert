@@ -12,12 +12,21 @@ module ActiveRecordInlineSchema::ActiveRecordClassMethods
   def reset_model!
     inline_schema_config.instance_variable_set(:@model, self)
     inline_schema_config.send(:safe_reset_column_information)
+    inline_schema_config.ideal_indexes.replace(
+      inline_schema_config.ideal_indexes.map do |idx|
+        ActiveRecordInlineSchema::Config::Index.new(
+          self.inline_schema_config,
+          idx.column_name,
+          idx.initial_options
+        )
+      end
+    )
   end
 
   def inline_schema_config
     return @inline_schema_config if defined?(@inline_schema_config)
     if superclass != ::ActiveRecord::Base
-      @inline_schema_config = superclass.inline_schema_config.dup
+      @inline_schema_config = base_class.inline_schema_config.dup
     else
       MUTEX.synchronize do
         @inline_schema_config = ::ActiveRecordInlineSchema::Config.new self
@@ -306,6 +315,27 @@ module SpecHelper
     end
     upsert_time.should be < ar_time
     $stderr.puts "   Upsert was #{((ar_time - upsert_time) / ar_time * 100).round}% faster than #{competition}"
+  end
+
+  def clone_ar_class(klass, table_name)
+    u = Upsert.new $conn, klass.table_name
+    new_table_name = [*table_name].compact
+    # AR's support for quoting of schema and table names is horrendous
+    # schema.table and schema.`table` are considiered different names on MySQL, but
+    # schema.table and schema."table" are correctly considered the same on Postgres
+    new_table_name[-1] = u.connection.quote_ident(new_table_name[-1]) if new_table_name[-1].to_s.index('.')
+    new_table_name = new_table_name.join('.')
+    cls = Class.new(klass)
+    cls.class_eval do
+      self.table_name = new_table_name
+      def self.quoted_table_name
+        table_name
+      end
+
+      reset_model!
+    end
+    cls.auto_upgrade!
+    cls
   end
 end
 
