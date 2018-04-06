@@ -12,7 +12,7 @@ module ActiveRecordInlineSchema::ActiveRecordClassMethods
   def reset_model!
     inline_schema_config.instance_variable_set(:@model, self)
     inline_schema_config.send(:safe_reset_column_information)
-    inline_schema_config.ideal_indexes.replace(
+    inline_schema_config.instance_variable_set(:@ideal_indexes, ::Set.new(
       inline_schema_config.ideal_indexes.map do |idx|
         ActiveRecordInlineSchema::Config::Index.new(
           self.inline_schema_config,
@@ -20,7 +20,7 @@ module ActiveRecordInlineSchema::ActiveRecordClassMethods
           idx.initial_options
         )
       end
-    )
+    ))
   end
 
   def inline_schema_config
@@ -146,40 +146,36 @@ else
   ActiveRecord::Base.logger.level = Logger::WARN
 end
 
-{ "" => nil, "2" => "#{RawConnectionFactory::DATABASE}2" }.each do |model_suffix, schema|
-  const = Object.const_set "Pet#{model_suffix}", Class.new(ActiveRecord::Base)
-  const.class_eval do
-    self.table_name = [schema, 'pets'].compact.join(".")
-    col :name, limit: 191 # utf8mb4 in mysql requirement
-    col :gender
-    col :spiel
-    col :good, :type => :boolean
-    col :lovability, :type => :float
-    col :morning_walk_time, :type => :datetime
-    col :zipped_biography, :type => :binary
-    col :tag_number, :type => :integer
-    col :big_tag_number, :type => :bigint
-    col :birthday, :type => :date
-    col :home_address, :type => :text
-    if ENV['DB'] == 'postgresql'
-      col :tsntz, :type => 'timestamp without time zone'
-    end
-    add_index :name, :unique => true
+class Pet < ActiveRecord::Base
+  col :name, limit: 191 # utf8mb4 in mysql requirement
+  col :gender
+  col :spiel
+  col :good, :type => :boolean
+  col :lovability, :type => :float
+  col :morning_walk_time, :type => :datetime
+  col :zipped_biography, :type => :binary
+  col :tag_number, :type => :integer
+  col :big_tag_number, :type => :bigint
+  col :birthday, :type => :date
+  col :home_address, :type => :text
+  if ENV['DB'] == 'postgresql'
+    col :tsntz, :type => 'timestamp without time zone'
   end
+  add_index :name, :unique => true
+end
 
-  if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-    begin
-      const.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
-    rescue => e
-      puts e.inspect
-    end
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+  begin
+    const.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
+  rescue => e
+    puts e.inspect
   end
+end
 
-  const.auto_upgrade!
+Pet.auto_upgrade!
 
-  if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-    const.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
-  end
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+  Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
 end
 
 class Task < ActiveRecord::Base
