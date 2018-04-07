@@ -232,6 +232,15 @@ require 'pg_hstore'
 upsert.row({:name => 'Bill'}, :mydata => {:a => 1, :b => 2})
 ```
 
+#### PostgreSQL notes
+
+- Upsert doesn't do any type casting, so if you attempt to do something like the following:
+    `upsert.row({ :name => 'A Name' }, :tag_number => 'bob')`
+    you'll get an error which reads something like:
+    `invalid input syntax for integer: "bob"`
+
+
+
 #### Speed
 
 From the tests (updated 9/21/12):
