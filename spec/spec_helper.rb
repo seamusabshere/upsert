@@ -62,6 +62,7 @@ class RawConnectionFactory
       # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
       Jdbc::Postgres.load_driver
       # java.sql.DriverManager.register_driver org.postgresql.Driver.new
+      Java::JavaClass.for_name("org.postgresql.Driver")
       def new_connection
         java.sql.DriverManager.get_connection CONFIG
       end
