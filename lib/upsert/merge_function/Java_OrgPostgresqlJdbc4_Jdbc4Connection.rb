@@ -18,7 +18,7 @@ class Upsert
 
       def unique_index_on_selector?
         return @unique_index_on_selector if defined?(@unique_index_on_selector)
-        @unique_index_on_selector = schema_query.any? do |row|
+        @unique_index_on_selector = unique_index_columns.any? do |row|
           row["index_columns"].sort == selector_keys.sort
         end
       end
