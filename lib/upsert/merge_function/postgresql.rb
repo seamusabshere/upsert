@@ -107,7 +107,7 @@ class Upsert
       end
 
       def use_pg_native?
-        server_version >= 95 && unique_index_on_selector?
+        @use_pg_native ||= server_version >= 95 && unique_index_on_selector?
       end
 
       def server_version
@@ -152,7 +152,7 @@ class Upsert
           INSERT INTO #{quoted_table_name} (#{quoted_setter_names.join(',')})
           VALUES (#{insert_bind_placeholders(row).join(', ')})
           ON CONFLICT(#{quoted_selector_names.join(', ')})
-          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = (#{conflict_bind_placeholders(row).join(', ')})
+          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = ROW(#{conflict_bind_placeholders(row).join(', ')})
         }
 
         execute_parameterized(upsert_sql, bind_setter_values)

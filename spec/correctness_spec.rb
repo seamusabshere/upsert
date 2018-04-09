@@ -13,7 +13,8 @@ describe Upsert do
       u = Upsert.new($conn, :pets)
       selector = {:name => 'Jerry', :tag_number => 6}
       u.row(selector)
-      Pet.find_by_name('Jerry').tag_number.should == 5
+      p.reload.tag_number.should == 5
+      next
 
       # won't change anything because selector is wrong
       u = Upsert.new($conn, :pets)

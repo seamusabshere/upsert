@@ -185,7 +185,7 @@ class Upsert
   # @param [Hash] options
   # @option options [TrueClass,FalseClass] :assume_function_exists (true) Assume the function has already been defined correctly by another process.
   def initialize(connection, table_name, options = {})
-    @table_name = table_name.is_a?(::Sequel::SQL::QualifiedIdentifier) ? [table_name.table, table_name.column] : [*table_name].map(&:to_s)
+    @table_name = self.class.normalize_table_name(table_name)
     metal = Upsert.metal connection
     @flavor = Upsert.flavor metal
     @adapter = Upsert.adapter metal
@@ -246,5 +246,14 @@ class Upsert
   # @private
   def column_definitions
     @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, quoted_table_name
+  end
+
+  # @private
+  def self.normalize_table_name(table_name)
+    if defined?(Sequel) && table_name.is_a?(::Sequel::SQL::QualifiedIdentifier)
+      [table_name.table, table_name.column]
+    else
+      [*table_name].map(&:to_s)
+    end
   end
 end

@@ -36,7 +36,7 @@ describe Upsert do
       end
     end
 
-    it "is safe to use with the entire block instead the thread" do
+    it "is safe to use with the entire block inside the thread" do
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         ts = []
         10.times do

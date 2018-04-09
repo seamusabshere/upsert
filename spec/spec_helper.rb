@@ -161,22 +161,22 @@ class Pet < ActiveRecord::Base
   if ENV['DB'] == 'postgresql'
     col :tsntz, :type => 'timestamp without time zone'
   end
-  add_index :name, :unique => true
+  add_index :name, :unique => UNIQUE_CONSTRAINT
 end
 
-if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-  begin
-    const.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
-  rescue => e
-    puts e.inspect
-  end
-end
+# if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+#   begin
+#     const.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
+#   rescue => e
+#     puts e.inspect
+#   end
+# end
 
 Pet.auto_upgrade!
 
-if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-  Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
-end
+# if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+#   Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
+# end
 
 class Task < ActiveRecord::Base
   col :name
@@ -271,6 +271,8 @@ module SpecHelper
   def compare_attribute_sets(expected, found)
     e = expected.map { |attrs| simplify_attributes attrs }
     f = found.map { |attrs| simplify_attributes attrs }
+    puts [e, f].inspect
+
     f.each_with_index do |fa, i|
       fa.should == e[i]
     end
