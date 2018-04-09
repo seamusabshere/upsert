@@ -6,10 +6,10 @@ describe Upsert do
       upsert = Upsert.new $conn, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         ts = []
-        10.times do
+        20.times do
           ts << Thread.new do
             ActiveRecord::Base.connection_pool.with_connection do |conn|
-              sleep 0.2
+              sleep 0.1
               upsert.row({:name => 'Jerry'}, :gender => 'male')
               upsert.row({:name => 'Jerry'}, :gender => 'neutered')
             end
@@ -22,10 +22,10 @@ describe Upsert do
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         Upsert.batch($conn, :pets) do |upsert|
           ts = []
-          10.times do
+          20.times do
             ts << Thread.new do
               ActiveRecord::Base.connection_pool.with_connection do |conn|
-                sleep 0.2
+                sleep 0.1
                 upsert.row({:name => 'Jerry'}, :gender => 'male')
                 upsert.row({:name => 'Jerry'}, :gender => 'neutered')
               end
@@ -39,10 +39,10 @@ describe Upsert do
     it "is safe to use with the entire block inside the thread" do
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         ts = []
-        10.times do
+        20.times do
           ts << Thread.new do
             ActiveRecord::Base.connection_pool.with_connection do |conn|
-              sleep 0.2
+              sleep 0.1
               Upsert.batch(conn, :pets) do |upsert|
                 upsert.row({:name => 'Jerry'}, :gender => 'male')
                 upsert.row({:name => 'Jerry'}, :gender => 'neutered')
