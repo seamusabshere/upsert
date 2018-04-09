@@ -45,12 +45,16 @@ class Upsert
       retrieve_mutex(upsert.table_name, row.selector.keys, row.setter.keys)
     end
 
+    # TODO: Rewrite this to use the thread_safe gem, perhaps?
     def retrieve_mutex(*args)
       # ||= isn't an atomic operation
       MUTEX_FOR_PERFORM.synchronize do
         @mutex_cache ||= Hash.new do |h, k|
           MUTEX_FOR_PERFORM.synchronize do
-            h[k] = Mutex.new
+            # We still need the ||= because this block could have
+            # theoretically been entered simultaneously by two threads
+            # but the actual assignment is protected by the mutex
+            h[k] ||= Mutex.new
           end
         end
       end
