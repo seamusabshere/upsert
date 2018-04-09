@@ -147,12 +147,13 @@ class Upsert
 
       def pg_native(row)
         bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
+        row_syntax = server_version >= 100 ? "ROW" : ""
 
         upsert_sql = %{
           INSERT INTO #{quoted_table_name} (#{quoted_setter_names.join(',')})
           VALUES (#{insert_bind_placeholders(row).join(', ')})
           ON CONFLICT(#{quoted_selector_names.join(', ')})
-          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = ROW(#{conflict_bind_placeholders(row).join(', ')})
+          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = #{row_syntax}(#{conflict_bind_placeholders(row).join(', ')})
         }
 
         execute_parameterized(upsert_sql, bind_setter_values)
