@@ -48,10 +48,14 @@ class Upsert
     def retrieve_mutex(*args)
       # ||= isn't an atomic operation
       MUTEX_FOR_PERFORM.synchronize do
-        @mutex_cache ||= {}
+        @mutex_cache ||= Hash.new do |h, k|
+          MUTEX_FOR_PERFORM.synchronize do
+            h[k] = Mutex.new
+          end
+        end
       end
-      cache_key = args.flatten.join('::')
-      @mutex_cache[cache_key] ||= Mutex.new
+
+      @mutex_cache[args.flatten.join('::')]
     end
 
     # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
