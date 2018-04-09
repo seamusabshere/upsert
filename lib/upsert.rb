@@ -37,6 +37,23 @@ class Upsert
       end
     end
 
+    def mutex_for_row(upsert, row)
+      retrieve_mutex(upsert.table_name, row.selector.keys)
+    end
+
+    def mutex_for_function(upsert, row)
+      retrieve_mutex(upsert.table_name, row.selector.keys, row.setter.keys)
+    end
+
+    def retrieve_mutex(*args)
+      # ||= isn't an atomic operation
+      MUTEX_FOR_PERFORM.synchronize do
+        @mutex_cache ||= {}
+      end
+      cache_key = args.flatten.join('::')
+      @mutex_cache[cache_key] ||= Mutex.new
+    end
+
     # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
     #
     # Clear any database functions that may have been created.
@@ -218,8 +235,8 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, setter = {}, options = nil)
-    @row_mutex.synchronize do
-      row_object = Row.new(selector, setter, options)
+    row_object = Row.new(selector, setter, options)
+    self.class.mutex_for_row(self, row_object).synchronize do
       merge_function(row_object).execute(row_object)
       nil
     end
@@ -232,7 +249,7 @@ class Upsert
 
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
-    @merge_function_mutex.synchronize do
+    self.class.mutex_for_function(self, row).synchronize do
       @merge_function_cache[cache_key] ||=
         merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
     end

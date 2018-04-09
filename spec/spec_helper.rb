@@ -271,8 +271,6 @@ module SpecHelper
   def compare_attribute_sets(expected, found)
     e = expected.map { |attrs| simplify_attributes attrs }
     f = found.map { |attrs| simplify_attributes attrs }
-    puts [e, f].inspect
-
     f.each_with_index do |fa, i|
       fa.should == e[i]
     end
