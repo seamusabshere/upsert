@@ -161,7 +161,7 @@ class Pet < ActiveRecord::Base
   if ENV['DB'] == 'postgresql'
     col :tsntz, :type => 'timestamp without time zone'
   end
-  add_index :name, :unique => UNIQUE_CONSTRAINT
+  add_index :name, :unique => true if UNIQUE_CONSTRAINT
 end
 
 # if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT

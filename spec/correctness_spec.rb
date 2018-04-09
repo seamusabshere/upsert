@@ -152,6 +152,13 @@ describe Upsert do
     if ENV['DB'] == 'mysql' && RUBY_VERSION >= '1.9'
       describe 'compared to activerecord-import' do
         it "is as correct as faking upserts with activerecord-import" do
+          class Pet
+            add_index :name, unique: true unless UNIQUE_CONSTRAINT
+          end
+          Pet.auto_upgrade!
+
+          # fail Pet.inline_schema_config.instance_variable_get(:@ideal_indexes).inspect
+
           assert_same_result lotsa_records do |records|
             columns = nil
             all_values = []
@@ -168,6 +175,11 @@ describe Upsert do
             end
             Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
           end
+
+          # We need a better syntax to do this sort of stuff in tests
+          # fail Pet.inline_schema_config.instance_variable_get(:@ideal_indexes).inspect
+          Pet.inline_schema_config.instance_variable_set(:@ideal_indexes, Set.new)  unless UNIQUE_CONSTRAINT
+          Pet.auto_upgrade!
         end
       end
     end
