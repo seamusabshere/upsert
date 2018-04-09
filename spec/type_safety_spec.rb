@@ -5,7 +5,7 @@ describe Upsert do
       upsert = Upsert.new $conn, :pets
       lambda do
         upsert.row :tag_number => ''
-      end.should raise_error
+      end.should raise_error PG::InvalidTextRepresentation
     end
   end
 end if ENV['DB'] == 'postgresql'
