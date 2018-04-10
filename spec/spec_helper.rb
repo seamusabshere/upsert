@@ -25,10 +25,10 @@ module ActiveRecordInlineSchema::ActiveRecordClassMethods
 
   def inline_schema_config
     return @inline_schema_config if defined?(@inline_schema_config)
-    if superclass != ::ActiveRecord::Base
-      @inline_schema_config = base_class.inline_schema_config.dup
-    else
-      MUTEX.synchronize do
+    MUTEX.synchronize do
+      if superclass != ::ActiveRecord::Base
+        @inline_schema_config = base_class.inline_schema_config.dup
+      else
         @inline_schema_config = ::ActiveRecordInlineSchema::Config.new self
       end
     end
