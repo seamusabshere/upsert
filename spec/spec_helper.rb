@@ -156,6 +156,13 @@ class Person < ActiveRecord::Base
 end
 Person.auto_upgrade!
 
+class Alphabet < ActiveRecord::Base
+  ('a'..'z').each do |col|
+    col "the_letter_#{col}".to_sym, :type => :integer
+  end
+end
+Alphabet.auto_upgrade!
+
 require 'zlib'
 require 'benchmark'
 require 'faker'

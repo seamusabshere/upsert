@@ -100,6 +100,16 @@ describe Upsert do
       lambda { u.row(:name => 'Jerry', :gibberish => 'ba', :gender => 'male') }.should raise_error(/invalid col/i)
     end
 
+    it "works with a long setter hash" do
+      Upsert.batch($conn, :alphabets) do |batch|
+        10_000.times do |time|
+          setter = Hash[('a'..'z').map { |letter| ["the_letter_#{letter}".to_sym, rand(100)] }]
+          selector = Hash[('a'..'z').map { |letter| ["the_letter_#{letter}".to_sym, rand(100)] }]
+          batch.row(setter, selector)
+        end
+      end
+    end
+
   end
 
   describe "is just as correct as other ways" do
