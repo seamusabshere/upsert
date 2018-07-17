@@ -24,6 +24,7 @@ class Upsert
         'TrueClass'  => 'setBoolean',
         'FalseClass' => 'setBoolean',
         'Fixnum'     => 'setInt',
+        'Integer'    => 'setInt',
       )
 
       def binary(v)
