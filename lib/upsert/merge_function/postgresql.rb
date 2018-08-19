@@ -107,7 +107,11 @@ class Upsert
       end
 
       def use_pg_native?
-        server_version >= 95 && unique_index_on_selector?
+        return @use_pg_native if defined?(@use_pg_native)
+
+        @use_pg_native = server_version >= 95 && unique_index_on_selector?
+        Upsert.logger.warn "[upsert] WARNING: Not using native PG CONFLICT / UPDATE" unless @use_pg_native
+        @use_pg_native
       end
 
       def server_version
