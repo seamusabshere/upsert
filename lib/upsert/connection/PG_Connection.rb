@@ -1,3 +1,5 @@
+require 'upsert/connection/postgresql'
+
 class Upsert
   class Connection
     # @private
