@@ -3,7 +3,7 @@ require File.expand_path('../lib/upsert/version', __FILE__)
 
 Gem::Specification.new do |gem|
   gem.authors       = ["Seamus Abshere", "Phil Schalm"]
-  gem.email         = ["seamus@abshere.net"]
+  gem.email         = ["seamus@abshere.net", "pnomolos@gmail.com"]
   t = %{Make it easy to upsert on MySQL, PostgreSQL, and SQLite3. Transparently creates merge functions for MySQL and PostgreSQL; on SQLite3, uses INSERT OR IGNORE.}
   gem.description   = t
   gem.summary       = t
@@ -22,16 +22,15 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rspec-expectations'
   gem.add_development_dependency 'rspec-mocks'
 
-  gem.add_development_dependency 'activerecord', '~>3'
-  gem.add_development_dependency 'active_record_inline_schema'
+  gem.add_development_dependency 'activerecord', '~> 5'
   gem.add_development_dependency 'yard'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'pg-hstore', ">=1.1.3"
   gem.add_development_dependency 'sequel'
-  gem.add_development_dependency 'rake', '~>10.1.1'
+  gem.add_development_dependency 'rake', '~> 10'
 
   if RUBY_VERSION >= '1.9'
-    gem.add_development_dependency 'activerecord-import', '0.11.0' # 0.12 and up were failing
+    gem.add_development_dependency 'activerecord-import', "~> 1" # 0.12 and up were failing
   else
     gem.add_development_dependency 'orderedhash'
   end

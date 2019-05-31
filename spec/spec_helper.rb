@@ -4,10 +4,12 @@ require 'bundler/setup'
 # require 'pry'
 require 'shellwords'
 
-require 'active_record'
-ActiveRecord::Base.default_timezone = :utc
+require "sequel"
+Sequel.default_timezone = :utc
+Sequel.extension :migration
 
-require 'active_record_inline_schema'
+require "active_record"
+ActiveRecord::Base.default_timezone = :utc
 
 require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
@@ -99,6 +101,18 @@ class RawConnectionFactory
   end
 end
 
+config = ActiveRecord::Base.connection.instance_variable_get(:@config)
+config[:adapter] = case config[:adapter]
+  when "postgresql" then "postgres"
+  else config[:adapter]
+end
+params = if RUBY_PLATFORM == "java"
+  RawConnectionFactory::CONFIG
+else
+  config.slice(:adapter, :host, :database, :username, :password).merge(:user => config[:username])
+end
+DB = Sequel.connect(params)
+
 $conn_factory = RawConnectionFactory.new
 $conn = $conn_factory.new_connection
 
@@ -113,49 +127,58 @@ else
   ActiveRecord::Base.logger.level = Logger::WARN
 end
 
-class Pet < ActiveRecord::Base
-  col :name, limit: 191 # utf8mb4 in mysql requirement
-  col :gender
-  col :spiel
-  col :good, :type => :boolean
-  col :lovability, :type => :float
-  col :morning_walk_time, :type => :datetime
-  col :zipped_biography, :type => :binary
-  col :tag_number, :type => :integer
-  col :big_tag_number, :type => :bigint
-  col :birthday, :type => :date
-  col :home_address, :type => :text
-  if ENV['DB'] == 'postgresql'
-    col :tsntz, :type => 'timestamp without time zone'
-  end
-  add_index :name, :unique => true
-end
 if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
   begin
-    Pet.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
+    DB << "ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name"
   rescue => e
     puts e.inspect
   end
 end
 
-Pet.auto_upgrade!
+Sequel.migration do
+  change do
+    db = self
+    create_table?(:pets) do
+      primary_key :id
+      String :name, limit: 191, index: { unique: true }
+      String :gender
+      String :spiel
+      TrueClass :good
+      Decimal :lovability
+      DateTime :morning_walk_time
+      File :zipped_biography
+      Integer :tag_number
+      Bignum :big_tag_number
+      Date :birthday
+      String :home_address, text: true
+
+      if db.database_type == :postgres
+        column :tsntz, "timestamp without time zone"
+      end
+    end
+
+    create_table?(:tasks) do
+      primary_key :id
+      String :name
+      DateTime :created_at
+      DateTime :created_on
+    end
+
+    create_table?(:people) do
+      primary_key :id
+      String :"First Name"
+      String :"Last Name"
+    end
+  end
+end.apply(DB, :up)
 
 if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-  Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
+  DB << "ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)"
 end
 
-class Task < ActiveRecord::Base
-  col :name
-  col :created_at, :type => :datetime
-  col :created_on, :type => :datetime
+%i[Pet Task Person].each do |name|
+  Object.const_set(name, Class.new(ActiveRecord::Base))
 end
-Task.auto_upgrade!
-
-class Person < ActiveRecord::Base
-  col :"First Name"
-  col :"Last Name"
-end
-Person.auto_upgrade!
 
 require 'zlib'
 require 'benchmark'
@@ -188,7 +211,7 @@ module SpecHelper
           names.choice
         end
         setter = {
-          :lovability => BigDecimal.new(rand(1e11).to_s, 2),
+          :lovability => BigDecimal(rand(1e11).to_s, 2),
           :tag_number => rand(1e8),
           :spiel => Faker::Lorem.sentences.join,
           :good => true,

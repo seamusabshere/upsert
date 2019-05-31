@@ -107,8 +107,8 @@ describe Upsert do
       it "is as correct as than new/set/save" do
         assert_same_result lotsa_records do |records|
           records.each do |selector, setter|
-            if pet = Pet.where(selector).first
-              pet.update_attributes setter, :without_protection => true
+            if (pet = Pet.where(selector).first)
+              pet.update_attributes(setter)
             else
               pet = Pet.new
               selector.each do |k, v|
