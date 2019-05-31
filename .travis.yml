@@ -15,8 +15,6 @@ addons:
 rvm:
   - 2.3
   - 2.2
-  - 2.1
-  - 1.9.3
   - rbx
   - jruby-1.7
   - jruby-9
