@@ -1,4 +1,4 @@
-require 'upsert/connection/jdbc'
+require "upsert/connection/jdbc"
 
 class Upsert
   class Connection

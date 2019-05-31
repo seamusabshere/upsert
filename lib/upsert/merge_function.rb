@@ -1,26 +1,26 @@
-require 'zlib'
-require 'upsert/version'
+require "zlib"
+require "upsert/version"
 
 class Upsert
   # @private
   class MergeFunction
     MAX_NAME_LENGTH = 62
-    NAME_PREFIX = "upsert#{Upsert::VERSION.gsub('.', '_')}"
+    NAME_PREFIX = "upsert#{Upsert::VERSION.tr(".", "_")}"
 
     class << self
       def unique_name(table_name, selector_keys, setter_keys)
         parts = [
           NAME_PREFIX,
           table_name,
-          'SEL',
-          selector_keys.join('_A_').gsub(" ","_"),
-          'SET',
-          setter_keys.join('_A_').gsub(" ","_")
-        ].join('_')
+          "SEL",
+          selector_keys.join("_A_").tr(" ", "_"),
+          "SET",
+          setter_keys.join("_A_").tr(" ", "_"),
+        ].join("_")
         if parts.length > MAX_NAME_LENGTH
           # maybe i should md5 instead
           crc32 = Zlib.crc32(parts).to_s
-          [ parts[0..MAX_NAME_LENGTH-10], crc32 ].join
+          [parts[0..MAX_NAME_LENGTH - 10], crc32].join
         else
           parts
         end
@@ -65,7 +65,7 @@ class Upsert
       possible = column_definitions.map(&:name)
       invalid = (setter_keys + selector_keys).uniq - possible
       if invalid.any?
-        raise ArgumentError, "[Upsert] Invalid column(s): #{invalid.map(&:inspect).join(', ')}"
+        raise ArgumentError, "[Upsert] Invalid column(s): #{invalid.map(&:inspect).join(", ")}"
       end
     end
   end

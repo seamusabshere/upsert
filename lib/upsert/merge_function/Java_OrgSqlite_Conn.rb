@@ -1,4 +1,4 @@
-require 'upsert/merge_function/sqlite3'
+require "upsert/merge_function/sqlite3"
 
 class Upsert
   class MergeFunction

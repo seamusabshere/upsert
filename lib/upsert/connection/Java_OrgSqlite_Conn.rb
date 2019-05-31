@@ -1,5 +1,5 @@
-require 'upsert/connection/jdbc'
-require 'upsert/connection/sqlite3'
+require "upsert/connection/jdbc"
+require "upsert/connection/sqlite3"
 
 class Upsert
   class Connection

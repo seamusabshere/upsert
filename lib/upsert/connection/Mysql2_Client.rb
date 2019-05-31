@@ -3,7 +3,7 @@ class Upsert
     # @private
     class Mysql2_Client < Connection
       def execute(sql)
-        Upsert.logger.debug { %{[upsert] #{sql}} }
+        Upsert.logger.debug { %([upsert] #{sql}) }
         if results = metal.query(sql)
           rows = []
           results.each { |row| rows << row }
@@ -44,7 +44,7 @@ class Upsert
       end
 
       def quote_boolean(v)
-        v ? 'TRUE' : 'FALSE'
+        v ? "TRUE" : "FALSE"
       end
 
       def quote_string(v)
@@ -69,7 +69,7 @@ class Upsert
       end
 
       def quote_big_decimal(v)
-        v.to_s('F')
+        v.to_s("F")
       end
     end
   end
