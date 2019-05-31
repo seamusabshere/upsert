@@ -1,11 +1,11 @@
 class Upsert
   # @private
   class Row
-    if RUBY_VERSION >= "1.9"
+    if RUBY_VERSION >= '1.9'
       OrderedHash = ::Hash
     else
       begin
-        require "orderedhash"
+        require 'orderedhash'
       rescue LoadError
         raise LoadError, "[upsert] If you're using upsert on Ruby 1.8, you need to add 'orderedhash' to your Gemfile."
       end
@@ -19,14 +19,15 @@ class Upsert
     def initialize(raw_selector, raw_setter, options)
       eager_nullify = (options.nil? || options.fetch(:eager_nullify, true))
 
-      @selector = raw_selector.each_with_object({}) { |(k, v), memo|
+      @selector = raw_selector.inject({}) do |memo, (k, v)|
         memo[k.to_s] = v
-      }
+        memo
+      end
 
       @hstore_delete_keys = {}
-      @setter = raw_setter.each_with_object({}) { |(k, v), memo|
+      @setter = raw_setter.inject({}) do |memo, (k, v)|
         k = k.to_s
-        if v.is_a?(::Hash) && eager_nullify
+        if v.is_a?(::Hash) and eager_nullify
           v.each do |kk, vv|
             if vv.nil?
               (@hstore_delete_keys[k] ||= []) << kk
@@ -34,7 +35,8 @@ class Upsert
           end
         end
         memo[k] = v
-      }
+        memo
+      end
 
       (selector.keys - setter.keys).each do |missing|
         setter[missing] = selector[missing]
@@ -48,8 +50,9 @@ class Upsert
     private
 
     def sort_hash(original)
-      original.keys.sort.each_with_object(OrderedHash.new) do |k, memo|
+      original.keys.sort.inject(OrderedHash.new) do |memo, k|
         memo[k] = original[k]
+        memo
       end
     end
   end

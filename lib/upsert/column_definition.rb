@@ -53,7 +53,7 @@ class Upsert
 
     def arg_type
       if temporal?
-        "character varying(255)"
+        'character varying(255)'
       else
         sql_type
       end
@@ -74,5 +74,6 @@ class Upsert
         quoted_selector_name
       end
     end
+
   end
 end

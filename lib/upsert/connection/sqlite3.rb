@@ -5,11 +5,11 @@ class Upsert
       def bind_value(v)
         case v
         when BigDecimal
-          v.to_s("F")
+          v.to_s('F')
         when TrueClass
-          "t"
+          't'
         when FalseClass
-          "f"
+          'f'
         else
           super
         end
