@@ -167,6 +167,12 @@ Sequel.migration {
       String :"First Name"
       String :"Last Name"
     end
+
+    create_table?(:alphabets) do
+      ("a".."z").each do |col|
+        Integer "the_letter_#{col}".to_sym
+      end
+    end
   end
 }.apply(DB, :up)
 
@@ -174,7 +180,7 @@ if ENV["DB"] == "postgresql" && UNIQUE_CONSTRAINT
   DB << "ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)"
 end
 
-%i[Pet Task Person].each do |name|
+%i[Pet Task Person Alphabet].each do |name|
   Object.const_set(name, Class.new(ActiveRecord::Base))
 end
 
