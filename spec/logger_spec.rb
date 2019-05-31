@@ -1,24 +1,22 @@
-require 'spec_helper'
+require "spec_helper"
 describe Upsert do
   MUTEX_FOR_PERFORM = Mutex.new
   describe "logger" do
     it "logs where you tell it" do
-      begin
-        old_logger = Upsert.logger
-        io = StringIO.new
-        MUTEX_FOR_PERFORM.synchronize do
-          Upsert.logger = Logger.new(io)
+      old_logger = Upsert.logger
+      io = StringIO.new
+      MUTEX_FOR_PERFORM.synchronize do
+        Upsert.logger = Logger.new(io)
 
-          Upsert.logger.warn "hello"
+        Upsert.logger.warn "hello"
 
-          io.rewind
-          puts io.read
-          io.rewind
-          io.read.chomp.should =~ /hello/
-        end
-      ensure
-        Upsert.logger = old_logger
+        io.rewind
+        puts io.read
+        io.rewind
+        io.read.chomp.should =~ /hello/
       end
+    ensure
+      Upsert.logger = old_logger
     end
 
     it "logs queries" do
@@ -29,7 +27,7 @@ describe Upsert do
           Upsert.logger = Logger.new(io)
 
           u = Upsert.new($conn, :pets)
-          u.row(:name => 'Jerry')
+          u.row(name: "Jerry")
 
           io.rewind
           log = io.read.chomp
