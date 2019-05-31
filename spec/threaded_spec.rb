@@ -1,10 +1,10 @@
-require "spec_helper"
+require 'spec_helper'
 describe Upsert do
   Thread.abort_on_exception = true
   describe "is thread-safe" do
     it "is safe to use one-by-one" do
       upsert = Upsert.new $conn, :pets
-      assert_creates(Pet, [{name: "Jerry", gender: "neutered"}]) do
+      assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         ts = []
         10.times do
           ts << Thread.new {
@@ -19,7 +19,7 @@ describe Upsert do
       end
     end
     it "is safe to use batch" do
-      assert_creates(Pet, [{name: "Jerry", gender: "neutered"}]) do
+      assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         Upsert.batch($conn, :pets) do |upsert|
           ts = []
           10.times do

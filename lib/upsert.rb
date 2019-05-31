@@ -1,12 +1,13 @@
-require "bigdecimal"
-require "logger"
+require 'bigdecimal'
+require 'thread'
+require 'logger'
 
-require "upsert/version"
-require "upsert/binary"
-require "upsert/connection"
-require "upsert/merge_function"
-require "upsert/column_definition"
-require "upsert/row"
+require 'upsert/version'
+require 'upsert/binary'
+require 'upsert/connection'
+require 'upsert/merge_function'
+require 'upsert/column_definition'
+require 'upsert/row'
 
 class Upsert
   class << self
@@ -19,16 +20,16 @@ class Upsert
     # @return [#info,#warn,#debug]
     def logger
       @logger || MUTEX_FOR_PERFORM.synchronize do
-        @logger ||= if defined?(::Rails) && (rails_logger = ::Rails.logger)
+        @logger ||= if defined?(::Rails) and (rails_logger = ::Rails.logger)
           rails_logger
-        elsif defined?(::ActiveRecord) && ::ActiveRecord.const_defined?(:Base) && (ar_logger = ::ActiveRecord::Base.logger)
+        elsif defined?(::ActiveRecord) and ::ActiveRecord.const_defined?(:Base) and (ar_logger = ::ActiveRecord::Base.logger)
           ar_logger
         else
           my_logger = Logger.new $stderr
-          case ENV["UPSERT_DEBUG"]
-          when "true"
+          case ENV['UPSERT_DEBUG']
+          when 'true'
             my_logger.level = Logger::DEBUG
-          when "false"
+          when 'false'
             my_logger.level = Logger::INFO
           end
           my_logger
@@ -73,11 +74,11 @@ class Upsert
     end
 
     # @deprecated Use .batch instead.
-    alias stream batch
+    alias :stream :batch
 
     # @private
     def class_name(metal)
-      if RUBY_PLATFORM == "java"
+      if RUBY_PLATFORM == 'java'
         metal.class.name || metal.get_class.name
       else
         metal.class.name
@@ -88,11 +89,11 @@ class Upsert
     def flavor(metal)
       case class_name(metal)
       when /sqlite/i
-        "Sqlite3"
+        'Sqlite3'
       when /mysql/i
-        "Mysql"
+        'Mysql'
       when /pg/i, /postgres/i
-        "Postgresql"
+        'Postgresql'
       else
         raise "[upsert] #{metal} not supported"
       end
@@ -101,13 +102,13 @@ class Upsert
     # @private
     def adapter(metal)
       metal_class_name = class_name metal
-      METAL_CLASS_ALIAS.fetch(metal_class_name, metal_class_name).gsub /\W+/, "_"
+      METAL_CLASS_ALIAS.fetch(metal_class_name, metal_class_name).gsub /\W+/, '_'
     end
 
     # @private
     def metal(connection)
       metal = connection.respond_to?(:raw_connection) ? connection.raw_connection : connection
-      if metal.class.name.to_s.start_with?("ActiveRecord::ConnectionAdapters")
+      if metal.class.name.to_s.start_with?('ActiveRecord::ConnectionAdapters')
         metal = metal.connection
       end
       metal
@@ -131,31 +132,31 @@ class Upsert
     # @private
     def utc_iso8601(time, tz = true)
       t = utc time
-      s = t.strftime(ISO8601_DATETIME) + "." + (USEC_SPRINTF % t.usec)
+      s = t.strftime(ISO8601_DATETIME) + '.' + (USEC_SPRINTF % t.usec)
       tz ? (s + UTC_TZ) : s
     end
   end
 
-  SINGLE_QUOTE = %(')
-  DOUBLE_QUOTE = %(")
-  BACKTICK = %(`)
-  X_AND_SINGLE_QUOTE = %(x')
-  USEC_SPRINTF = "%06d"
-  if RUBY_VERSION >= "1.9.0"
+  SINGLE_QUOTE = %{'}
+  DOUBLE_QUOTE = %{"}
+  BACKTICK = %{`}
+  X_AND_SINGLE_QUOTE = %{x'}
+  USEC_SPRINTF = '%06d'
+  if RUBY_VERSION >= '1.9.0'
     SEC_FRACTION = 1e6
     NANO_FRACTION = 1e9
   else
     SEC_FRACTION = 8.64e10
     NANO_FRACTION = 8.64e13
   end
-  ISO8601_DATETIME = "%Y-%m-%d %H:%M:%S"
-  ISO8601_DATE = "%F"
-  UTC_TZ = "+00:00"
-  NULL_WORD = "NULL"
+  ISO8601_DATETIME = '%Y-%m-%d %H:%M:%S'
+  ISO8601_DATE = '%F'
+  UTC_TZ = '+00:00'
+  NULL_WORD = 'NULL'
   METAL_CLASS_ALIAS = {
-    "PGConn" => "PG::Connection",
-    "org.sqlite.Conn" => "Java::OrgSqlite::Conn", # for some reason, org.sqlite.Conn doesn't have a ruby class name
-    "Sequel::Postgres::Adapter" => "PG::Connection", # Only the Postgres adapter needs an alias
+    'PGConn'                     => 'PG::Connection',
+    'org.sqlite.Conn'            => 'Java::OrgSqlite::Conn', # for some reason, org.sqlite.Conn doesn't have a ruby class name
+    'Sequel::Postgres::Adapter'  => 'PG::Connection',      # Only the Postgres adapter needs an alias
   }
   CREATED_COL_REGEX = /\Acreated_(at|on)\z/
 
