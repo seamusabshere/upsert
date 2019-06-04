@@ -13,10 +13,12 @@ addons:
       - mysql-client-core-5.6
       - mysql-client-5.6
 rvm:
+  - 2.6
+  - 2.5
+  - 2.4
   - 2.3
   - 2.2
-  - rbx
-  - jruby-9
+  - jruby-9.1.14
 matrix:
   allow_failures:
     - rvm: rbx
