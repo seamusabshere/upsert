@@ -1,6 +1,7 @@
 sudo: required
-dist: trusty
+dist: xenial
 language: ruby
+cache: bundler
 global:
   - USERNAME=travis
   - PASSWORD=
@@ -13,16 +14,13 @@ addons:
       - mysql-client-core-5.6
       - mysql-client-5.6
 rvm:
+  - 2.6
+  - 2.5
+  - 2.4
   - 2.3
   - 2.2
-  - 2.1
-  - 1.9.3
-  - rbx
-  - jruby-1.7
-  - jruby-9
-matrix:
-  allow_failures:
-    - rvm: rbx
+  - jruby-9.1.14
+
 env:
   - DB=postgresql PGVERSION=9.4
   - DB=postgresql PGVERSION=9.5
