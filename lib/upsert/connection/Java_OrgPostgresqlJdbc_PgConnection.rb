@@ -1,4 +1,5 @@
-require "upsert/connection/jdbc"
+require_relative "jdbc"
+require_relative "postgresql"
 
 class Upsert
   class Connection
