@@ -66,7 +66,7 @@ class Upsert
 
         first_try = true
         begin
-          create! if connection.in_transaction? && !function_exists?
+          create! if !@assume_function_exists && (connection.in_transaction? && !function_exists?)
           execute_parameterized(sql, values.map { |v| connection.bind_value v })
         rescue self.class::ERROR_CLASS => pg_error
           if pg_error.message =~ /function #{name}.* does not exist/i
@@ -85,8 +85,7 @@ class Upsert
       end
 
       def function_exists?
-        # The ::int is a hack until jruby+jdbc is happy with bigints being returned
-        @function_exists ||= controller.connection.execute("SELECT count(*)::int AS cnt FROM pg_proc WHERE lower(proname) = lower('#{name}')").first["cnt"].to_i > 0
+        @function_exists ||= controller.connection.execute("SELECT count(*) AS cnt FROM pg_proc WHERE lower(proname) = lower('#{name}')").first["cnt"].to_i > 0
       end
 
       # strangely ? can't be used as a placeholder

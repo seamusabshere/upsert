@@ -11,6 +11,7 @@ class Upsert
         java.sql.Types::BIGINT => "getLong",
         java.sql.Types::INTEGER => "getInt",
         java.sql.Types::ARRAY => ->(r, i) { r.getArray(i).array.to_ary },
+        java.sql.Types::REAL => "getLong"
       }
       java.sql.Types.constants.each do |type_name|
         i = java.sql.Types.const_get type_name
@@ -44,7 +45,7 @@ class Upsert
             case v
             when Upsert::Binary
               statement.setBytes i + 1, binary(v)
-            when BigDecimal
+            when Float, BigDecimal
               statement.setBigDecimal i + 1, java.math.BigDecimal.new(v.to_s)
             when NilClass
               # http://stackoverflow.com/questions/4243513/why-does-preparedstatement-setnull-requires-sqltype

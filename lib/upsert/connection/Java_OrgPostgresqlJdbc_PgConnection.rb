@@ -3,7 +3,7 @@ require "upsert/connection/jdbc"
 class Upsert
   class Connection
     # @private
-    class Java_OrgPostgresqlJdbc4_Jdbc4Connection < Connection
+    class Java_OrgPostgresqlJdbc_PgConnection < Connection
       include Jdbc
       include Postgresql
 

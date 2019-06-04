@@ -8,6 +8,7 @@ Gem::Specification.new do |gem|
   gem.summary       = t
   gem.homepage      = "https://github.com/seamusabshere/upsert"
   gem.license       = "MIT"
+  gem.platform      = "java"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
@@ -31,11 +32,11 @@ Gem::Specification.new do |gem|
 
   gem.add_development_dependency "activerecord-import", "~> 1" # 0.12 and up were failing
 
-  gem.add_development_dependency "activerecord-postgresql-adapter"
-  gem.add_development_dependency "sqlite3"
-  gem.add_development_dependency "mysql2", "~> 0.5"
-  gem.add_development_dependency "pg", "~> 1.1"
-  # github-flavored markdown
-  gem.add_development_dependency "redcarpet"
-  gem.add_development_dependency "faker", "1.6.3"
+  gem.add_development_dependency "jruby-openssl"
+  gem.add_development_dependency "jdbc-postgres"
+  gem.add_development_dependency "jdbc-mysql"
+  gem.add_development_dependency "jdbc-sqlite3"
+  gem.add_development_dependency "activerecord-jdbc-adapter"
+
+  gem.add_development_dependency "faker"
 end
