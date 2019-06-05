@@ -143,7 +143,7 @@ Sequel.migration do
       String :gender
       String :spiel
       TrueClass :good
-      Decimal :lovability
+      BigDecimal :lovability, size: [15, 15]
       DateTime :morning_walk_time
       File :zipped_biography
       Integer :tag_number
