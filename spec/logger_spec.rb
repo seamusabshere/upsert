@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 describe Upsert do
   MUTEX_FOR_PERFORM = Mutex.new
   describe "logger" do
@@ -29,7 +29,7 @@ describe Upsert do
           Upsert.logger = Logger.new(io)
 
           u = Upsert.new($conn, :pets)
-          u.row(name: "Jerry")
+          u.row(:name => 'Jerry')
 
           io.rewind
           log = io.read.chomp

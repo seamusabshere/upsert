@@ -14,7 +14,7 @@ class Upsert
           #   lines of: "invalid input syntax for <type>: <value>"
           metal.exec sql, convert_binary(params)
         else
-          Upsert.logger.debug { %([upsert] #{sql}) }
+          Upsert.logger.debug { %{[upsert] #{sql}} }
           metal.exec sql
         end
       end
@@ -24,7 +24,7 @@ class Upsert
       end
 
       def binary(v)
-        {value: v.value, format: 1}
+        { :value => v.value, :format => 1 }
       end
 
       def in_transaction?

@@ -1,4 +1,4 @@
-require "upsert/merge_function/postgresql"
+require 'upsert/merge_function/postgresql'
 
 class Upsert
   class MergeFunction
@@ -17,9 +17,9 @@ class Upsert
         type_map = PG::TypeMapByColumn.new([PG::TextDecoder::Array.new])
         res = schema_query.tap { |r| r.type_map = type_map }
 
-        @unique_index_on_selector = res.values.any? { |row|
+        @unique_index_on_selector = res.values.any? do |row|
           row.first.sort == selector_keys.sort
-        }
+        end
       end
     end
   end

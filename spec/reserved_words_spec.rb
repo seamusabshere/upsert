@@ -1,12 +1,12 @@
-require "spec_helper"
+require 'spec_helper'
 describe Upsert do
   describe "doesn't blow up on reserved words" do
     # collect and uniq reserved words
-    reserved_words = ["mysql_reserved.txt", "pg_reserved.txt"].map { |basename|
+    reserved_words = ['mysql_reserved.txt', 'pg_reserved.txt'].map do |basename|
       File.expand_path("../misc/#{basename}", __FILE__)
-    }.map { |path|
+    end.map do |path|
       IO.readlines(path)
-    }.flatten.map(&:chomp).select(&:present?).uniq
+    end.flatten.map(&:chomp).select(&:present?).uniq
 
     # make lots of AR models, each of which has 10 columns named after these words
     nasties = []
@@ -19,7 +19,7 @@ describe Upsert do
         self.primary_key = "fake_primary_key"
       end
 
-      Sequel.migration {
+      Sequel.migration do
         change do
           db = self
           create_table?(name.downcase) do
@@ -29,17 +29,17 @@ describe Upsert do
             end
           end
         end
-      }.apply(DB, :up)
-      nasties << [nasty, words]
+      end.apply(DB, :up)
+      nasties << [ nasty, words ]
     end
 
     describe "reserved words" do
       nasties.each do |nasty, words|
-        it "doesn't die on reserved words #{words.join(",")}" do
+        it "doesn't die on reserved words #{words.join(',')}" do
           upsert = Upsert.new $conn, nasty.table_name
           random = rand(1e3)
-          selector = {:fake_primary_key => random, words.first => words.first}
-          setter = words[1..-1].each_with_object({}) { |word, memo| memo[word] = word; }
+          selector = { :fake_primary_key => random, words.first => words.first }
+          setter = words[1..-1].inject({}) { |memo, word| memo[word] = word; memo }
           assert_creates nasty, [selector.merge(setter)] do
             upsert.row selector, setter
           end

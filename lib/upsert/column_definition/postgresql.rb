@@ -11,15 +11,15 @@ FROM pg_attribute a LEFT JOIN pg_attrdef d
   ON a.attrelid = d.adrelid AND a.attnum = d.adnum
 WHERE a.attrelid = '#{connection.quote_ident(table_name)}'::regclass
 AND a.attnum > 0 AND NOT a.attisdropped
-          EOS
-          res.map { |row|
-            new connection, row["name"], row["sql_type"], row["default"]
-          }.sort_by do |cd|
+EOS
+          res.map do |row|
+            new connection, row['name'], row['sql_type'], row['default']
+          end.sort_by do |cd|
             cd.name
           end
         end
       end
-
+      
       # NOTE not using this because it can't be indexed
       # def equality(left, right)
       #   "#{left} IS NOT DISTINCT FROM #{right}"
@@ -38,7 +38,7 @@ AND a.attnum > 0 AND NOT a.attisdropped
 
       def arg_type
         if hstore?
-          "text"
+          'text'
         else
           super
         end
