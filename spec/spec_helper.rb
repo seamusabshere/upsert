@@ -139,7 +139,7 @@ Sequel.migration do
     db = self
     create_table?(:pets) do
       primary_key :id
-      String :name, limit: 191, index: { unique: true }
+      String :name, size: 191, index: { unique: true }
       String :gender
       String :spiel
       TrueClass :good
