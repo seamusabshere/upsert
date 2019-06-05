@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 # Specify your gem's dependencies in upsert.gemspec
 
-gemspec
+gemspec, name: RUBY_VERSION == "java" ? "upsert-java.gemspec" : "upsert.gemspec"
 
 case RUBY_VERSION
 when "java"
