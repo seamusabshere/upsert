@@ -8,9 +8,8 @@ Sequel.default_timezone = :utc
 Sequel.extension :migration
 
 require "active_record"
+require "activerecord-import"
 ActiveRecord::Base.default_timezone = :utc
-
-require "activerecord-import" if RUBY_VERSION >= "1.9"
 
 ENV["DB"] ||= "mysql"
 ENV["DB"] = "postgresql" if ENV["DB"].to_s =~ /postgresql/
