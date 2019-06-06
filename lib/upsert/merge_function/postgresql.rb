@@ -133,7 +133,7 @@ class Upsert
           INSERT INTO #{quoted_table_name} (#{quoted_setter_names.join(',')})
           VALUES (#{insert_bind_placeholders(row).join(', ')})
           ON CONFLICT(#{quoted_selector_names.join(', ')})
-          DO UPDATE SET (#{quoted_setter_names.join(', ')}) = (#{conflict_bind_placeholders(row).join(', ')})
+          DO UPDATE SET #{quoted_setter_names.zip(conflict_bind_placeholders(row)).map { |n, v| "#{n} = #{v}" }.join(', ')}
         }
 
         execute_parameterized(upsert_sql, bind_setter_values)
@@ -156,13 +156,17 @@ class Upsert
       def insert_bind_placeholders(row)
         if row.hstore_delete_keys.empty?
           @insert_bind_placeholders ||= setter_column_definitions.each_with_index.map do |column_definition, i|
-            "$#{i + 1}"
+            if column_definition.hstore?
+              "CAST($#{i + 1} AS hstore)"
+            else
+              "$#{i + 1}"
+            end
           end
         else
           setter_column_definitions.each_with_index.map do |column_definition, i|
             idx = i + 1
             if column_definition.hstore?
-              hstore_delete_function("$#{idx}", row, column_definition)
+              hstore_delete_function("CAST($#{idx} AS hstore)", row, column_definition)
             else
               "$#{idx}"
             end
@@ -175,8 +179,8 @@ class Upsert
           @conflict_bind_placeholders ||= setter_column_definitions.each_with_index.map do |column_definition, i|
             idx = i + 1
             if column_definition.hstore?
-              "CASE WHEN #{quoted_table_name}.#{column_definition.quoted_name} IS NULL THEN $#{idx} ELSE" \
-                + " (#{quoted_table_name}.#{column_definition.quoted_name} || $#{idx})" \
+              "CASE WHEN #{quoted_table_name}.#{column_definition.quoted_name} IS NULL THEN CAST($#{idx} AS hstore) ELSE" \
+                + " (#{quoted_table_name}.#{column_definition.quoted_name} || CAST($#{idx} AS hstore))" \
                 + " END"
             else
               "$#{idx}"
@@ -187,9 +191,9 @@ class Upsert
             idx = i + 1
             if column_definition.hstore?
               "CASE WHEN #{quoted_table_name}.#{column_definition.quoted_name} IS NULL THEN " \
-                + hstore_delete_function("$#{idx}", row, column_definition) \
+                + hstore_delete_function("CAST($#{idx} AS hstore)", row, column_definition) \
                 + " ELSE " \
-                + hstore_delete_function("(#{quoted_table_name}.#{column_definition.quoted_name} || $#{idx})", row, column_definition) \
+                + hstore_delete_function("(#{quoted_table_name}.#{column_definition.quoted_name} || CAST($#{idx} AS hstore))", row, column_definition) \
                 + " END"
             else
               "$#{idx}"

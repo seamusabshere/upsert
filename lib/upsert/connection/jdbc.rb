@@ -25,6 +25,7 @@ class Upsert
         'TrueClass'  => 'setBoolean',
         'FalseClass' => 'setBoolean',
         'Fixnum'     => 'setInt',
+        'Integer'    => 'setInt'
       )
 
       def binary(v)
@@ -50,8 +51,11 @@ class Upsert
             when NilClass
               # http://stackoverflow.com/questions/4243513/why-does-preparedstatement-setnull-requires-sqltype
               statement.setObject i+1, nil
+            when java.time.LocalDateTime, java.time.Instant, java.time.LocalDate
+              statement.setObject i+1, v
             else
               setter = setters[v.class.name]
+              Upsert.logger.debug { "Setting [#{v.class}, #{v}] via #{setter}" }
               statement.send setter, i+1, v
             end
           end
