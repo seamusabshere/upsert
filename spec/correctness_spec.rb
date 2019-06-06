@@ -157,12 +157,15 @@ describe Upsert do
       # end
     end
 
-    if ENV['DB'] == 'mysql' && RUBY_VERSION >= '1.9'
+    if ENV['DB'] == 'mysql' || (UNIQUE_CONSTRAINT && ENV["DB"] == "postgresql")
       describe 'compared to activerecord-import' do
         it "is as correct as faking upserts with activerecord-import" do
           assert_same_result lotsa_records do |records|
             columns = nil
             all_values = []
+            # Reverse because we want to mimic an 'overwrite' of previous values
+            records = records.reverse.uniq { |s, _| s } if ENV['DB'] == "postgresql"
+
             records.each do |selector, setter|
               columns ||= (selector.keys + setter.keys).uniq
               all_values << columns.map do |k|
@@ -174,7 +177,9 @@ describe Upsert do
                 end
               end
             end
-            Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => columns
+
+            conflict_update = ENV['DB'] == "postgresql" ? {conflict_target: records.first.first.keys, columns: columns} : columns
+            Pet.import columns, all_values, :timestamps => false, :on_duplicate_key_update => conflict_update
           end
         end
       end
