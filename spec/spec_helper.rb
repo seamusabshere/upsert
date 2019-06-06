@@ -44,6 +44,7 @@ class RawConnectionFactory
       end
     end
     ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
+    require "activerecord-import/active_record/adapters/postgresql_adapter"
 
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
@@ -74,6 +75,7 @@ class RawConnectionFactory
       :encoding => 'utf8mb4'
     )
     ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
+    require "activerecord-import/active_record/adapters/mysql2_adapter"
 
   when 'sqlite3'
     CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
@@ -91,6 +93,7 @@ class RawConnectionFactory
       end
     end
     ActiveRecord::Base.establish_connection CONFIG
+    require "activerecord-import/active_record/adapters/sqlite3_adapter"
 
   when 'postgres'
     raise "please use DB=postgresql NOT postgres"
@@ -108,7 +111,7 @@ end
 params = if RUBY_PLATFORM == "java"
   RawConnectionFactory::CONFIG
 else
-  config.slice(:adapter, :host, :database, :username, :password).merge(:user => config[:username])
+  config.slice(:adapter, :host, :database, :username, :password).merge(:user => (config[:user] || config[:username]))
 end
 DB = Sequel.connect(params)
 
