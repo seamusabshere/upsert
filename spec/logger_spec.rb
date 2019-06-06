@@ -12,8 +12,6 @@ describe Upsert do
           Upsert.logger.warn "hello"
 
           io.rewind
-          puts io.read
-          io.rewind
           io.read.chomp.should =~ /hello/
         end
       ensure
