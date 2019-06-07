@@ -1,10 +1,14 @@
-sudo: required
 dist: xenial
 language: ruby
 cache: bundler
+services:
+  - docker
 global:
   - USERNAME=travis
   - PASSWORD=
+  - DB_USER=upsert_test
+  - DB_PASSWORD=upsert_test
+  - DB_NAME=upsert_test
 addons:
   apt:
     packages:
@@ -22,19 +26,24 @@ rvm:
   - jruby-9.1.14
 
 env:
-  - DB=postgresql PGVERSION=9.4
-  - DB=postgresql PGVERSION=9.5
-  - DB=postgresql PGVERSION=10.0
-  - DB=postgresql PGVERSION=9.4 UNIQUE_CONSTRAINT=true
-  - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
-  - DB=postgresql PGVERSION=10.0 UNIQUE_CONSTRAINT=true
-  - DB=mysql DB_USER=root
+  - DB=postgresql DB_VERSION=postgres:9.4
+  - DB=postgresql DB_VERSION=postgres:9.5
+  - DB=postgresql DB_VERSION=postgres:9.6
+  - DB=postgresql DB_VERSION=postgres:10
+  - DB=postgresql DB_VERSION=postgres:11
+  - DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
+  - DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
+  - DB=postgresql DB_VERSION=postgres:9.6 UNIQUE_CONSTRAINT=true
+  - DB=postgresql DB_VERSION=postgres:10 UNIQUE_CONSTRAINT=true
+  - DB=postgresql DB_VERSION=postgres:11 UNIQUE_CONSTRAINT=true
+  - DB=mysql DB_VERSION=mysql:5.6
+  - DB=mysql DB_VERSION=mysql:5.7
+  - DB=mysql DB_VERSION=mysql:8
 before_install:
+  - ./travis/run_docker_db.sh
   - if [ "$DB" = 'mysql' ]; then sudo ./travis/tune_mysql.sh; fi
 # Right now the build-script is properly installing Postgres version.  We will need this to test PG 9.6 and up, though
 #  - if [ "$DB" = 'postgresql' ]; then sudo ./travis/install_postgres.sh; fi
-  - gem update --system
-  - gem update bundler
   - bundle --version
   - gem --version
 script: bundle exec rake spec
