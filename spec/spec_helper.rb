@@ -126,24 +126,6 @@ end
 DB = Sequel.connect(params)
 
 $conn_factory = RawConnectionFactory.new
-
-# Fix a regression in activerecord-jdbc-adapter v1.3.25
-if ArJdbc::VERSION == "1.3.25"
-  module ActiveRecord
-    module ConnectionAdapters
-      class JdbcDriver
-        def connection(url, user, pass)
-          # bypass DriverManager to get around problem with dynamically loaded jdbc drivers
-          properties = self.properties.dup
-          properties.setProperty("user", user.to_s) if user
-          properties.setProperty("password", pass.to_s) if pass
-          @driver.connect(url, properties)
-        end
-      end
-    end
-  end
-end
-
 $conn = $conn_factory.new_connection
 
 require 'logger'
