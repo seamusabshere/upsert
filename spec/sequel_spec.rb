@@ -10,11 +10,14 @@ describe Upsert do
                        end
 
     let(:db) do
-      params = if RUBY_PLATFORM == 'java'
-                 RawConnectionFactory::CONFIG
-               else
-                 config.slice(:adapter, :host, :database, :username, :password).merge(:user => (config[:user] || config[:username]))
-               end
+      params = if RUBY_PLATFORM == "java"
+        RawConnectionFactory::CONFIG
+      else
+        config.merge(
+          :user => config.values_at(:user, :username).compact.first,
+          :host => config.values_at(:host, :hostaddr).compact.first
+        )
+      end
       Sequel.connect(params)
     end
 
