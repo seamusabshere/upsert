@@ -36,7 +36,8 @@ class RawConnectionFactory
         java.sql.DriverManager.get_connection CONFIG
       end
     else
-      CONFIG = { :dbname => DATABASE }
+      CONFIG = { :dbname => DATABASE, :host => DB_HOST, :user => CURRENT_USER }
+      CONFIG.merge!(:password => PASSWORD) unless PASSWORD.nil?
       require 'pg'
       def new_connection
         PG::Connection.new CONFIG
