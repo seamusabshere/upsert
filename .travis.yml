@@ -41,9 +41,6 @@ env:
   - DB=mysql DB_VERSION=mysql:8
 before_install:
   - ./travis/run_docker_db.sh
-  - if [ "$DB" = 'mysql' ]; then sudo ./travis/tune_mysql.sh; fi
-# Right now the build-script is properly installing Postgres version.  We will need this to test PG 9.6 and up, though
-#  - if [ "$DB" = 'postgresql' ]; then sudo ./travis/install_postgres.sh; fi
   - bundle --version
   - gem --version
 script: bundle exec rake spec
