@@ -24,10 +24,10 @@ class RawConnectionFactory
 
   case ENV['DB']
   when 'postgresql'
-    Kernel.system %{ dropdb upsert_test }
-    Kernel.system %{ createdb upsert_test }
+    Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} dropdb #{DATABASE} }
+    Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} createdb #{DATABASE} }
     if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:postgresql://localhost/#{DATABASE}?user=#{CURRENT_USER}"
+      CONFIG = "jdbc:postgresql://#{DB_HOST}/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
       require 'jdbc/postgres'
       # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
       Jdbc::Postgres.load_driver
@@ -47,10 +47,10 @@ class RawConnectionFactory
 
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
-    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
-    Kernel.system %{ mysql -h 127.0.0.1 -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
+    Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:mysql://127.0.0.1/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
+      CONFIG = "jdbc:mysql://#{DB_HOST}/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
       require 'jdbc/mysql'
       Jdbc::MySQL.load_driver
       # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
@@ -69,7 +69,7 @@ class RawConnectionFactory
       :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
       :username => CURRENT_USER,
       :password => PASSWORD,
-      :host => '127.0.0.1',
+      :host => DB_HOST,
       :database => DATABASE,
       :encoding => 'utf8mb4'
     )
