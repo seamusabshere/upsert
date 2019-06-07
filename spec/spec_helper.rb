@@ -6,6 +6,7 @@ require 'shellwords'
 
 require 'active_record'
 ActiveRecord::Base.default_timezone = :utc
+require 'activerecord-jdbc-adapter' if defined? JRUBY_VERSION
 
 require 'active_record_inline_schema'
 
