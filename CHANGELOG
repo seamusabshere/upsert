@@ -1,3 +1,12 @@
+-- no version -- / 2019-06-05
+
+* Enhancements
+
+  * Bump development Ruby version to 2.5 since Ruby 2.2 is no longer supported.
+  This should not affect usage of the gem, only local development for people
+  working *on* the gem. Ruby 2.2 is also not dropped from Upsert compatibility
+  at this time but you should consider upgrading to newer Ruby versions anyway.
+
 2.2.1 / 2017-04-20
 
 * Bug fixes

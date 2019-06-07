@@ -1,5 +1,11 @@
 #!/usr/bin/env rake
-require "bundler/gem_tasks"
+require "bundler/gem_helper"
+case RUBY_PLATFORM
+when "java"
+  Bundler::GemHelper.install_tasks name: "upsert-java"
+else
+  Bundler::GemHelper.install_tasks name: "upsert"
+end
 require "rspec/core/rake_task"
 
 RSpec::Core::RakeTask.new(:spec) do |t|
