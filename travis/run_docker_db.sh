@@ -1,7 +1,7 @@
 case "$DB" in
   postgresql)
       docker run --tmpfs /var/lib/postgresql/data:rw --rm --name db_server \
-        -e POSTGRES_USER=$DB_USER -e POSTGRES_PASSWORD=$DB_PASSWORD -e POSTGRES_DB=$DB_NAME
+        -e POSTGRES_USER=$DB_USER -e POSTGRES_PASSWORD=$DB_PASSWORD -e POSTGRES_DB=$DB_NAME \
         -p 5432:5432 -d \
         $DB_VERSION
     ;;

@@ -3,12 +3,6 @@ language: ruby
 cache: bundler
 services:
   - docker
-global:
-  - USERNAME=travis
-  - PASSWORD=
-  - DB_USER=upsert_test
-  - DB_PASSWORD=upsert_test
-  - DB_NAME=upsert_test
 rvm:
   - 2.6
   - 2.5
@@ -17,19 +11,32 @@ rvm:
   - 2.2
   - jruby-9.1.14
 env:
-  - DB=postgresql DB_VERSION=postgres:9.4
-  - DB=postgresql DB_VERSION=postgres:9.5
-  - DB=postgresql DB_VERSION=postgres:9.6
-  - DB=postgresql DB_VERSION=postgres:10
-  - DB=postgresql DB_VERSION=postgres:11
-  - DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
-  - DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
-  - DB=postgresql DB_VERSION=postgres:9.6 UNIQUE_CONSTRAINT=true
-  - DB=postgresql DB_VERSION=postgres:10 UNIQUE_CONSTRAINT=true
-  - DB=postgresql DB_VERSION=postgres:11 UNIQUE_CONSTRAINT=true
-  - DB=mysql DB_VERSION=mysql:5.6
-  - DB=mysql DB_VERSION=mysql:5.7
-  - DB=mysql DB_VERSION=mysql:8
+  global:
+  - USERNAME=travis
+  - PASSWORD=
+  - DB_USER=upsert_test
+  - DB_PASSWORD=upsert_test
+  - DB_NAME=upsert_test
+  matrix:
+    - DB=postgresql DB_VERSION=postgres:9.4
+    - DB=postgresql DB_VERSION=postgres:9.5
+    - DB=postgresql DB_VERSION=postgres:9.6
+    - DB=postgresql DB_VERSION=postgres:10
+    - DB=postgresql DB_VERSION=postgres:11
+    - DB=postgresql DB_VERSION=postgres:12
+    - DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:9.6 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:10 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:11 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:12 UNIQUE_CONSTRAINT=true
+    - DB=mysql DB_VERSION=mysql:5.6
+    - DB=mysql DB_VERSION=mysql:5.7
+    - DB=mysql DB_VERSION=mysql:8
+matrix:
+  allow_failures:
+    - env: DB=postgresql DB_VERSION=postgres:12
+    - env: DB=postgresql DB_VERSION=postgres:12 UNIQUE_CONSTRAINT=true
 before_install:
   - ./travis/run_docker_db.sh
   - bundle --version
