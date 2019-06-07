@@ -6,7 +6,7 @@ case "$DB" in
         $DB_VERSION
     ;;
   mysql)
-      docker run --tmpfs /var/lib/mysq --rm --name db_server \
+      docker run --tmpfs /var/lib/mysql:rw --rm --name db_server \
         -e MYSQL_ROOT_PASSWORD=root -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME \
         -p 3306:3306 -d \
         $DB_VERSION \
