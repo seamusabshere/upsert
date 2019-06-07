@@ -28,7 +28,7 @@ class RawConnectionFactory
     Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} dropdb #{DATABASE} }
     Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} createdb #{DATABASE} }
     if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:postgresql://#{DB_HOST}/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
+      CONFIG = "jdbc:postgresql://#{DB_HOST}/#{DATABASE}"
       require 'jdbc/postgres'
       # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
       Jdbc::Postgres.load_driver
@@ -58,7 +58,7 @@ class RawConnectionFactory
     Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
     Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:mysql://#{DB_HOST}/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
+      CONFIG = "jdbc:mysql://#{DB_HOST}/#{DATABASE}"
       require 'jdbc/mysql'
       Jdbc::MySQL.load_driver
       # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
@@ -123,7 +123,18 @@ else
     :host => config.values_at(:host, :hostaddr).compact.first
   )
 end
-DB = Sequel.connect(params)
+DB = if RUBY_PLATFORM == "java"
+  Sequel.connect(
+    RawConnectionFactory::CONFIG,
+    :user => RawConnectionFactory::CURRENT_USER,
+    :password => RawConnectionFactory::PASSWORD
+  )
+else
+  Sequel.connect(config.merge(
+    :user => config.values_at(:user, :username).compact.first,
+    :host => config.values_at(:host, :hostaddr).compact.first
+  ))
+end
 
 $conn_factory = RawConnectionFactory.new
 $conn = $conn_factory.new_connection
