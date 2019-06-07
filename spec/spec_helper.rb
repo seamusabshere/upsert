@@ -43,7 +43,7 @@ class RawConnectionFactory
         PG::Connection.new CONFIG
       end
     end
-    ActiveRecord::Base.establish_connection :host => DB_HOST, :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
+    ActiveRecord::Base.establish_connection :host => DB_HOST, :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER, :password => PASSWORD
 
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
