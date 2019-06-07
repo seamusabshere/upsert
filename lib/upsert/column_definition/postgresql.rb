@@ -19,7 +19,7 @@ EOS
           end
         end
       end
-      
+
       # NOTE not using this because it can't be indexed
       # def equality(left, right)
       #   "#{left} IS NOT DISTINCT FROM #{right}"
@@ -40,7 +40,8 @@ EOS
         if hstore?
           'text'
         else
-          super
+          # JDBC uses prepared statements and properly sends date objects (which are otherwise escaped)
+          RUBY_PLATFORM == "java" ? sql_type : super
         end
       end
 

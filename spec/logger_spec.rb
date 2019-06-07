@@ -12,7 +12,7 @@ describe Upsert do
           Upsert.logger.warn "hello"
 
           io.rewind
-          io.read.chomp.should == 'hello'
+          io.read.chomp.should =~ /hello/
         end
       ensure
         Upsert.logger = old_logger

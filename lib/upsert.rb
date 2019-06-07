@@ -196,7 +196,7 @@ class Upsert
     @connection = Connection.const_get(adapter).new self, metal
     @merge_function_class = MergeFunction.const_get adapter
     @merge_function_cache = {}
-    @assume_function_exists = options.fetch :assume_function_exists, true
+    @assume_function_exists = options.fetch :assume_function_exists, @flavor != "Postgresql"
 
     @merge_function_mutex = Mutex.new
     @row_mutex = Mutex.new

@@ -6,7 +6,6 @@ describe Upsert do
     config = ActiveRecord::Base.connection.instance_variable_get(:@config)
     config[:adapter] = case config[:adapter]
                        when 'postgresql' then 'postgres'
-                       when 'sqlie3' then 'sqlite'
                        else config[:adapter]
                        end
 
@@ -14,7 +13,7 @@ describe Upsert do
       params = if RUBY_PLATFORM == 'java'
                  RawConnectionFactory::CONFIG
                else
-                 config.slice(:adapter, :host, :database, :username, :password).merge(:user => config[:username])
+                 config.slice(:adapter, :host, :database, :username, :password).merge(:user => (config[:user] || config[:username]))
                end
       Sequel.connect(params)
     end
