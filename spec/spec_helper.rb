@@ -15,7 +15,6 @@ ENV['DB'] ||= 'mysql'
 ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/
 UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
 
-
 class RawConnectionFactory
   DATABASE = 'upsert_test'
   CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
@@ -43,7 +42,13 @@ class RawConnectionFactory
         PG::Connection.new CONFIG
       end
     end
-    ActiveRecord::Base.establish_connection :host => DB_HOST, :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER, :password => PASSWORD
+    ActiveRecord::Base.establish_connection(
+      :hostaddr => DB_HOST, 
+      :adapter => 'postgresql', 
+      :dbname => DATABASE, 
+      :username => CURRENT_USER, 
+      :password => PASSWORD
+    )
 
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
@@ -101,6 +106,24 @@ class RawConnectionFactory
 end
 
 $conn_factory = RawConnectionFactory.new
+
+# Fix a regression in activerecord-jdbc-adapter v1.3.25
+if ArJdbc::VERSION == "1.3.25"
+  module ActiveRecord
+    module ConnectionAdapters
+      class JdbcDriver
+        def connection(url, user, pass)
+          # bypass DriverManager to get around problem with dynamically loaded jdbc drivers
+          properties = self.properties.dup
+          properties.setProperty("user", user.to_s) if user
+          properties.setProperty("password", pass.to_s) if pass
+          @driver.connect(url, properties)
+        end
+      end
+    end
+  end
+end
+
 $conn = $conn_factory.new_connection
 
 require 'logger'
