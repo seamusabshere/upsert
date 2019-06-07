@@ -20,6 +20,7 @@ class RawConnectionFactory
   DATABASE = 'upsert_test'
   CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
   PASSWORD = ENV['DB_PASSWORD']
+  DB_HOST = ENV['DB_HOST'] || '127.0.0.1'
 
   case ENV['DB']
   when 'postgresql'
@@ -41,7 +42,7 @@ class RawConnectionFactory
         PG::Connection.new CONFIG
       end
     end
-    ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
+    ActiveRecord::Base.establish_connection :host => DB_HOST, :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
 
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
@@ -58,7 +59,7 @@ class RawConnectionFactory
     else
       require 'mysql2'
       def new_connection
-        config = { :username => CURRENT_USER, :database => DATABASE, :host => "127.0.0.1", :encoding => 'utf8mb4' }
+        config = { :username => CURRENT_USER, :database => DATABASE, :host => DB_HOST, :encoding => 'utf8mb4' }
         config.merge!(:password => PASSWORD) unless PASSWORD.nil?
         Mysql2::Client.new config
       end
