@@ -18,6 +18,8 @@ UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
 
 class RawConnectionFactory
   DATABASE = 'upsert_test'
+  # You *need* to specific DB_USER on certain combinations of JRuby/JDK as spawning a shell
+  # has some oddities
   CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
   PASSWORD = ENV['DB_PASSWORD']
   DB_HOST = ENV['DB_HOST'] || '127.0.0.1'

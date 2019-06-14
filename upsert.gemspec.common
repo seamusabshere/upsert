@@ -1,0 +1,105 @@
+require File.expand_path("../lib/upsert/version", __FILE__)
+
+Gem::Specification.new do |gem|
+  gem.authors       = ["Seamus Abshere", "Phil Schalm"]
+  gem.email         = ["seamus@abshere.net", "pnomolos@gmail.com"]
+  t = %{Make it easy to upsert on MySQL, PostgreSQL, and SQLite3. Transparently creates merge functions for MySQL and PostgreSQL; on SQLite3, uses INSERT OR IGNORE.}
+  gem.description   = t
+  gem.summary       = t
+  gem.homepage      = "https://github.com/seamusabshere/upsert"
+  gem.license       = "MIT"
+
+  # We no longer use `git ls-files` here because it breaks on some version of jruby...
+  # For some slightly related information:
+  # - https://github.com/jruby/jruby/issues/4515
+  # - https://github.com/jruby/jruby/issues/5249
+  #
+  gem.files = %w[
+    .gitignore
+    .ruby-version
+    .standard.yml
+    .travis.yml
+    .yardopts
+    CHANGELOG
+    Gemfile
+    LICENSE
+    README.md
+    Rakefile
+    lib/upsert.rb
+    lib/upsert/active_record_upsert.rb
+    lib/upsert/binary.rb
+    lib/upsert/column_definition.rb
+    lib/upsert/column_definition/mysql.rb
+    lib/upsert/column_definition/postgresql.rb
+    lib/upsert/column_definition/sqlite3.rb
+    lib/upsert/connection.rb
+    lib/upsert/connection/Java_ComMysqlJdbc_JDBC4Connection.rb
+    lib/upsert/connection/Java_OrgPostgresqlJdbc_PgConnection.rb
+    lib/upsert/connection/Java_OrgSqlite_Conn.rb
+    lib/upsert/connection/Mysql2_Client.rb
+    lib/upsert/connection/PG_Connection.rb
+    lib/upsert/connection/SQLite3_Database.rb
+    lib/upsert/connection/jdbc.rb
+    lib/upsert/connection/postgresql.rb
+    lib/upsert/connection/sqlite3.rb
+    lib/upsert/merge_function.rb
+    lib/upsert/merge_function/Java_ComMysqlJdbc_JDBC4Connection.rb
+    lib/upsert/merge_function/Java_OrgPostgresqlJdbc_PgConnection.rb
+    lib/upsert/merge_function/Java_OrgSqlite_Conn.rb
+    lib/upsert/merge_function/Mysql2_Client.rb
+    lib/upsert/merge_function/PG_Connection.rb
+    lib/upsert/merge_function/SQLite3_Database.rb
+    lib/upsert/merge_function/mysql.rb
+    lib/upsert/merge_function/postgresql.rb
+    lib/upsert/merge_function/sqlite3.rb
+    lib/upsert/row.rb
+    lib/upsert/version.rb
+    spec/active_record_upsert_spec.rb
+    spec/binary_spec.rb
+    spec/correctness_spec.rb
+    spec/database_functions_spec.rb
+    spec/database_spec.rb
+    spec/hstore_spec.rb
+    spec/jruby_spec.rb
+    spec/logger_spec.rb
+    spec/misc/get_postgres_reserved_words.rb
+    spec/misc/mysql_reserved.txt
+    spec/misc/pg_reserved.txt
+    spec/multibyte_spec.rb
+    spec/postgresql_spec.rb
+    spec/precision_spec.rb
+    spec/reserved_words_spec.rb
+    spec/sequel_spec.rb
+    spec/spec_helper.rb
+    spec/speed_spec.rb
+    spec/threaded_spec.rb
+    spec/timezones_spec.rb
+    spec/type_safety_spec.rb
+    travis/install_postgres.sh
+    travis/run_docker_db.sh
+    travis/tune_mysql.sh
+    upsert-java.gemspec
+    upsert.gemspec
+  ]
+  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
+  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
+  gem.name          = "upsert"
+  gem.require_paths = ["lib"]
+  gem.version       = Upsert::VERSION
+
+  # NOTE: no runtime dependencies!
+
+  gem.add_development_dependency 'rspec-core'
+  gem.add_development_dependency 'rspec-expectations'
+  gem.add_development_dependency 'rspec-mocks'
+
+  gem.add_development_dependency 'activerecord', '~> 5'
+  gem.add_development_dependency 'yard'
+  gem.add_development_dependency 'pry'
+  gem.add_development_dependency 'pg-hstore', ">=1.1.3"
+  gem.add_development_dependency 'sequel'
+  gem.add_development_dependency 'rake', '~> 10'
+
+  gem.add_development_dependency "activerecord-import", "~> 1" # 0.12 and up were failing
+  gem.add_development_dependency "faker"
+end

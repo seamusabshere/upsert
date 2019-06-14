@@ -11,11 +11,11 @@ describe Upsert do
 
     let(:db) do
       if RUBY_PLATFORM == "java"
-      Sequel.connect(
-        RawConnectionFactory::CONFIG,
-        :user => RawConnectionFactory::CURRENT_USER,
-        :password => RawConnectionFactory::PASSWORD
-      )
+        Sequel.connect(
+          RawConnectionFactory::CONFIG,
+          :user => RawConnectionFactory::CURRENT_USER,
+          :password => RawConnectionFactory::PASSWORD
+        )
       else
         Sequel.connect(config.merge(
           :user => config.values_at(:user, :username).compact.first,
