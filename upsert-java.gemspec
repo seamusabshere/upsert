@@ -1,4 +1,4 @@
-Gem::Specification.load(File.expand_path("upsert.gemspec.common", __dir__)).tap do |gem|
+Gem::Specification.load(File.expand_path("upsert.gemspec.common", __dir__)).dup.tap do |gem|
   gem.instance_exec do
     self.name = "upsert-java"
     add_development_dependency "jruby-openssl"
