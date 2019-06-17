@@ -60,5 +60,4 @@ before_install:
   - ./travis/run_docker_db.sh
   - bundle --version
   - gem --version
-# https://markmail.org/message/qb32j3ybhhu7bfge#query:+page:1+mid:qb32j3ybhhu7bfge+state:results
-script: ./travis/run_specs.rb
+script: sh ./travis/run_specs.rb
