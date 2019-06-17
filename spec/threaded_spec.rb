@@ -6,14 +6,14 @@ describe Upsert do
       upsert = Upsert.new $conn, :pets
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         ts = []
-        20.times do
-          ts << Thread.new do
+        10.times do
+          ts << Thread.new {
             ActiveRecord::Base.connection_pool.with_connection do |conn|
-              sleep 0.1
-              upsert.row({:name => 'Jerry'}, :gender => 'male')
-              upsert.row({:name => 'Jerry'}, :gender => 'neutered')
+              sleep 0.2
+              upsert.row({name: "Jerry"}, gender: "male")
+              upsert.row({name: "Jerry"}, gender: "neutered")
             end
-          end
+          }
         end
         ts.each { |t| t.join(3) }
       end
@@ -22,33 +22,33 @@ describe Upsert do
       assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
         Upsert.batch($conn, :pets) do |upsert|
           ts = []
-          20.times do
-            ts << Thread.new do
+          10.times do
+            ts << Thread.new {
               ActiveRecord::Base.connection_pool.with_connection do |conn|
-                sleep 0.1
-                upsert.row({:name => 'Jerry'}, :gender => 'male')
-                upsert.row({:name => 'Jerry'}, :gender => 'neutered')
+                sleep 0.2
+                upsert.row({name: "Jerry"}, gender: "male")
+                upsert.row({name: "Jerry"}, gender: "neutered")
               end
-            end
+            }
           end
           ts.each { |t| t.join(3) }
         end
       end
     end
 
-    it "is safe to use with the entire block inside the thread" do
-      assert_creates(Pet, [{:name => 'Jerry', :gender => 'neutered'}]) do
+    it "is safe to use with the entire block instead the thread" do
+      assert_creates(Pet, [{name: "Jerry", gender: "neutered"}]) do
         ts = []
-        20.times do
-          ts << Thread.new do
+        10.times do
+          ts << Thread.new {
             ActiveRecord::Base.connection_pool.with_connection do |conn|
               sleep 0.1
               Upsert.batch(conn, :pets) do |upsert|
-                upsert.row({:name => 'Jerry'}, :gender => 'male')
-                upsert.row({:name => 'Jerry'}, :gender => 'neutered')
+                upsert.row({name: "Jerry"}, gender: "male")
+                upsert.row({name: "Jerry"}, gender: "neutered")
               end
             end
-          end
+          }
         end
         ts.each { |t| t.join(3) }
       end

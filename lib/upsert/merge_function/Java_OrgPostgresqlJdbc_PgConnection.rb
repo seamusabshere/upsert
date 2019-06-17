@@ -3,7 +3,7 @@ require 'upsert/merge_function/postgresql'
 class Upsert
   class MergeFunction
     # @private
-    class Java_OrgPostgresqlJdbc4_Jdbc4Connection < MergeFunction
+    class Java_OrgPostgresqlJdbc_PgConnection < MergeFunction
       ERROR_CLASS = org.postgresql.util.PSQLException
       include Postgresql
 

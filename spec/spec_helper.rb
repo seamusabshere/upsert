@@ -5,39 +5,13 @@ Bundler.require(:default, :development)
 # require 'pry'
 require 'shellwords'
 
-require 'active_record'
+require "sequel"
+Sequel.default_timezone = :utc
+Sequel.extension :migration
+
+require "active_record"
+require "activerecord-import"
 ActiveRecord::Base.default_timezone = :utc
-
-module ActiveRecordInlineSchema::ActiveRecordClassMethods
-  def reset_model!
-    inline_schema_config.instance_variable_set(:@model, self)
-    inline_schema_config.send(:safe_reset_column_information)
-    inline_schema_config.instance_variable_set(:@ideal_indexes, ::Set.new(
-      inline_schema_config.ideal_indexes.map do |idx|
-        ActiveRecordInlineSchema::Config::Index.new(
-          self.inline_schema_config,
-          idx.column_name,
-          idx.initial_options
-        )
-      end
-    ))
-  end
-
-  def inline_schema_config
-    return @inline_schema_config if defined?(@inline_schema_config)
-    MUTEX.synchronize do
-      if superclass != ::ActiveRecord::Base
-        @inline_schema_config = base_class.inline_schema_config.dup
-      else
-        @inline_schema_config = ::ActiveRecordInlineSchema::Config.new self
-      end
-    end
-  end
-end
-
-require 'active_record_inline_schema'
-
-require 'activerecord-import' if RUBY_VERSION >= '1.9'
 
 ENV['DB'] ||= 'mysql'
 ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/
@@ -51,6 +25,7 @@ class RawConnectionFactory
   HOST = ENV['DB_HOST'] || '127.0.0.1'
 
   case ENV['DB']
+
   when 'postgresql'
     Kernel.system %{ dropdb upsert_test }
     Kernel.system %{ createdb upsert_test }
@@ -73,6 +48,7 @@ class RawConnectionFactory
       end
     end
     ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
+    require "activerecord-import/active_record/adapters/postgresql_adapter"
 
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
@@ -98,13 +74,14 @@ class RawConnectionFactory
     end
     ActiveRecord::Base.establish_connection(
       :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
-      :username => CURRENT_USER,
+      :user => CURRENT_USER,
       :password => PASSWORD,
       :host => HOST,
       :database => DATABASE,
       :encoding => 'utf8mb4'
     )
     ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
+    require "activerecord-import/active_record/adapters/mysql2_adapter"
 
   when 'sqlite3'
     CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
@@ -123,6 +100,7 @@ class RawConnectionFactory
     end
     ActiveRecord::Base.establish_connection CONFIG
     ActiveRecord::Base.connection.execute "ATTACH DATABASE ':memory:' AS #{DATABASE}2"
+    require "activerecord-import/active_record/adapters/sqlite3_adapter"
 
   when 'postgres'
     raise "please use DB=postgresql NOT postgres"
@@ -131,6 +109,18 @@ class RawConnectionFactory
     raise "not supported"
   end
 end
+
+config = ActiveRecord::Base.connection.instance_variable_get(:@config)
+config[:adapter] = case config[:adapter]
+  when "postgresql" then "postgres"
+  else config[:adapter]
+end
+params = if RUBY_PLATFORM == "java"
+  RawConnectionFactory::CONFIG
+else
+  config.slice(:adapter, :host, :database, :username, :password).merge(:user => (config[:user] || config[:username]))
+end
+DB = Sequel.connect(params)
 
 $conn_factory = RawConnectionFactory.new
 $conn = $conn_factory.new_connection
@@ -146,50 +136,71 @@ else
   ActiveRecord::Base.logger.level = Logger::WARN
 end
 
-class Pet < ActiveRecord::Base
-  col :name, limit: 191 # utf8mb4 in mysql requirement
-  col :gender
-  col :spiel
-  col :good, :type => :boolean
-  col :lovability, :type => :float
-  col :morning_walk_time, :type => :datetime
-  col :zipped_biography, :type => :binary
-  col :tag_number, :type => :integer
-  col :big_tag_number, :type => :bigint
-  col :birthday, :type => :date
-  col :home_address, :type => :text
-  if ENV['DB'] == 'postgresql'
-    col :tsntz, :type => 'timestamp without time zone'
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+  begin
+    DB << "ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name"
+  rescue => e
+    puts e.inspect
   end
-  add_index :name, :unique => true if UNIQUE_CONSTRAINT
 end
 
-# if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-#   begin
-#     const.connection.execute("ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name")
-#   rescue => e
-#     puts e.inspect
-#   end
-# end
+class InternalMigration
+  DEFINITIONS = {
+    pets: ->(db) {
+      primary_key :id
+      String :name, size: 191, index: { unique: true }
+      String :gender
+      String :spiel
+      TrueClass :good
+      BigDecimal :lovability, size: [30, 15] # 15 integer digits and 15 fractional digits
+      DateTime :morning_walk_time
+      File :zipped_biography
+      Integer :tag_number
+      Bignum :big_tag_number
+      Date :birthday
+      String :home_address, text: true
 
-Pet.auto_upgrade!
-
-# if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
-#   Pet.connection.execute("ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)")
-# end
-
-class Task < ActiveRecord::Base
-  col :name
-  col :created_at, :type => :datetime
-  col :created_on, :type => :datetime
+      if db.database_type == :postgres
+        column :tsntz, "timestamp without time zone"
+      end
+    },
+    tasks: ->(db) {
+      primary_key :id
+      String :name
+      DateTime :created_at
+      DateTime :created_on
+    },
+    people: ->(db) {
+      primary_key :id
+      String :"First Name"
+      String :"Last Name"
+    },
+    alphabets: ->(db) {
+      ("a".."z").each do |col|
+        Integer "the_letter_#{col}".to_sym
+      end
+    }
+  }
 end
-Task.auto_upgrade!
 
-class Person < ActiveRecord::Base
-  col :"First Name"
-  col :"Last Name"
+Sequel.migration do
+  change do
+    db = self
+    InternalMigration::DEFINITIONS.each do |table, blk|
+      create_table?(table) do
+        instance_exec(db, &blk)
+      end
+    end
+  end
+end.apply(DB, :up)
+
+if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+  DB << "ALTER TABLE pets ADD CONSTRAINT unique_name UNIQUE (name)"
 end
-Person.auto_upgrade!
+
+%i[Pet Task Person Alphabet].each do |name|
+  Object.const_set(name, Class.new(ActiveRecord::Base))
+end
 
 require 'zlib'
 require 'benchmark'
@@ -222,7 +233,7 @@ module SpecHelper
           names.choice
         end
         setter = {
-          :lovability => BigDecimal.new(rand(1e11).to_s, 2),
+          :lovability => BigDecimal(rand(1e11).to_s, 2),
           :tag_number => rand(1e8),
           :spiel => Faker::Lorem.sentences.join,
           :good => true,
@@ -319,18 +330,27 @@ module SpecHelper
     # AR's support for quoting of schema and table names is horrendous
     # schema.table and schema.`table` are considiered different names on MySQL, but
     # schema.table and schema."table" are correctly considered the same on Postgres
+    sequel_table_name = new_table_name.map(&:to_sym)
     new_table_name[-1] = u.connection.quote_ident(new_table_name[-1]) if new_table_name[-1].to_s.index('.')
     new_table_name = new_table_name.join('.')
+
+    Sequel.migration do
+      change do
+        db = self
+        puts "Creating #{sequel_table_name}"
+        create_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first) do
+          instance_exec(db, &InternalMigration::DEFINITIONS[klass.table_name.to_sym])
+        end
+      end
+    end.apply(DB, :up)
+
     cls = Class.new(klass)
     cls.class_eval do
       self.table_name = new_table_name
       def self.quoted_table_name
         table_name
       end
-
-      reset_model!
     end
-    cls.auto_upgrade!
     cls
   end
 end

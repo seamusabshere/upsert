@@ -40,7 +40,8 @@ class Upsert
         if hstore?
           'text'
         else
-          super
+          # JDBC uses prepared statements and properly sends date objects (which are otherwise escaped)
+          RUBY_PLATFORM == "java" ? sql_type : super
         end
       end
 

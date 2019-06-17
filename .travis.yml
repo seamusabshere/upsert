@@ -13,24 +13,23 @@ addons:
       - mysql-client-core-5.6
       - mysql-client-5.6
 rvm:
+  - 2.6
+  - 2.5
+  - 2.4
   - 2.3
   - 2.2
-  - 2.1
-  - 1.9.3
-  - rbx
-  - jruby-1.7
-  - jruby-9
+  - jruby-9.1.14
 matrix:
   allow_failures:
     - rvm: rbx
 env:
+  - DB=mysql DB_USER=root
   - DB=postgresql PGVERSION=9.4
   - DB=postgresql PGVERSION=9.5
   - DB=postgresql PGVERSION=10.0
   - DB=postgresql PGVERSION=9.4 UNIQUE_CONSTRAINT=true
   - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
   - DB=postgresql PGVERSION=10.0 UNIQUE_CONSTRAINT=true
-  - DB=mysql DB_USER=root
 before_install:
   - if [ "$DB" = 'mysql' ]; then sudo ./travis/tune_mysql.sh; fi
 # Right now the build-script is properly installing Postgres version.  We will need this to test PG 9.6 and up, though

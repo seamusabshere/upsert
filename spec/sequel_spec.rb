@@ -14,7 +14,7 @@ describe Upsert do
       params = if RUBY_PLATFORM == 'java'
                  RawConnectionFactory::CONFIG
                else
-                 config.slice(:adapter, :host, :database, :username, :password).merge(:user => config[:username])
+                 config.slice(:adapter, :host, :database, :username, :password).merge(:user => (config[:user] || config[:username]))
                end
       Sequel.connect(params)
     end
