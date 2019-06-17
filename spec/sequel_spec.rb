@@ -6,6 +6,7 @@ describe Upsert do
     config = ActiveRecord::Base.connection.instance_variable_get(:@config)
     config[:adapter] = case config[:adapter]
                        when 'postgresql' then 'postgres'
+                       when 'sqlite3' then 'sqlite'
                        else config[:adapter]
                        end
 

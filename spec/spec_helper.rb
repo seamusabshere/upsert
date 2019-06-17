@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 require 'bundler/setup'
+Bundler.require(:default, :development)
 
 # require 'pry'
 require 'shellwords'
@@ -29,12 +30,14 @@ class RawConnectionFactory
   when 'postgresql'
     Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} dropdb #{DATABASE} }
     Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} createdb #{DATABASE} }
+    Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} psql -d #{DATABASE} -c 'CREATE SCHEMA #{DATABASE}2' }
     if RUBY_PLATFORM == 'java'
       CONFIG = "jdbc:postgresql://#{DB_HOST}/#{DATABASE}"
       require 'jdbc/postgres'
       # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
       Jdbc::Postgres.load_driver
       # java.sql.DriverManager.register_driver org.postgresql.Driver.new
+      Java::JavaClass.for_name("org.postgresql.Driver")
       def new_connection
         java.sql.DriverManager.get_connection CONFIG, CURRENT_USER, PASSWORD
       end
@@ -58,7 +61,9 @@ class RawConnectionFactory
   when 'mysql'
     password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
     Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
+    Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}2" }
     Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
+    Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE}2 CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'
       CONFIG = "jdbc:mysql://#{DB_HOST}/#{DATABASE}"
       require 'jdbc/mysql'
@@ -102,6 +107,7 @@ class RawConnectionFactory
       end
     end
     ActiveRecord::Base.establish_connection CONFIG
+    ActiveRecord::Base.connection.execute "ATTACH DATABASE ':memory:' AS #{DATABASE}2"
     require "activerecord-import/active_record/adapters/sqlite3_adapter"
 
   when 'postgres'
@@ -158,10 +164,9 @@ if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
   end
 end
 
-Sequel.migration do
-  change do
-    db = self
-    create_table?(:pets) do
+class InternalMigration
+  DEFINITIONS = {
+    pets: ->(db) {
       primary_key :id
       String :name, size: 191, index: { unique: true }
       String :gender
@@ -178,24 +183,32 @@ Sequel.migration do
       if db.database_type == :postgres
         column :tsntz, "timestamp without time zone"
       end
-    end
-
-    create_table?(:tasks) do
+    },
+    tasks: ->(db) {
       primary_key :id
       String :name
       DateTime :created_at
       DateTime :created_on
-    end
-
-    create_table?(:people) do
+    },
+    people: ->(db) {
       primary_key :id
       String :"First Name"
       String :"Last Name"
-    end
-
-    create_table?(:alphabets) do
+    },
+    alphabets: ->(db) {
       ("a".."z").each do |col|
         Integer "the_letter_#{col}".to_sym
+      end
+    }
+  }
+end
+
+Sequel.migration do
+  change do
+    db = self
+    InternalMigration::DEFINITIONS.each do |table, blk|
+      create_table?(table) do
+        instance_exec(db, &blk)
       end
     end
   end
@@ -329,6 +342,36 @@ module SpecHelper
     end
     upsert_time.should be < ar_time
     $stderr.puts "   Upsert was #{((ar_time - upsert_time) / ar_time * 100).round}% faster than #{competition}"
+  end
+
+  def clone_ar_class(klass, table_name)
+    u = Upsert.new $conn, klass.table_name
+    new_table_name = [*table_name].compact
+    # AR's support for quoting of schema and table names is horrendous
+    # schema.table and schema.`table` are considiered different names on MySQL, but
+    # schema.table and schema."table" are correctly considered the same on Postgres
+    sequel_table_name = new_table_name.map(&:to_sym)
+    new_table_name[-1] = u.connection.quote_ident(new_table_name[-1]) if new_table_name[-1].to_s.index('.')
+    new_table_name = new_table_name.join('.')
+
+    Sequel.migration do
+      change do
+        db = self
+        puts "Creating #{sequel_table_name}"
+        create_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first) do
+          instance_exec(db, &InternalMigration::DEFINITIONS[klass.table_name.to_sym])
+        end
+      end
+    end.apply(DB, :up)
+
+    cls = Class.new(klass)
+    cls.class_eval do
+      self.table_name = new_table_name
+      def self.quoted_table_name
+        table_name
+      end
+    end
+    cls
   end
 end
 

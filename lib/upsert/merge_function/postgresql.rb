@@ -153,20 +153,40 @@ class Upsert
         end
       end
 
-      def schema_query
+      def unique_index_columns
+        if table_name.is_a?(Array) && table_name.length > 1
+          schema_argument = '$2'
+          table_name_arguments = table_name
+        else
+          schema_argument = 'ANY(current_schemas(true)::text[])'
+          table_name_arguments = [*table_name]
+        end
+
+        table_name_arguments.reverse!
+
         execute_parameterized(
           %{
-            SELECT array_agg(column_name::text) AS index_columns FROM information_schema.constraint_column_usage
-              JOIN pg_catalog.pg_constraint ON constraint_name::text = conname::text
-              WHERE table_name = $1 AND conrelid = $1::regclass::oid AND contype = 'u'
-              GROUP BY table_catalog, table_name, constraint_name
+            SELECT
+            ARRAY(
+              SELECT pg_get_indexdef(pg_index.indexrelid, k + 1, TRUE)
+              FROM
+                generate_subscripts(pg_index.indkey, 1) AS k
+              ORDER BY k
+            ) AS index_columns
+              FROM pg_index
+              JOIN pg_class AS idx ON idx.oid = pg_index.indexrelid
+              JOIN pg_class AS tbl ON tbl.oid = pg_index.indrelid
+              JOIN pg_namespace ON pg_namespace.oid = idx.relnamespace
+            WHERE pg_index.indisunique IS TRUE AND pg_namespace.nspname = #{schema_argument} AND tbl.relname = $1
           },
-          [table_name]
+          table_name_arguments
         )
       end
 
       def pg_native(row)
         bind_setter_values = row.setter.values.map { |v| connection.bind_value v }
+        # TODO: Is this needed?
+        row_syntax = server_version >= 100 ? "ROW" : ""
 
         upsert_sql = %{
           INSERT INTO #{quoted_table_name} (#{quoted_setter_names.join(',')})
