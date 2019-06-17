@@ -48,7 +48,7 @@ class RawConnectionFactory
     end
     ActiveRecord::Base.establish_connection(
       :hostaddr => DB_HOST,
-      :adapter => RUBY_PLATFORM == 'java' ? 'jdbcpostgresql' : 'postgresql',
+      :adapter => 'postgresql'
       :dbname => DATABASE,
       :username => CURRENT_USER,
       :password => PASSWORD
@@ -76,7 +76,7 @@ class RawConnectionFactory
       end
     end
     ActiveRecord::Base.establish_connection(
-      :adapter => RUBY_PLATFORM == 'java' ? 'jdbcmysql' : 'mysql2',
+      :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
       :username => CURRENT_USER,
       :password => PASSWORD,
       :host => DB_HOST,
