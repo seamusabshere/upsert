@@ -2,6 +2,16 @@ class Upsert
   class MergeFunction
     # @private
     module Sqlite3
+      def self.included(klass)
+        klass.extend ClassMethods
+      end
+
+      module ClassMethods
+        def clear(*)
+          # not necessary
+        end
+      end
+
       attr_reader :quoted_setter_names
       attr_reader :quoted_update_names
       attr_reader :quoted_selector_names

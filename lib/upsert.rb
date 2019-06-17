@@ -37,6 +37,31 @@ class Upsert
       end
     end
 
+    def mutex_for_row(upsert, row)
+      retrieve_mutex(upsert.table_name, row.selector.keys)
+    end
+
+    def mutex_for_function(upsert, row)
+      retrieve_mutex(upsert.table_name, row.selector.keys, row.setter.keys)
+    end
+
+    # TODO: Rewrite this to use the thread_safe gem, perhaps?
+    def retrieve_mutex(*args)
+      # ||= isn't an atomic operation
+      MUTEX_FOR_PERFORM.synchronize do
+        @mutex_cache ||= {}
+      end
+
+      @mutex_cache.fetch(args.flatten.join('::')) do |k|
+        MUTEX_FOR_PERFORM.synchronize do
+          # We still need the ||= because this block could have
+          # theoretically been entered simultaneously by two threads
+          # but the actual assignment is protected by the mutex
+          @mutex_cache[k] ||= Mutex.new
+        end
+      end
+    end
+
     # @param [Mysql2::Client,Sqlite3::Database,PG::Connection,#metal] connection A supported database connection.
     #
     # Clear any database functions that may have been created.
@@ -185,7 +210,7 @@ class Upsert
   # @param [Hash] options
   # @option options [TrueClass,FalseClass] :assume_function_exists (true) Assume the function has already been defined correctly by another process.
   def initialize(connection, table_name, options = {})
-    @table_name = table_name.to_s
+    @table_name = self.class.normalize_table_name(table_name)
     metal = Upsert.metal connection
     @flavor = Upsert.flavor metal
     @adapter = Upsert.adapter metal
@@ -218,8 +243,8 @@ class Upsert
   #   upsert.row({:name => 'Jerry'}, :breed => 'beagle')
   #   upsert.row({:name => 'Pierre'}, :breed => 'tabby')
   def row(selector, setter = {}, options = nil)
-    @row_mutex.synchronize do
-      row_object = Row.new(selector, setter, options)
+    row_object = Row.new(selector, setter, options)
+    self.class.mutex_for_row(self, row_object).synchronize do
       merge_function(row_object).execute(row_object)
       nil
     end
@@ -232,7 +257,7 @@ class Upsert
 
   def merge_function(row)
     cache_key = [row.selector.keys, row.setter.keys]
-    @merge_function_mutex.synchronize do
+    self.class.mutex_for_function(self, row).synchronize do
       @merge_function_cache[cache_key] ||=
         merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)
     end
@@ -240,11 +265,20 @@ class Upsert
 
   # @private
   def quoted_table_name
-    @quoted_table_name ||= connection.quote_ident table_name
+    @quoted_table_name ||= ([*table_name].map { |t| connection.quote_ident(t) }.join("."))
   end
 
   # @private
   def column_definitions
-    @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, table_name
+    @column_definitions ||= ColumnDefinition.const_get(flavor).all connection, quoted_table_name
+  end
+
+  # @private
+  def self.normalize_table_name(table_name)
+    if defined?(Sequel) && table_name.is_a?(::Sequel::SQL::QualifiedIdentifier)
+      [table_name.table, table_name.column]
+    else
+      [*table_name].map(&:to_s)
+    end
   end
 end

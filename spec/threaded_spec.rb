@@ -42,7 +42,7 @@ describe Upsert do
         10.times do
           ts << Thread.new {
             ActiveRecord::Base.connection_pool.with_connection do |conn|
-              sleep 0.2
+              sleep 0.1
               Upsert.batch(conn, :pets) do |upsert|
                 upsert.row({name: "Jerry"}, gender: "male")
                 upsert.row({name: "Jerry"}, gender: "neutered")
