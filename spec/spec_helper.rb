@@ -48,7 +48,7 @@ class RawConnectionFactory
     end
     ActiveRecord::Base.establish_connection(
       :hostaddr => DB_HOST,
-      :adapter => 'postgresql',
+      :adapter => RUBY_PLATFORM == 'java' ? 'jdbcpostgresql' : 'postgresql',
       :dbname => DATABASE,
       :username => CURRENT_USER,
       :password => PASSWORD
@@ -76,8 +76,8 @@ class RawConnectionFactory
       end
     end
     ActiveRecord::Base.establish_connection(
-      :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
-      :user => CURRENT_USER,
+      :adapter => RUBY_PLATFORM == 'java' ? 'jdbcmysql' : 'mysql2',
+      :username => CURRENT_USER,
       :password => PASSWORD,
       :host => DB_HOST,
       :database => DATABASE,
@@ -122,20 +122,18 @@ params = if RUBY_PLATFORM == "java"
 else
   config.merge(
     :user => config.values_at(:user, :username).compact.first,
-    :host => config.values_at(:host, :hostaddr).compact.first
+    :host => config.values_at(:host, :hostaddr).compact.first,
+    :database => config.values_at(:database, :dbname).compact.first
   )
 end
 DB = if RUBY_PLATFORM == "java"
   Sequel.connect(
-    RawConnectionFactory::CONFIG,
+    params,
     :user => RawConnectionFactory::CURRENT_USER,
     :password => RawConnectionFactory::PASSWORD
   )
 else
-  Sequel.connect(config.merge(
-    :user => config.values_at(:user, :username).compact.first,
-    :host => config.values_at(:host, :hostaddr).compact.first
-  ))
+  Sequel.connect(params)
 end
 
 $conn_factory = RawConnectionFactory.new

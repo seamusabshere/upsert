@@ -20,6 +20,7 @@ describe Upsert do
         Sequel.connect(config.merge(
           :user => config.values_at(:user, :username).compact.first,
           :host => config.values_at(:host, :hostaddr).compact.first
+          :database => config.values_at(:database, :dbname).compact.first
         ))
       end
     end
