@@ -48,7 +48,7 @@ class RawConnectionFactory
     end
     ActiveRecord::Base.establish_connection(
       :hostaddr => DB_HOST,
-      :adapter => 'postgresql'
+      :adapter => 'postgresql',
       :dbname => DATABASE,
       :username => CURRENT_USER,
       :password => PASSWORD
