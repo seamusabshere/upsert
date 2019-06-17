@@ -60,4 +60,4 @@ before_install:
   - ./travis/run_docker_db.sh
   - bundle --version
   - gem --version
-script: bash ./travis/run_specs.rb
+script: ./travis/run_specs.sh
