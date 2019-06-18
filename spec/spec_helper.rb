@@ -156,7 +156,7 @@ else
   ActiveRecord::Base.logger.level = Logger::WARN
 end
 
-if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+if ENV['DB'] == 'postgresql'
   begin
     DB << "ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name"
   rescue => e
@@ -168,7 +168,7 @@ class InternalMigration
   DEFINITIONS = {
     pets: ->(db) {
       primary_key :id
-      String :name, size: 191, index: { unique: true }
+      String :name, { size: 191 }.merge(ENV["DB"] == "mysql" ? { index: { unique: true } } : {})
       String :gender
       String :spiel
       TrueClass :good
