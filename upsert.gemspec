@@ -5,5 +5,7 @@ Gem::Specification.load(File.expand_path("upsert.gemspec.common", __dir__)).dup.
     add_development_dependency "sqlite3"
     add_development_dependency "mysql2", "~> 0.5"
     add_development_dependency "pg", "~> 1.1"
+
+    add_development_dependency "pry-byebug"
   end
 end
