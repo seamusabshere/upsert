@@ -357,7 +357,6 @@ module SpecHelper
     Sequel.migration do
       change do
         db = self
-        puts "Creating #{sequel_table_name}"
         create_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first) do
           instance_exec(db, &InternalMigration::DEFINITIONS[klass.table_name.to_sym])
         end
