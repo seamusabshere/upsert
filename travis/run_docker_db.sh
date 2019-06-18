@@ -6,6 +6,7 @@ case "$DB" in
         -e POSTGRES_USER=$DB_USER -e POSTGRES_PASSWORD=$DB_PASSWORD -e POSTGRES_DB=$DB_NAME \
         -p 5432:5432 -d \
         $DB_VERSION
+      sleep 10
     ;;
   mysql)
       docker run --network upsert_test --ip 172.25.0.2 --tmpfs /var/lib/mysql:rw --rm --name db_server \
