@@ -30,6 +30,7 @@ class RawConnectionFactory
   when 'postgresql'
     Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} dropdb #{DATABASE} }
     Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} createdb #{DATABASE} }
+    Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} psql -d #{DATABASE} -c 'DROP SCHEMA IF EXISTS #{DATABASE}2 CASCADE' }
     Kernel.system %{ PGHOST=#{DB_HOST} PGUSER=#{CURRENT_USER} PGPASSWORD=#{PASSWORD} psql -d #{DATABASE} -c 'CREATE SCHEMA #{DATABASE}2' }
     if RUBY_PLATFORM == 'java'
       CONFIG = "jdbc:postgresql://#{DB_HOST}/#{DATABASE}"
@@ -168,7 +169,7 @@ class InternalMigration
   DEFINITIONS = {
     pets: ->(db) {
       primary_key :id
-      String :name, { size: 191 }.merge(ENV["DB"] == "mysql" ? { index: { unique: true } } : {})
+      String :name, { size: 191 }.merge(ENV["DB"] == "mysql" || UNIQUE_CONSTRAINT ? { index: { unique: true } } : {})
       String :gender
       String :spiel
       TrueClass :good
@@ -367,7 +368,7 @@ module SpecHelper
     cls.class_eval do
       self.table_name = new_table_name
       def self.quoted_table_name
-        table_name
+        new_table_name
       end
     end
     cls

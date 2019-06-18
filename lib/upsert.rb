@@ -265,7 +265,7 @@ class Upsert
 
   # @private
   def quoted_table_name
-    @quoted_table_name ||= ([*table_name].map { |t| connection.quote_ident(t) }.join("."))
+    @quoted_table_name ||= table_name.map { |t| connection.quote_ident(t) }.join(".")
   end
 
   # @private
