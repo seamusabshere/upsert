@@ -1,3 +1,5 @@
+docker network create -d bridge --subnet 	172.25.0.0/16 --gateway 172.25.0.1 upsert_test
+
 case "$DB" in
   postgresql)
       docker run --tmpfs /var/lib/postgresql/data:rw --rm --name db_server \
@@ -6,10 +8,12 @@ case "$DB" in
         $DB_VERSION
     ;;
   mysql)
-      docker run --tmpfs /var/lib/mysql:rw --rm --name db_server \
+      docker run --network upsert_test --ip 172.25.0.2 --tmpfs /var/lib/mysql:rw --rm --name db_server \
         -e MYSQL_ROOT_PASSWORD=root -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME \
         -p 3306:3306 -d \
         $DB_VERSION \
         --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      sleep 10
+      docker run --network upsert_test --rm $DB_VERSION mysql -h172.25.0.2 -uroot -proot -e "GRANT ALL ON *.* TO '$DB_USER'"
     ;;
 esac
