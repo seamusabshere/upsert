@@ -66,11 +66,12 @@ class RawConnectionFactory
     Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     Kernel.system %{ mysql -h #{DB_HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE}2 CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
     if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:mysql://#{DB_HOST}/#{DATABASE}"
+      CONFIG = "jdbc:mysql://#{DB_HOST}/#{DATABASE}?useSSL=false&allowPublicKeyRetrieval=true"
       require 'jdbc/mysql'
       Jdbc::MySQL.load_driver
       # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
       def new_connection
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("+00:00"))
         java.sql.DriverManager.get_connection CONFIG, CURRENT_USER, PASSWORD
       end
     else
@@ -87,7 +88,10 @@ class RawConnectionFactory
       :password => PASSWORD,
       :host => DB_HOST,
       :database => DATABASE,
-      :encoding => 'utf8mb4'
+      :encoding => 'utf8mb4',
+      :properties => {
+        :allowPublicKeyRetrieval => true
+      }
     )
     ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
     require "activerecord-import/active_record/adapters/mysql2_adapter"

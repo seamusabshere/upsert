@@ -17,9 +17,11 @@ class Upsert
 
       def bind_value(v)
         case v
-        when Time, DateTime
-          # mysql doesn't like it when you send timezone to a datetime
-          Upsert.utc_iso8601 v, false
+        when DateTime, Time
+          date = v.utc
+          java.time.LocalDateTime.of(date.year, date.month, date.day, date.hour, date.min, date.sec, date.nsec)
+        when Date
+          java.time.LocalDate.of(v.year, v.month, v.day)
         else
           super
         end
