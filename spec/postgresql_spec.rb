@@ -20,7 +20,7 @@ describe Upsert do
 
   if version >= 90500 && UNIQUE_CONSTRAINT
     it "works with a schema" do
-      table_name = ["#{RawConnectionFactory::DATABASE}2", :pets2]
+      table_name = ["#{RawConnectionFactory::DB_NAME}2", :pets2]
       cls = clone_ar_class(Pet, table_name)
       upsert = Upsert.new $conn, table_name
       upsert.row({:name => 'Jerry'}, {:gender => 'male'})

@@ -14,8 +14,8 @@ describe Upsert do
       if RUBY_PLATFORM == "java"
         Sequel.connect(
           RawConnectionFactory::CONFIG,
-          :user => RawConnectionFactory::CURRENT_USER,
-          :password => RawConnectionFactory::PASSWORD
+          :user => RawConnectionFactory::DB_USER,
+          :password => RawConnectionFactory::DB_PASSWORD
         )
       else
         Sequel.connect(config.merge(
