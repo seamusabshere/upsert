@@ -10,3 +10,7 @@ when "java"
 else
   gem "ffi"
 end
+
+group "test" do
+  gem "testmetrics_rspec"
+end

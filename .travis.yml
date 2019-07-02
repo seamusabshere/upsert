@@ -1,41 +1,63 @@
-sudo: required
-dist: trusty
+dist: xenial
 language: ruby
-global:
-  - USERNAME=travis
-  - PASSWORD=
-addons:
-  apt:
-    packages:
-      # https://github.com/travis-ci/docs-travis-ci-com/pull/743
-      - haveged
-      - mysql-server-5.6
-      - mysql-client-core-5.6
-      - mysql-client-5.6
+cache: bundler
+services:
+  - docker
 rvm:
   - 2.6
   - 2.5
   - 2.4
   - 2.3
   - 2.2
-  - jruby-9.1.14
-matrix:
-  allow_failures:
-    - rvm: rbx
+  - jruby-9.1.14.0
+  - jruby-9.1.17.0
+  - jruby-9.2.7.0
 env:
-  - DB=mysql DB_USER=root
-  - DB=postgresql PGVERSION=9.4
-  - DB=postgresql PGVERSION=9.5
-  - DB=postgresql PGVERSION=10.0
-  - DB=postgresql PGVERSION=9.4 UNIQUE_CONSTRAINT=true
-  - DB=postgresql PGVERSION=9.5 UNIQUE_CONSTRAINT=true
-  - DB=postgresql PGVERSION=10.0 UNIQUE_CONSTRAINT=true
+  global:
+  - USERNAME=travis
+  - PASSWORD=
+  - DB_USER=upsert_test
+  - DB_PASSWORD=upsert_test
+  - DB_NAME=upsert_test
+  matrix:
+    - DB=postgresql DB_VERSION=postgres:9.4
+    - DB=postgresql DB_VERSION=postgres:9.5
+    - DB=postgresql DB_VERSION=postgres:9.6
+    - DB=postgresql DB_VERSION=postgres:10
+    - DB=postgresql DB_VERSION=postgres:11
+    - DB=postgresql DB_VERSION=postgres:12
+    - DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:9.6 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:10 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:11 UNIQUE_CONSTRAINT=true
+    - DB=postgresql DB_VERSION=postgres:12 UNIQUE_CONSTRAINT=true
+    - DB=mysql DB_VERSION=mysql:5.6
+    - DB=mysql DB_VERSION=mysql:5.7
+    - DB=mysql DB_VERSION=mysql:8
+matrix:
+  exclude:
+    - rvm: 2.6
+      env: DB=postgresql DB_VERSION=postgres:9.4
+    - rvm: 2.6
+      env: DB=postgresql DB_VERSION=postgres:9.5
+    - rvm: 2.6
+      env: DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
+    - rvm: 2.6
+      env: DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
+    - rvm: jruby-9.2.7
+      env: DB=postgresql DB_VERSION=postgres:9.4
+    - rvm: jruby-9.2.7
+      env: DB=postgresql DB_VERSION=postgres:9.5
+    - rvm: jruby-9.2.7
+      env: DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
+    - rvm: jruby-9.2.7
+      env: DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
+  allow_failures:
+    - env: DB=postgresql DB_VERSION=postgres:12
+    - env: DB=postgresql DB_VERSION=postgres:12 UNIQUE_CONSTRAINT=true
 before_install:
-  - if [ "$DB" = 'mysql' ]; then sudo ./travis/tune_mysql.sh; fi
-# Right now the build-script is properly installing Postgres version.  We will need this to test PG 9.6 and up, though
-#  - if [ "$DB" = 'postgresql' ]; then sudo ./travis/install_postgres.sh; fi
-  - gem update --system
-  - gem update bundler
+  - ./travis/run_docker_db.sh
   - bundle --version
   - gem --version
-script: bundle exec rake spec
+script: ./travis/run_specs.sh

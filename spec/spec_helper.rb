@@ -2,9 +2,7 @@
 require 'bundler/setup'
 Bundler.require(:default, :development)
 
-# require 'pry'
 require 'shellwords'
-
 require "sequel"
 Sequel.default_timezone = :utc
 Sequel.extension :migration
@@ -13,102 +11,140 @@ require "active_record"
 require "activerecord-import"
 ActiveRecord::Base.default_timezone = :utc
 
-ENV['DB'] ||= 'mysql'
-ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/
+raise "A DB value is required" unless ENV["DB"]
+ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/i
 UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
 
+raise "please use DB=postgresql NOT postgres" if ENV["DB"] == "postgres"
 
 class RawConnectionFactory
-  DATABASE = 'upsert_test'
-  CURRENT_USER = (ENV['DB_USER'] || `whoami`.chomp)
-  PASSWORD = ENV['DB_PASSWORD']
-  HOST = ENV['DB_HOST'] || '127.0.0.1'
+  DB_NAME = ENV['DB_NAME'] || 'upsert_test'
+  # You *need* to specific DB_USER on certain combinations of JRuby/JDK as spawning a shell
+  # has some oddities
+  DB_USER = (ENV['DB_USER'] || `whoami`.chomp).to_s
+  raise "A DB_USER value is required" if DB_USER.empty?
+  DB_PASSWORD = ENV['DB_PASSWORD']
+  DB_HOST = ENV['DB_HOST'] || '127.0.0.1'
 
-  case ENV['DB']
-
-  when 'postgresql'
-    Kernel.system %{ dropdb upsert_test }
-    Kernel.system %{ createdb upsert_test }
-    Kernel.system %{ psql -d upsert_test -c 'CREATE SCHEMA #{DATABASE}2' }
-    if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:postgresql://localhost/#{DATABASE}?user=#{CURRENT_USER}"
-      require 'jdbc/postgres'
-      # http://thesymanual.wordpress.com/2011/02/21/connecting-jruby-to-postgresql-with-jdbc-postgre-api/
-      Jdbc::Postgres.load_driver
-      # java.sql.DriverManager.register_driver org.postgresql.Driver.new
-      Java::JavaClass.for_name("org.postgresql.Driver")
-      def new_connection
-        java.sql.DriverManager.get_connection CONFIG
-      end
-    else
-      CONFIG = { :dbname => DATABASE }
-      require 'pg'
-      def new_connection
-        PG::Connection.new CONFIG
-      end
-    end
-    ActiveRecord::Base.establish_connection :adapter => 'postgresql', :database => DATABASE, :username => CURRENT_USER
-    require "activerecord-import/active_record/adapters/postgresql_adapter"
-
-  when 'mysql'
-    password_argument = (PASSWORD.nil?) ? "" : "--password=#{Shellwords.escape(PASSWORD)}"
-    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}" }
-    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "DROP DATABASE IF EXISTS #{DATABASE}2" }
-    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE} CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
-    Kernel.system %{ mysql -h #{HOST} -u #{CURRENT_USER} #{password_argument} -e "CREATE DATABASE #{DATABASE}2 CHARSET utf8mb4 COLLATE utf8mb4_general_ci" }
-    if RUBY_PLATFORM == 'java'
-      CONFIG = "jdbc:mysql://#{HOST}/#{DATABASE}?user=#{CURRENT_USER}&password=#{PASSWORD}"
-      require 'jdbc/mysql'
-      Jdbc::MySQL.load_driver
-      # java.sql.DriverManager.register_driver com.mysql.jdbc.Driver.new
-      def new_connection
-        java.sql.DriverManager.get_connection CONFIG
-      end
-    else
-      require 'mysql2'
-      def new_connection
-        config = { :username => CURRENT_USER, :database => DATABASE, :host => HOST, :encoding => 'utf8mb4' }
-        config.merge!(:password => PASSWORD) unless PASSWORD.nil?
-        Mysql2::Client.new config
-      end
-    end
-    ActiveRecord::Base.establish_connection(
-      :adapter => RUBY_PLATFORM == 'java' ? 'mysql' : 'mysql2',
-      :user => CURRENT_USER,
-      :password => PASSWORD,
-      :host => HOST,
-      :database => DATABASE,
-      :encoding => 'utf8mb4'
-    )
-    ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
-    require "activerecord-import/active_record/adapters/mysql2_adapter"
-
-  when 'sqlite3'
-    CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
-    if RUBY_PLATFORM == 'java'
-      # CONFIG = 'jdbc:sqlite://test.sqlite3'
-      require 'jdbc/sqlite3'
-      Jdbc::SQLite3.load_driver
-      def new_connection
-        ActiveRecord::Base.connection.raw_connection.connection
-      end
-    else
-      require 'sqlite3'
-      def new_connection
-        ActiveRecord::Base.connection.raw_connection
-      end
-    end
-    ActiveRecord::Base.establish_connection CONFIG
-    ActiveRecord::Base.connection.execute "ATTACH DATABASE ':memory:' AS #{DATABASE}2"
-    require "activerecord-import/active_record/adapters/sqlite3_adapter"
-
-  when 'postgres'
-    raise "please use DB=postgresql NOT postgres"
-
-  else
-    raise "not supported"
+  def self.db_env
+    @db_env ||= base_params(nil, false).map { |k, v| [":#{k}", v.to_s.empty? ? nil : Shellwords.escape(v)] }.to_h
   end
+
+  def self.adapter_name(adapter = nil)
+    RUBY_PLATFORM != "java" && adapter == "mysql" ? "mysql2" : adapter
+  end
+
+  def self.base_params(adapter = nil, show_additional_params = true)
+    return { adapter: "sqlite3", database: "file::memory:?cache=shared" } if adapter == "sqlite3"
+    {
+      host: DB_HOST,
+      database: DB_NAME,
+      dbname: DB_NAME,
+      username: DB_USER,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      adapter: adapter,
+    }.merge(
+      show_additional_params ? additional_params(adapter) : {}
+    )
+  end
+
+  def self.additional_params(adapter = nil)
+    {
+      "mysql" => { encoding: "utf8mb4" },
+      "mysql2" => { encoding: "utf8mb4" },
+    }.fetch(adapter, {})
+  end
+
+  def self.postgresql_call(string)
+    Kernel.system "PGHOST=#{db_env[":host"]} PGUSER=#{db_env[":user"]} PGPASSWORD=#{db_env[":password"]} #{string.gsub(/:[a-z]+/, db_env)}"
+  end
+
+  def self.mysql_call(string)
+    Kernel.system "mysql -h #{db_env[":host"]} -u #{db_env[":user"]} --password=#{db_env[":password"]} #{string.gsub(/:[a-z]+/, db_env)}"
+  end
+
+  SYSTEM_CALLS = {
+    "postgresql" => [
+      %{ dropdb :dbname },
+      %{ createdb :dbname },
+      %{ psql -d :dbname -c 'DROP SCHEMA IF EXISTS :dbname2 CASCASE' },
+      %{ psql -d :dbname -c 'CREATE SCHEMA :dbname2' },
+    ],
+    "mysql" => [
+      %{ -e "DROP DATABASE IF EXISTS :dbname" },
+      %{ -e "DROP DATABASE IF EXISTS :dbname2" },
+      %{ -e "CREATE DATABASE :dbname CHARSET utf8mb4 COLLATE utf8mb4_general_ci" },
+      %{ -e "CREATE DATABASE :dbname2 CHARSET utf8mb4 COLLATE utf8mb4_general_ci" },
+    ]
+  }.freeze
+
+  REQUIRES = {
+    "mysql" => "mysql2",
+    "postgresql" => "pg",
+    "sqlite3" => "sqlite3",
+    "java-postgresql" => "jdbc/postgres",
+    "java-mysql" => "jdbc/mysql",
+    "java-sqlite3" => "jdbc/sqlite3",
+  }.freeze
+
+  NEW_CONNECTION = {
+    "postgresql" => ->(base_params) { PG::Connection.new(base_params.except(:database, :username, :adapter)) },
+    "mysql" => ->(base_params) { Mysql2::Client.new(base_params) },
+    "sqlite3" => ->(base_params) { ActiveRecord::Base.connection.raw_connection },
+  }
+
+  POST_CONNECTION = {
+    "mysql" => -> { ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci" },
+    "sqlite3" => -> { ActiveRecord::Base.connection.execute "ATTACH DATABASE ':memory:' AS #{DB_NAME}2" },
+  }
+
+  SYSTEM_CALLS.fetch(ENV["DB"], []).each do |str|
+    send("#{ENV["DB"]}_call", str)
+  end
+
+  if RUBY_PLATFORM == 'java'
+    CONFIG = "jdbc:#{ENV["DB"]}://#{DB_HOST}/#{DB_NAME}"
+    require REQUIRES["java-#{ENV["DB"]}"]
+
+    case ENV["DB"]
+    when "postgresql" then Jdbc::Postgres.load_driver
+    when "mysql"      then Jdbc::MySQL.load_driver
+    when "sqlite3"
+      Jdbc::SQLite3.load_driver
+      CONFIG = "jdbc:sqlite::memory:?cache=shared"
+    end
+
+    def new_connection
+      java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("+00:00"))
+      java.sql.DriverManager.get_connection CONFIG, DB_USER, DB_PASSWORD
+    end
+  else
+    case ENV['DB']
+    when "postgresql", "mysql"
+      require REQUIRES[ENV["DB"]]
+      def new_connection
+        NEW_CONNECTION[ENV["DB"]].call(self.class.base_params(ENV["DB"]))
+      end
+    when "sqlite3"
+      require REQUIRES[ENV["DB"]]
+      def new_connection
+        NEW_CONNECTION[ENV["DB"]].call(self.class.base_params(ENV["DB"]))
+      end
+      CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
+
+    end
+  end
+
+  ActiveRecord::Base.establish_connection(
+    base_params(adapter_name(ENV["DB"]))
+  )
+  ari_adapter_name = adapter_name(ENV["DB"]) == "mysql" ? "mysql2" : adapter_name(ENV["DB"])
+  require "activerecord-import/active_record/adapters/#{ari_adapter_name}_adapter"
+  POST_CONNECTION.fetch(ENV["DB"], -> {}).call
 end
+
+raise "not supported" unless RawConnectionFactory.instance_methods.include?(:new_connection)
 
 config = ActiveRecord::Base.connection.instance_variable_get(:@config)
 config[:adapter] = case config[:adapter]
@@ -118,9 +154,21 @@ end
 params = if RUBY_PLATFORM == "java"
   RawConnectionFactory::CONFIG
 else
-  config.slice(:adapter, :host, :database, :username, :password).merge(:user => (config[:user] || config[:username]))
+  config.merge(
+    :user => config.values_at(:user, :username).compact.first,
+    :host => config.values_at(:host, :hostaddr).compact.first,
+    :database => config.values_at(:database, :dbname).compact.first
+  )
 end
-DB = Sequel.connect(params)
+DB = if RUBY_PLATFORM == "java"
+  Sequel.connect(
+    params,
+    :user => RawConnectionFactory::DB_USER,
+    :password => RawConnectionFactory::DB_PASSWORD
+  )
+else
+  Sequel.connect(params)
+end
 
 $conn_factory = RawConnectionFactory.new
 $conn = $conn_factory.new_connection
@@ -136,7 +184,7 @@ else
   ActiveRecord::Base.logger.level = Logger::WARN
 end
 
-if ENV['DB'] == 'postgresql' && UNIQUE_CONSTRAINT
+if ENV['DB'] == 'postgresql'
   begin
     DB << "ALTER TABLE pets DROP CONSTRAINT IF EXISTS unique_name"
   rescue => e
@@ -148,7 +196,7 @@ class InternalMigration
   DEFINITIONS = {
     pets: ->(db) {
       primary_key :id
-      String :name, size: 191, index: { unique: true }
+      String :name, { size: 191 }.merge(ENV["DB"] == "mysql" || UNIQUE_CONSTRAINT ? { index: { unique: true } } : {})
       String :gender
       String :spiel
       TrueClass :good
@@ -337,7 +385,6 @@ module SpecHelper
     Sequel.migration do
       change do
         db = self
-        puts "Creating #{sequel_table_name}"
         create_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first) do
           instance_exec(db, &InternalMigration::DEFINITIONS[klass.table_name.to_sym])
         end
@@ -348,7 +395,7 @@ module SpecHelper
     cls.class_eval do
       self.table_name = new_table_name
       def self.quoted_table_name
-        table_name
+        new_table_name
       end
     end
     cls

@@ -382,6 +382,11 @@ In general, run some upserts and make sure datetimes get persisted like you expe
 
 Per https://github.com/seamusabshere/upsert/issues/23 you might have issues if you try to use transactional fixtures and this library.
 
+##
+Testmetrics - https://www.testmetrics.app/seamusabshere/upsert
+
 ## Copyright
 
-Copyright 2014 Seamus Abshere
+Copyright 2013-2019 Seamus Abshere
+Copyright 2017-2019 Philip Schalm
+Portions Copyright (c) 2019 The JRuby Team

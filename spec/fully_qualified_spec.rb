@@ -9,7 +9,7 @@ describe Upsert do
   end
 
   it "works with a fully qualified name" do
-    table_name = ["#{RawConnectionFactory::DATABASE}2", :pets]
+    table_name = ["#{RawConnectionFactory::DB_NAME}2", :pets]
     cls = clone_ar_class(Pet, table_name)
     upsert = Upsert.new $conn, table_name
     assert_creates(cls, [{:name => 'Jerry', :gender => 'male'}]) do
@@ -29,7 +29,7 @@ describe Upsert do
       end
 
       it "works with a fully qualified name" do
-        table_name = ["#{RawConnectionFactory::DATABASE}2", 'asdf.`grr']
+        table_name = ["#{RawConnectionFactory::DB_NAME}2", 'asdf.`grr']
         cls = clone_ar_class(Pet, table_name)
         upsert = Upsert.new $conn, table_name
         assert_creates(cls, [{:name => 'Jerry', :gender => 'male'}]) do

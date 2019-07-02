@@ -11,12 +11,19 @@ describe Upsert do
                        end
 
     let(:db) do
-      params = if RUBY_PLATFORM == 'java'
-                 RawConnectionFactory::CONFIG
-               else
-                 config.slice(:adapter, :host, :database, :username, :password).merge(:user => (config[:user] || config[:username]))
-               end
-      Sequel.connect(params)
+      if RUBY_PLATFORM == "java"
+        Sequel.connect(
+          RawConnectionFactory::CONFIG,
+          :user => RawConnectionFactory::DB_USER,
+          :password => RawConnectionFactory::DB_PASSWORD
+        )
+      else
+        Sequel.connect(config.merge(
+          :user => config.values_at(:user, :username).compact.first,
+          :host => config.values_at(:host, :hostaddr).compact.first,
+          :database => config.values_at(:database, :dbname).compact.first
+        ))
+      end
     end
 
     it "Doesn't explode on connection" do

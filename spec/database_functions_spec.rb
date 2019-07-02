@@ -1,10 +1,14 @@
 require 'spec_helper'
 require 'stringio'
+require 'upsert/merge_function/postgresql'
+
 describe Upsert do
   describe 'database functions' do
-    version = 'postgresql' == ENV['DB'] ? Pet.connection.select_value("SHOW server_version")[0..2].split('.').join('').to_i : 0
+    version = 'postgresql' == ENV['DB'] ? Upsert::MergeFunction::Postgresql.extract_version(
+      Pet.connection.select_value("SHOW server_version")
+    ) : 0
     before(:each) {
-      skip "Not using DB functions" if 'postgresql' == ENV['DB'] && UNIQUE_CONSTRAINT && version >= 95
+      skip "Not using DB functions" if 'postgresql' == ENV['DB'] && UNIQUE_CONSTRAINT && version >= 90500
     }
     it "does not re-use merge functions across connections" do
       begin

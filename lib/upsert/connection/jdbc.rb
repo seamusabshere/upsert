@@ -4,6 +4,7 @@ class Upsert
     module Jdbc
       # /Users/seamusabshere/.rvm/gems/jruby-head/gems/activerecord-jdbc-adapter-1.2.2.1/src/java/arjdbc/jdbc/RubyJdbcConnection.java
       GETTER = {
+        java.sql.Types::CHAR        => 'getString',
         java.sql.Types::VARCHAR     => 'getString',
         java.sql.Types::OTHER       => 'getString', # ?! i guess unicode text?
         java.sql.Types::BINARY      => 'getBlob',

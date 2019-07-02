@@ -108,14 +108,49 @@ class Upsert
       def use_pg_native?
         return @use_pg_native if defined?(@use_pg_native)
 
-        @use_pg_native = server_version >= 95 && unique_index_on_selector?
+        @use_pg_native = server_version >= 90500 && unique_index_on_selector?
         Upsert.logger.warn "[upsert] WARNING: Not using native PG CONFLICT / UPDATE" unless @use_pg_native
         @use_pg_native
       end
 
       def server_version
-        @server_version ||=
-          controller.connection.execute("SHOW server_version").first["server_version"].split('.')[0..1].join('').to_i
+        @server_version ||= Upsert::MergeFunction::Postgresql.extract_version(
+          controller.connection.execute("SHOW server_version").first["server_version"]
+        )
+      end
+
+      # Extracted from https://github.com/dr-itz/activerecord-jdbc-adapter/blob/master/lib/arjdbc/postgresql/adapter.rb
+      def self.extract_version(version_string)
+        # Use the same versioning format as jdbc-postgresql and libpq
+        # https://github.com/dr-itz/activerecord-jdbc-adapter/commit/fd79756374c62fa9d009995dd1914d780e6a3dbf
+        # https://github.com/postgres/postgres/blob/master/src/interfaces/libpq/fe-exec.c
+        if (match = version_string.match(/([\d\.]*\d).*?/))
+          version = match[1].split('.').map(&:to_i)
+          # PostgreSQL version representation does not have more than 4 digits
+          # From version 10 onwards, PG has changed its versioning policy to
+          # limit it to only 2 digits. i.e. in 10.x, 10 being the major
+          # version and x representing the patch release
+          # Refer to:
+          #   https://www.postgresql.org/support/versioning/
+          #   https://www.postgresql.org/docs/10/static/libpq-status.html -> PQserverVersion()
+          # for more info
+
+          if version.size >= 3
+            (version[0] * 100 + version[1]) * 100 + version[2]
+          elsif version.size == 2
+            if version[0] >= 10
+              version[0] * 100 * 100 + version[1]
+            else
+              (version[0] * 100 + version[1]) * 100
+            end
+          elsif version.size == 1
+            version[0] * 100 * 100
+          else
+            0
+          end
+        else
+          0
+        end
       end
 
       def unique_index_columns
