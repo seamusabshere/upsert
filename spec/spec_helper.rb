@@ -35,7 +35,7 @@ class RawConnectionFactory
   end
 
   def self.base_params(adapter = nil, show_additional_params = true)
-    return { adapter: "sqlite3", database: "file::memory:?cache=shared" } if adapter == "sqlite3"
+    return { :adapter => "sqlite3", :database => "temp.db", cache: "shared" } if adapter == "sqlite3"
     {
       host: DB_HOST,
       database: DB_NAME,
@@ -96,7 +96,7 @@ class RawConnectionFactory
 
   POST_CONNECTION = {
     "mysql" => -> { ActiveRecord::Base.connection.execute "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci" },
-    "sqlite3" => -> { ActiveRecord::Base.connection.execute "ATTACH DATABASE ':memory:' AS #{DB_NAME}2" },
+    "sqlite3" => -> { [ActiveRecord::Base.connection, ::DB].each { |c| c.execute "ATTACH DATABASE 'temp2.db' AS #{DB_NAME}2" } },
   }
 
   SYSTEM_CALLS.fetch(ENV["DB"], []).each do |str|
@@ -131,7 +131,7 @@ class RawConnectionFactory
       def new_connection
         NEW_CONNECTION[ENV["DB"]].call(self.class.base_params(ENV["DB"]))
       end
-      CONFIG = { :adapter => 'sqlite3', :database => 'file::memory:?cache=shared' }
+      CONFIG = { :adapter => "sqlite3", :database => "temp.db", cache: "shared" }
 
     end
   end
@@ -141,7 +141,6 @@ class RawConnectionFactory
   )
   ari_adapter_name = adapter_name(ENV["DB"]) == "mysql" ? "mysql2" : adapter_name(ENV["DB"])
   require "activerecord-import/active_record/adapters/#{ari_adapter_name}_adapter"
-  POST_CONNECTION.fetch(ENV["DB"], -> {}).call
 end
 
 raise "not supported" unless RawConnectionFactory.instance_methods.include?(:new_connection)
@@ -149,6 +148,7 @@ raise "not supported" unless RawConnectionFactory.instance_methods.include?(:new
 config = ActiveRecord::Base.connection.instance_variable_get(:@config)
 config[:adapter] = case config[:adapter]
   when "postgresql" then "postgres"
+  when "sqlite3" then "sqlite"
   else config[:adapter]
 end
 params = if RUBY_PLATFORM == "java"
@@ -166,12 +166,17 @@ DB = if RUBY_PLATFORM == "java"
     :user => RawConnectionFactory::DB_USER,
     :password => RawConnectionFactory::DB_PASSWORD
   )
+elsif ENV["DB"] == "sqlite3"
+  Kernel.at_exit { FileUtils.rm(Dir.glob("temp*.db")) }
+  Sequel.sqlite("temp.db")
 else
   Sequel.connect(params)
 end
 
 $conn_factory = RawConnectionFactory.new
 $conn = $conn_factory.new_connection
+RawConnectionFactory::POST_CONNECTION.fetch(ENV["DB"], -> {}).call
+
 
 require 'logger'
 require 'fileutils'
