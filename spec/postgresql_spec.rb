@@ -56,4 +56,39 @@ describe Upsert do
       Pet.connection.execute("DROP SCHEMA unique_constraint_test CASCADE")
     end
   end
+
+  describe "array escaping" do
+    let(:upsert) do
+      Upsert.new($conn, :posts)
+    end
+
+    before(:all) do
+      Sequel.migration do
+        change do
+          db = self
+          create_table?(:posts) do
+            primary_key :id
+            String :name
+            column :tags, "text[]"
+          end
+        end
+      end.apply(DB, :up)
+
+      Object.const_set("Post", Class.new(ActiveRecord::Base))
+    end
+
+    [
+      %w[1 2 3],
+      %w[can't stop won't stop],
+      %w["''" '""' '\\],
+      ["[]", "{}", "\\\\", "()"],
+      %w[*& *&^ $%IUBS (&^ ) ()*& // \\ \\\\ (*&^JN) (*HNCSD) ~!!!`` {} } { ( )],
+      %w[\\ \\\\ \\\\\\ \\\\\\\\ \\'\\'\'\\\'" \\'\\"\''\""],
+    ].each do |arr|
+      it "properly upserts array of: #{arr}" do
+        upsert.row({name: "same-name"}, tags: arr)
+        expect(Post.first.tags).to eq(arr)
+      end
+    end
+  end
 end if ENV['DB'] == 'postgresql'

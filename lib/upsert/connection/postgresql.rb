@@ -8,9 +8,8 @@ class Upsert
           # pg array escaping lifted from https://github.com/tlconnor/activerecord-postgres-array/blob/master/lib/activerecord-postgres-array/array.rb
           '{' + v.map do |vv|
             vv = vv.to_s.dup
-            vv.gsub! /\\/, '\&\&'
-            vv.gsub! /'/, "''"
-            vv.gsub! /"/, '\"'
+            vv.gsub!(/\\/, '\&\&')
+            vv.gsub!(/"/, '\"')
             %{"#{vv}"}
           end.join(',') + '}'
         when Hash
