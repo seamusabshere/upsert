@@ -123,7 +123,10 @@ See below for details about what SQL MERGE trick (emulation of upsert) is used, 
 
 ### Rails / ActiveRecord
 
-(assuming that one of the other three supported drivers is being used under the covers)
+(Assuming that one of the other three supported drivers is being used under the covers).
+
+* add "upsert" to your Gemfile and 
+* run bundle install
 
 ```ruby
 Upsert.new Pet.connection, Pet.table_name
