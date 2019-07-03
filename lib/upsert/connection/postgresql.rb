@@ -9,7 +9,7 @@ class Upsert
           '{' + v.map do |vv|
             vv = vv.to_s.dup
             vv.gsub! /\\/, '\&\&'
-            vv.gsub! /'/, "''"
+            vv.gsub! /'/, "\'"
             vv.gsub! /"/, '\"'
             %{"#{vv}"}
           end.join(',') + '}'
