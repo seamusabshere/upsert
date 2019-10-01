@@ -381,6 +381,22 @@ If you're using MySQL, make sure server/connection timezone is UTC. If you're us
 
 In general, run some upserts and make sure datetimes get persisted like you expect.
 
+### Clearning all library-generated functions
+
+Place the following in to a rake task (so you don't globally redefine the `NAME_PREFIX` constant)
+
+```ruby
+Upsert::MergeFunction::NAME_PREFIX = "upsert"
+
+# ActiveRecord
+Upsert.clear_database_functions(ActiveRecord::Base.connection)
+
+# Sequel
+DB.synchronize do |conn|
+  Upsert.clear_database_functions(conn)
+end
+```
+
 ### Doesn't work with transactional fixtures
 
 Per https://github.com/seamusabshere/upsert/issues/23 you might have issues if you try to use transactional fixtures and this library.

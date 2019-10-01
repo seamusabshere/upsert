@@ -17,6 +17,8 @@ describe Upsert do
           :user => RawConnectionFactory::DB_USER,
           :password => RawConnectionFactory::DB_PASSWORD
         )
+      elsif config[:adapter] == "sqlite"
+        Sequel.sqlite("temp.db")
       else
         Sequel.connect(config.merge(
           :user => config.values_at(:user, :username).compact.first,
