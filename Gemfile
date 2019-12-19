@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 # Specify your gem's dependencies in upsert.gemspec
 
-gemspec name: RUBY_PLATFORM == "java" ? "upsert-java" : "upsert"
+gemspec glob: RUBY_PLATFORM == "java" ? "upsert-java.gemspec" : "upsert.gemspec"
 
 case RUBY_PLATFORM
 when "java"

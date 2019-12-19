@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.summary       = t
   gem.homepage      = "https://github.com/seamusabshere/upsert"
   gem.license       = "MIT"
-  gem.platform      = Gem::Platform::CURRENT
+  gem.platform      = (Gem::Platform::CURRENT.index("java") ? Gem::Platform::CURRENT : "")
 
   # We no longer use `git ls-files` here because it breaks on some version of jruby...
   # For some slightly related information:
