@@ -1,3 +1,3 @@
 class Upsert
-    VERSION = "2.9.9"
+    VERSION = "2.9.10"
 end
