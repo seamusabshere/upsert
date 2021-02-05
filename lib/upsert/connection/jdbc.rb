@@ -54,6 +54,8 @@ class Upsert
               statement.setObject i+1, nil
             when java.time.LocalDateTime, java.time.Instant, java.time.LocalDate
               statement.setObject i+1, v
+            when Array
+              statement.setObject i+1, metal.create_array_of("text", v.to_java)
             else
               setter = setters[v.class.name]
               Upsert.logger.debug { "Setting [#{v.class}, #{v}] via #{setter}" }

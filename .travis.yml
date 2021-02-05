@@ -11,7 +11,7 @@ rvm:
   - 2.2
   - jruby-9.1.14.0
   - jruby-9.1.17.0
-  - jruby-9.2.7.0
+  - jruby-9.2.10.0
 env:
   global:
   - USERNAME=travis
@@ -45,13 +45,13 @@ matrix:
       env: DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
     - rvm: 2.6
       env: DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
-    - rvm: jruby-9.2.7
+    - rvm: jruby-9.2.10
       env: DB=postgresql DB_VERSION=postgres:9.4
-    - rvm: jruby-9.2.7
+    - rvm: jruby-9.2.10
       env: DB=postgresql DB_VERSION=postgres:9.5
-    - rvm: jruby-9.2.7
+    - rvm: jruby-9.2.10
       env: DB=postgresql DB_VERSION=postgres:9.4 UNIQUE_CONSTRAINT=true
-    - rvm: jruby-9.2.7
+    - rvm: jruby-9.2.10
       env: DB=postgresql DB_VERSION=postgres:9.5 UNIQUE_CONSTRAINT=true
   allow_failures:
     - env: DB=postgresql DB_VERSION=postgres:12

@@ -68,7 +68,7 @@ class RawConnectionFactory
     "postgresql" => [
       %{ dropdb :dbname },
       %{ createdb :dbname },
-      %{ psql -d :dbname -c 'DROP SCHEMA IF EXISTS :dbname2 CASCASE' },
+      %{ psql -d :dbname -c 'DROP SCHEMA IF EXISTS :dbname2 CASCADE' },
       %{ psql -d :dbname -c 'CREATE SCHEMA :dbname2' },
     ],
     "mysql" => [
