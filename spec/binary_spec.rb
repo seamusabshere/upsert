@@ -4,7 +4,7 @@ describe Upsert do
     before do
       @fakes = []
       10.times do
-        @fakes << [Faker::Name.name, Faker::Lorem.paragraphs(10).join("\n\n")]
+        @fakes << [Faker::Name.name, Faker::Lorem.paragraphs(number: 10).join("\n\n")]
       end
     end
     it "saves binary one by one" do

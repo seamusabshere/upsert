@@ -102,5 +102,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rake', '~> 10'
 
   gem.add_development_dependency "activerecord-import", "~> 1"
+  gem.add_development_dependency "sequel-activerecord_connection", "~> 1.0"
   gem.add_development_dependency "faker"
 end
