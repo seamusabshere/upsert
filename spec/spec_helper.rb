@@ -12,10 +12,9 @@ require "activerecord-import"
 ActiveRecord::Base.default_timezone = :utc
 
 raise "A DB value is required" unless ENV["DB"]
-ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgresql/i
+ENV["DB"] = ENV["DB"].split(":").first
+ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgres/i
 UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
-
-raise "please use DB=postgresql NOT postgres" if ENV["DB"] == "postgres"
 
 class RawConnectionFactory
   DB_NAME = ENV['DB_NAME'] || 'upsert_test'
