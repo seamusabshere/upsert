@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        ruby-version: [2.2, 2.3, 2.4, 2.5, 2.6, 2.7, jruby-9.1, jruby-9.2]
+        ruby-version: [2.4, 2.5, 2.6, 2.7, jruby-9.1, jruby-9.2]
         unique_constraint: ["true", "false"]
         db: ["postgres:9.4", "postgres:9.5", "postgres:9.6", "postgres:10", "postgres:11", "postgres:12", "postgres:13"]
 
@@ -61,7 +61,7 @@ jobs:
 
     strategy:
       matrix:
-        ruby-version: [2.2, 2.3, 2.4, 2.5, 2.6, 2.7, jruby-9.1, jruby-9.2]
+        ruby-version: [2.4, 2.5, 2.6, 2.7, jruby-9.1, jruby-9.2]
         db: ["mysql:5.6", "mysql:5.7", "mysql:8"]
 
     services:
