@@ -99,7 +99,7 @@ jobs:
       run: bundle install
     - name: Setup Mysql user
       run: |
-        echo -e "\n\n[server]\ncharacter-set-server=utf8mb4\ncollation-server=utf8mb4_general_ci\n" | sudo tee -a /etc/custom-mysql/my.cnf
+        echo -e "\n\n[server]\ncharacter-set-server=utf8mb4\ncollation-server=utf8mb4_general_ci\n" | sudo tee -a /my/custom-mysql/my.cnf
         docker restart db_service_container
         sleep 60
         mysql -h 127.0.0.1 -u root -p"$DB_PASSWORD" -e "CREATE USER '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD';"
