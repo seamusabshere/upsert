@@ -36,7 +36,7 @@ describe Upsert do
     describe "reserved words" do
       nasties.each do |nasty, words|
         it "doesn't die on reserved words #{words.join(',')}" do
-          upsert = Upsert.new $conn, nasty.table_name
+          upsert = Upsert.new nasty.connection, nasty.table_name
           random = rand(1e3)
           selector = { :fake_primary_key => random, words.first => words.first }
           setter = words[1..-1].inject({}) { |memo, word| memo[word] = word; memo }
