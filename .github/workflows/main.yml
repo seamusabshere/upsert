@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  test-postgres:
     runs-on: ubuntu-latest
 
     env:
@@ -17,14 +17,7 @@ jobs:
       matrix:
         ruby-version: [2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.0, jruby-9.1, jruby-9.2]
         unique_constraint: ["true", "false"]
-        db: ["postgres:9.4", "postgres:9.5", "postgres:9.6", "postgres:10", "postgres:11", "postgres:12", "postgres:13", "mysql:5.6", "mysql:5.7", "mysql:8"]
-        exclude:
-          - db: mysql:5.6
-            unique_constraint: true
-          - db: mysql:5.7
-            unique_constraint: true
-          - db: mysql:8
-            unique_constraint: true
+        db: ["postgres:9.4", "postgres:9.5", "postgres:9.6", "postgres:10", "postgres:11", "postgres:12", "postgres:13"]
 
     services:
       dbcontainer:
@@ -34,15 +27,56 @@ jobs:
           POSTGRES_USER: upsert_test
           POSTGRES_DB: upsert_test
           PGDATABASE: upsert_test
+        ports: ["5432:5432"]
+        options: >-
+          --name=db_service_container
+          --health-cmd="pg_isready"
+          --health-interval=15s
+          --health-timeout=30s
+          --health-retries=5
+
+    steps:
+    - name: Switch to libmariaclient-dev (libmysql was causing segfaults)
+      run: sudo apt install --yes --force-yes libmariadbclient-dev
+    - uses: actions/checkout@v2
+    - name: Set up Ruby ${{ matrix.ruby-version }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true
+    - name: Install dependencies
+      run: bundle install
+    - name: Run tests
+      env:
+        DB: ${{ matrix.db }}
+      run: bundle exec rake
+
+  test-mysql:
+    runs-on: ubuntu-latest
+
+    env:
+      DB_NAME: upsert_test
+      DB_USER: upsert_test
+      DB_PASSWORD: upsert_test
+
+    strategy:
+      matrix:
+        ruby-version: [2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.0, jruby-9.1, jruby-9.2]
+        db: ["mysql:5.6", "mysql:5.7", "mysql:8"]
+
+    services:
+      dbcontainer:
+        image: ${{ matrix.db }}
+        env:
           MYSQL_ROOT_PASSWORD: upsert_test
           MYSQL_DATABASE: upsert_test
           MYSQL_ROOT_HOST: "%"
-        ports: ["5432:5432", "3306:3306"]
+        ports: ["3306:3306"]
         volumes:
           - /my/custom-mysql:/etc/mysql/conf.d
         options: >-
           --name=db_service_container
-          --health-cmd="${{ fromJson('["mysqladmin ping", "pg_isready"]')[startsWith(matrix.db, 'postgres')] }}"
+          --health-cmd="mysqladmin ping"
           --health-interval=15s
           --health-timeout=30s
           --health-retries=5
@@ -54,8 +88,7 @@ jobs:
       if: ${{ matrix.db == 'mysql:8' }}
       run: |
         echo -e "[mysqld]\ndefault-authentication-plugin=mysql_native_password" | sudo tee -a /my/custom-mysql/my.cnf
-        docker restart db_service_container
-        sleep 60
+      # Will be restarted in a later step
     - uses: actions/checkout@v2
     - name: Set up Ruby ${{ matrix.ruby-version }}
       uses: ruby/setup-ruby@v1
@@ -65,8 +98,10 @@ jobs:
     - name: Install dependencies
       run: bundle install
     - name: Setup Mysql user
-      if: ${{ startsWith(matrix.db, 'mysql') }}
       run: |
+        echo -e "\n\n[server]\ncharacter-set-server=utf8mb4\ncollation-server=utf8mb4_general_ci\n" | sudo tee -a /etc/custom-mysql/my.cnf
+        docker restart db_service_container
+        sleep 60
         mysql -h 127.0.0.1 -u root -p"$DB_PASSWORD" -e "CREATE USER '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD';"
         mysql -h 127.0.0.1 -u root -p"$DB_PASSWORD" -e "GRANT ALL ON *.* TO '$DB_USER'@'%';"
     - name: Run tests
