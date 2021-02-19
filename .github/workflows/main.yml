@@ -15,16 +15,16 @@ jobs:
 
     strategy:
       matrix:
-        ruby-version: [2.2, 2.6] # [2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.0, jruby-9.1, jruby-9.2]
-        # unique_constraint: ["true", "false"]
-        db: ["mysql:5.6", "postgres:10"] # ["postgres:9.4", "postgres:9.5", "postgres:9.6", "postgres:10", "postgres:11", "postgres:12", "postgres:13", "mysql:5.6", "mysql:5.7", "mysql:8"]
-        # exclude:
-        #   - db: mysql:5.6
-        #     unique_constraint: true
-        #   - db: mysql:5.7
-        #     unique_constraint: true
-        #   - db: mysql:8
-        #     unique_constraint: true
+        ruby-version: [2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.0, jruby-9.1, jruby-9.2]
+        unique_constraint: ["true", "false"]
+        db: ["postgres:9.4", "postgres:9.5", "postgres:9.6", "postgres:10", "postgres:11", "postgres:12", "postgres:13", "mysql:5.6", "mysql:5.7", "mysql:8"]
+        exclude:
+          - db: mysql:5.6
+            unique_constraint: true
+          - db: mysql:5.7
+            unique_constraint: true
+          - db: mysql:8
+            unique_constraint: true
 
     services:
       dbcontainer:
@@ -55,7 +55,7 @@ jobs:
       run: |
         echo -e "[mysqld]\ndefault-authentication-plugin=mysql_native_password" | sudo tee -a /my/custom-mysql/my.cnf
         docker restart db_service_container
-        sleep 120
+        sleep 60
     - uses: actions/checkout@v2
     - name: Set up Ruby ${{ matrix.ruby-version }}
       uses: ruby/setup-ruby@v1
