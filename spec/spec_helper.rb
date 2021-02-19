@@ -67,8 +67,8 @@ class RawConnectionFactory
     "postgresql" => [
       %{ dropdb :dbname },
       %{ createdb :dbname },
-      %{ psql -d :dbname -c 'DROP SCHEMA IF EXISTS :dbname2 CASCASE' },
-      %{ psql -d :dbname -c 'CREATE SCHEMA :dbname2' },
+      %{ psql -d :dbname -c "DROP SCHEMA IF EXISTS :dbname2 CASCASE" },
+      %{ psql -d :dbname -c "CREATE SCHEMA :dbname2" },
     ],
     "mysql" => [
       %{ -e "DROP DATABASE IF EXISTS :dbname" },
@@ -239,6 +239,7 @@ Sequel.migration do
   change do
     db = self
     InternalMigration::DEFINITIONS.each do |table, blk|
+      drop_table?(table)
       create_table?(table) do
         instance_exec(db, &blk)
       end
@@ -389,6 +390,7 @@ module SpecHelper
     Sequel.migration do
       change do
         db = self
+        drop_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first)
         create_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first) do
           instance_exec(db, &InternalMigration::DEFINITIONS[klass.table_name.to_sym])
         end
