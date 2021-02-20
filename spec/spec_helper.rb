@@ -1,20 +1,20 @@
 # -*- encoding: utf-8 -*-
+raise "A DB value is required" unless ENV["DB"]
+ENV["DB"] = ENV["DB"].split(":").first
+ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgres/i
+UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
+
 require 'bundler/setup'
 Bundler.require(:default, :development)
-
-require 'shellwords'
-require "sequel"
-Sequel.default_timezone = :utc
-Sequel.extension :migration
 
 require "active_record"
 require "activerecord-import"
 ActiveRecord::Base.default_timezone = :utc
 
-raise "A DB value is required" unless ENV["DB"]
-ENV["DB"] = ENV["DB"].split(":").first
-ENV['DB'] = 'postgresql' if ENV['DB'].to_s =~ /postgres/i
-UNIQUE_CONSTRAINT = ENV['UNIQUE_CONSTRAINT'] == 'true'
+require 'shellwords'
+require "sequel"
+Sequel.default_timezone = :utc
+Sequel.extension :migration
 
 class RawConnectionFactory
   DB_NAME = ENV['DB_NAME'] || 'upsert_test'
@@ -163,13 +163,14 @@ DB = if RUBY_PLATFORM == "java"
   Sequel.connect(
     params,
     :user => RawConnectionFactory::DB_USER,
-    :password => RawConnectionFactory::DB_PASSWORD
+    :password => RawConnectionFactory::DB_PASSWORD,
+    extensions: :activerecord_connection
   )
 elsif ENV["DB"] == "sqlite3"
   Kernel.at_exit { FileUtils.rm(Dir.glob("temp*.db")) }
-  Sequel.sqlite("temp.db")
+  Sequel.sqlite("temp.db", extensions: :activerecord_connection)
 else
-  Sequel.connect(params)
+  Sequel.connect(params.merge(extensions: :activerecord_connection))
 end
 
 $conn_factory = RawConnectionFactory.new
@@ -239,8 +240,7 @@ Sequel.migration do
   change do
     db = self
     InternalMigration::DEFINITIONS.each do |table, blk|
-      drop_table?(table)
-      create_table?(table) do
+      create_table!(table) do
         instance_exec(db, &blk)
       end
     end
@@ -390,8 +390,7 @@ module SpecHelper
     Sequel.migration do
       change do
         db = self
-        drop_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first)
-        create_table?(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first) do
+        create_table!(sequel_table_name.length > 1 ? Sequel.qualify(*sequel_table_name) : sequel_table_name.first) do
           instance_exec(db, &InternalMigration::DEFINITIONS[klass.table_name.to_sym])
         end
       end
@@ -410,6 +409,12 @@ end
 
 RSpec.configure do |c|
   c.include SpecHelper
+
+  c.filter_run_when_matching :focus
+  c.order = :defined
+  c.warnings = true
+  c.full_backtrace = false
+
   c.before do
     Pet.delete_all
   end

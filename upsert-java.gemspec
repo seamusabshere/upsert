@@ -9,6 +9,6 @@ Gem::Specification.load(File.expand_path("upsert.gemspec.common", __dir__)).dup.
     add_development_dependency "jdbc-sqlite3"
     add_development_dependency "activerecord-jdbc-adapter"
 
-    add_development_dependency "pry-nav"
+    add_development_dependency "pry-nav" unless ENV["CI"]
   end
 end

@@ -256,7 +256,7 @@ class Upsert
   end
 
   def merge_function(row)
-    cache_key = [row.selector.keys, row.setter.keys]
+    cache_key = [quoted_table_name, row.selector.keys, row.setter.keys]
     self.class.mutex_for_function(self, row).synchronize do
       @merge_function_cache[cache_key] ||=
         merge_function_class.new(self, row.selector.keys, row.setter.keys, assume_function_exists?)

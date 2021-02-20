@@ -1,12 +1,12 @@
 require 'spec_helper'
 describe Upsert do
+  let(:upsert) { Upsert.new(Pet.connection, :pets) }
   describe "timezone support" do
     it "takes times in UTC" do
       time = Time.new.utc
       if ENV['DB'] == 'mysql'
         time = time.change(:usec => 0)
       end
-      upsert = Upsert.new $conn, :pets
       assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
         upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
       end
@@ -17,7 +17,6 @@ describe Upsert do
       if ENV['DB'] == 'mysql'
         time = time.change(:usec => 0)
       end
-      upsert = Upsert.new $conn, :pets
       assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
         upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
       end
@@ -28,7 +27,6 @@ describe Upsert do
       if ENV['DB'] == 'mysql'
         time = time.change(:usec => 0)
       end
-      upsert = Upsert.new $conn, :pets
       assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
         upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
       end
@@ -39,7 +37,6 @@ describe Upsert do
       if ENV['DB'] == 'mysql'
         time = time.change(:usec => 0)
       end
-      upsert = Upsert.new $conn, :pets
       assert_creates(Pet, [[{:name => 'Jerry'}, {:morning_walk_time => time}]]) do
         upsert.row({:name => 'Jerry'}, {:morning_walk_time => time})
       end
@@ -48,7 +45,6 @@ describe Upsert do
     if ENV['DB'] == 'postgresql'
       it "doesn't die on timestamp without time zone (postgresql)" do
         time = Time.new.utc
-        upsert = Upsert.new $conn, :pets
         assert_creates(Pet, [[{:name => 'Jerry'}, {:tsntz => time}]]) do
           upsert.row({:name => 'Jerry'}, {:tsntz => time})
         end

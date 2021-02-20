@@ -24,6 +24,9 @@ class Upsert
           java.time.LocalDateTime.of(date.year, date.month, date.day, date.hour, date.min, date.sec, date.nsec)
         when Date
           java.time.LocalDate.of(v.year, v.month, v.day)
+        when Array
+          # Make sure it's passed through.  Encoding handled at the JDBC level
+          v
         else
           super
         end
