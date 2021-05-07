@@ -14,7 +14,7 @@ Does **not** use `INSERT ON DUPLICATE KEY UPDATE` on MySQL as this only works if
 
 70&ndash;90%+ faster than emulating upsert with ActiveRecord.
 
-Supports MRI and JRuby.
+Supports MRI (2.2+) and JRuby (9.1.14+).  When used in conjunction with AR it requires AR 5+.  For compatibility with older version of Ruby/AR, please use a version of Upsert < 3.
 
 ## Usage
 
