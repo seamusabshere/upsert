@@ -305,10 +305,12 @@ class Upsert
       end
 
       def setter_column_definitions
+        @time_stamp_cols = column_definitions.select{|cd| cd.name == 'created_at' || cd.name == 'updated_at'}
         column_definitions.select { |cd| setter_keys.include?(cd.name) }
       end
 
       def update_column_definitions
+        @update_time_stamp_cols =  column_definitions.select{|cd| cd.name == 'updated_at'}
         setter_column_definitions.select { |cd| cd.name !~ CREATED_COL_REGEX }
       end
 
@@ -317,6 +319,20 @@ class Upsert
       def create!
         Upsert.logger.info "[upsert] Creating or replacing database function #{name.inspect} on table #{table_name.inspect} for selector #{selector_keys.map(&:inspect).join(', ')} and setter #{setter_keys.map(&:inspect).join(', ')}"
         first_try = true
+
+        names = setter_column_definitions.map(&:quoted_name).join(', ')
+        values = setter_column_definitions.map(&:to_setter_value).join(', ')
+        update_pair = update_column_definitions.map(&:to_setter).join(', ')
+        #Solution based on based on https://github.com/seamusabshere/upsert/pull/65
+        if @time_stamp_cols.count > 0
+          names += ', created_at, updated_at'
+          values += ", now(), now()"
+        end
+        @time_stamp_cols=[]
+        if @update_time_stamp_cols.count > 0
+          update_pair += ", updated_at = now()"
+        end
+        @update_time_stamp_cols=[]
         connection.execute(%{
           CREATE OR REPLACE FUNCTION #{name}(#{(selector_column_definitions.map(&:to_selector_arg) + setter_column_definitions.map(&:to_setter_arg) + hstore_delete_handlers.map(&:to_arg)).join(', ')}) RETURNS VOID AS
           $$
@@ -325,7 +341,7 @@ class Upsert
           BEGIN
             LOOP
               -- first try to update the key
-              UPDATE #{quoted_table_name} SET #{update_column_definitions.map(&:to_setter).join(', ')}
+              UPDATE #{quoted_table_name} SET #{update_pair}
                 WHERE #{selector_column_definitions.map(&:to_selector).join(' AND ') };
               IF found THEN
                 #{hstore_delete_handlers.map(&:to_pgsql).join(' ')}
@@ -335,7 +351,7 @@ class Upsert
               -- if someone else inserts the same key concurrently,
               -- we could get a unique-key failure
               BEGIN
-                INSERT INTO #{quoted_table_name}(#{setter_column_definitions.map(&:quoted_name).join(', ')}) VALUES (#{setter_column_definitions.map(&:to_setter_value).join(', ')});
+                INSERT INTO #{quoted_table_name}(#{names}) VALUES (#{values});
                 #{hstore_delete_handlers.map(&:to_pgsql).join(' ')}
                 RETURN;
               EXCEPTION WHEN unique_violation THEN
