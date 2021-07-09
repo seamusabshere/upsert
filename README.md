@@ -44,7 +44,8 @@ upsert.row(selector, setter)
 
 ### Batch mode
 
-By organizing your upserts into a batch, we can do work behind the scenes to make them faster.
+By organizing your upserts into a batch, we can do work behind the scenes to make them faster.  __Right now__ this does not execute a bulk insert/upsert,
+but this is planned for a future release (post 3.0.0).
 
 ```ruby
 connection = Mysql2::Client.new([...])
@@ -125,7 +126,7 @@ See below for details about what SQL MERGE trick (emulation of upsert) is used, 
 
 (Assuming that one of the other three supported drivers is being used under the covers).
 
-* add "upsert" to your Gemfile and 
+* add "upsert" to your Gemfile and
 * run bundle install
 
 ```ruby
